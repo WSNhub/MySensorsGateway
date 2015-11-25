@@ -23,6 +23,11 @@ struct ApplicationSettingsStorage
 	IPAddress netmask;
 	IPAddress gateway;
 
+        String mqttUser;
+        String mqttPass;
+        String mqttServer;
+        int    mqttPort;
+
 	void load()
 	{
 		DynamicJsonBuffer jsonBuffer;
@@ -42,6 +47,12 @@ struct ApplicationSettingsStorage
 			ip = network["ip"].toString();
 			netmask = network["netmask"].toString();
 			gateway = network["gateway"].toString();
+
+                        JsonObject& mqtt = root["mqtt"];
+			mqttUser = mqtt["user"].toString();
+			mqttPass = mqtt["password"].toString();
+			mqttServer = mqtt["server"].toString();
+			mqttPort = mqtt["port"];
 
 			delete[] jsonString;
 		}
@@ -63,6 +74,13 @@ struct ApplicationSettingsStorage
 		network.addCopy("ip", ip.toString());
 		network.addCopy("netmask", netmask.toString());
 		network.addCopy("gateway", gateway.toString());
+
+                JsonObject& mqtt = jsonBuffer.createObject();
+		root["mqtt"] = mqtt;
+                mqtt.addCopy("user", mqttUser);
+                mqtt.addCopy("password", mqttPass);
+                mqtt.addCopy("server", mqttServer);
+                mqtt["port"] = mqttPort;
 
 		//TODO: add direct file stream writing
 		fileSetContent(APP_SETTINGS_FILE, root.toJsonString());

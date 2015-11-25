@@ -32,7 +32,7 @@ SPI_SIZE        ?= 4M
 #RBOOT_ROM_1     ?= rom1
 #RBOOT_LD_1      ?= rom1.ld
 ## Location of the spiffs filesystem
-SPIFF_FILES ?= web/build
+SPIFF_FILES ?= spiffs
 ## size of the spiffs to create
 SPIFF_SIZE      ?= 262144
 ## option to completely disable spiffs

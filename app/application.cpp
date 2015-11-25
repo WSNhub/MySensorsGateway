@@ -183,11 +183,38 @@ void onAjaxConnect(HttpRequest &request, HttpResponse &response)
 	response.sendJsonObject(stream);
 }
 
+extern void checkMqttClient();
+void onMqttConfig(HttpRequest &request, HttpResponse &response)
+{
+    AppSettings.load();
+    if (request.getRequestMethod() == RequestMethod::POST)
+    {
+        AppSettings.mqttUser = request.getPostParameter("user");
+        AppSettings.mqttPass = request.getPostParameter("password");
+        AppSettings.mqttServer = request.getPostParameter("server");
+        AppSettings.mqttPort = atoi(request.getPostParameter("port").c_str());
+        AppSettings.save();
+        if (WifiStation.isConnected())
+            checkMqttClient();
+    }
+
+    TemplateFileStream *tmpl = new TemplateFileStream("mqtt.html");
+    auto &vars = tmpl->variables();
+
+    vars["user"] = AppSettings.mqttUser;
+    vars["password"] = AppSettings.mqttPass;
+    vars["server"] = AppSettings.mqttServer;
+    vars["port"] = AppSettings.mqttPort;
+
+    response.sendTemplate(tmpl); // will be automatically deleted
+}
+
 void startWebServer()
 {
 	server.listen(80);
 	server.addPath("/", onIndex);
 	server.addPath("/ipconfig", onIpConfig);
+	server.addPath("/mqttconfig", onMqttConfig);
 	server.addPath("/ajax/get-networks", onAjaxNetworkList);
 	server.addPath("/ajax/connect", onAjaxConnect);
 	server.setDefaultHandler(onFile);
@@ -226,6 +253,46 @@ void networkScanCompleted(bool succeeded, BssList list)
                 networks.add(list[i]);
     }
     networks.sort([](const BssInfo& a, const BssInfo& b){ return b.rssi - a.rssi; } );
+}
+
+Timer connectionCheckTimer;
+bool wasConnected = FALSE;
+void connectOk();
+void connectFail();
+
+void wifiCheckState()
+{
+    if (WifiStation.isConnected())
+    {
+        if (!wasConnected)
+        {
+            Serial.println("CONNECTED");
+            wasConnected = TRUE;
+            connectOk();
+        }
+        checkMqttClient();
+    }
+    else
+    {
+        if (wasConnected)
+        {
+            Serial.println("NOT CONNECTED");
+            wasConnected = FALSE;
+            connectFail();
+        }
+    }
+}
+
+// Will be called when WiFi station was connected to AP
+void connectOk()
+{
+    Serial.println("--> I'm CONNECTED");
+}
+
+// Will be called when WiFi station timeout was reached
+void connectFail()
+{
+    Serial.println("--> I'm NOT CONNECTED. Need help :(");
 }
 
 void init()
@@ -273,6 +340,9 @@ void init()
     // Start AP for configuration
     WifiAccessPoint.enable(true);
     WifiAccessPoint.config("MySensors gateway", "", AUTH_OPEN);
+
+    wasConnected = FALSE;
+    connectionCheckTimer.initializeMs(1000, wifiCheckState).start(true);
 
     // Run WEB server on system ready
     System.onReady(startServers);

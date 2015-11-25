@@ -5,3 +5,4 @@ include/mutex.h
 app/mutex.c
 app/globals.c
 *~
+*.swp
