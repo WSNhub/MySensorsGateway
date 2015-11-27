@@ -7,21 +7,6 @@
 #include "Libraries/MySensors/MyTransportNRF24.h"
 #include "Libraries/MySensors/MyHwESP8266.h"
 
-char convBuf[MAX_PAYLOAD*2+1];
-
-void incomingMessage(const MyMessage &message) {
-//  if (mGetCommand(message) == C_PRESENTATION && inclusionMode) {
-//	gw.rxBlink(3);
-//   } else {
-//	gw.rxBlink(1);
-//   }
-   // Pass along the message from sensors to serial line
-   Serial.printf("%d;%d;%d;%d;%d;%s\n",
-                 message.sender, message.sensor,
-                 mGetCommand(message), mGetAck(message),
-                 message.type, message.getString(convBuf));
-}
-
 #define RADIO_CE_PIN        4   // radio chip enable
 #define RADIO_SPI_SS_PIN    15  // radio SPI serial select
 MyTransportNRF24 transport(RADIO_CE_PIN, RADIO_SPI_SS_PIN, RF24_PA_LEVEL_GW);
@@ -29,17 +14,56 @@ MyHwESP8266 hw;
 MySensor gw(transport, hw);
 Timer t;
 
-void process()
-{
-  gw.process();
-}
-
 HttpServer server;
 FTPServer ftp;
 
 BssList networks;
 String network, password;
 Timer connectionTimer;
+
+MyMessage msg;
+MyMessage& build (MyMessage &msg, uint8_t destination, uint8_t sensor, uint8_t command, uint8_t type, bool enableAck) {
+	msg.destination = destination;
+	msg.sender = GATEWAY_ADDRESS;
+	msg.sensor = sensor;
+	msg.type = type;
+	mSetCommand(msg,command);
+	mSetRequestAck(msg,enableAck);
+	mSetAck(msg,false);
+	return msg;
+}
+
+void SendToSensor(String message)
+{
+    gw.sendRoute(build(msg, 22, 1, C_REQ, 2, 0));
+}
+
+char convBuf[MAX_PAYLOAD*2+1];
+
+void mqttPublishMessage(String topic, String message);
+void incomingMessage(const MyMessage &message)
+{
+   // Pass along the message from sensors to serial line
+   Serial.printf("%d;%d;%d;%d;%d;%s\n",
+                 message.sender, message.sensor,
+                 mGetCommand(message), mGetAck(message),
+                 message.type, message.getString(convBuf));
+   
+   String type = message.type == 35 ? "V_VOLUME" : "V_LIGHT";
+
+   //<NODEID>/<SENSOR_ID>/<SENSOR_TYPE>/<VALUE>
+   mqttPublishMessage(message.sender + String("/") +
+                      message.sensor + String("/") +
+                      type, convBuf);
+
+   msg.set(1);
+   gw.sendRoute(build(msg, message.sender, message.sensor, C_SET, message.type, 0));
+}
+
+void process()
+{
+  gw.process();
+}
 
 void onIndex(HttpRequest &request, HttpResponse &response)
 {
@@ -328,13 +352,14 @@ void init()
     Serial.systemDebugOutput(true); // Enable debug output to serial
     AppSettings.load();
 
-    WifiStation.enable(true);
-    if (AppSettings.exist())
-    {
-        WifiStation.config(AppSettings.ssid, AppSettings.password);
-        if (!AppSettings.dhcp && !AppSettings.ip.isNull())
-            WifiStation.setIP(AppSettings.ip, AppSettings.netmask, AppSettings.gateway);
-    }
+    WifiStation.enable(false);
+    //WifiStation.config("WSNatWork", "");
+    //if (AppSettings.exist())
+    //{
+    //    WifiStation.config(AppSettings.ssid, AppSettings.password);
+    //    if (!AppSettings.dhcp && !AppSettings.ip.isNull())
+    //        WifiStation.setIP(AppSettings.ip, AppSettings.netmask, AppSettings.gateway);
+    //}
     WifiStation.startScan(networkScanCompleted);
 
     // Start AP for configuration

@@ -5,38 +5,46 @@
 // Forward declarations
 void startMqttClient();
 void onMessageReceived(String topic, String message);
-void OtaUpdate();
 
 // MQTT client
 MqttClient *mqtt = NULL;
 char clientId[33];
 
+#define MQTTPREFIX "MyMQTT"
+
+//<MQTTPREFIX>/<NODEID>/<SENSOR_ID>/<SENSOR_TYPE>/<VALUE>
 void ICACHE_FLASH_ATTR mqttPublishMessage(String topic, String message)
 {
     if (!mqtt)
         return;
 
-    mqtt->publish(String("/") + clientId + String("/") + topic,
-                  message);
+    mqtt->publish(MQTTPREFIX + String("/") + topic, message);
 }
 
 void ICACHE_FLASH_ATTR mqttPublishVersion()
 {
     mqtt->publish(String("/") + clientId + String("/version"),
-                  "cloud-o-mation C-001");
+                  "MySensors gateway");
 }
 
-bool ICACHE_FLASH_ATTR i2cSetMcpOutput(uint8_t output, bool enable);
-bool ICACHE_FLASH_ATTR i2cSetMcpOutputInvert(uint8_t output, bool invert);
-bool ICACHE_FLASH_ATTR i2cSetMcpInputInvert(uint8_t input, bool invert);
-
 // Callback for messages, arrived from MQTT server
+void SendToSensor(String value);
 void ICACHE_FLASH_ATTR onMessageReceived(String topic, String message)
 {
     /*
      * Supported topics:
-     *   /?                => send version info
+     *   /? => send version info
+     *   <MQTTPREFIX>/<NODEID>/<SENSOR_ID>/<SENSOR_TYPE>/<VALUE>
      */
+
+    //MyMQTT/22/1/V_LIGHT
+    if (topic.equals("MyMQTT/22/1/V_LIGHT"))
+    {
+        Serial.print("Sending state \"");
+        Serial.print(message);
+        Serial.println("\" to led");
+        SendToSensor(message);
+    }
 
     if (topic.equals(String("/?")))
     {
@@ -44,13 +52,6 @@ void ICACHE_FLASH_ATTR onMessageReceived(String topic, String message)
         return;
     }
 
-    if (topic.startsWith("version"))
-    {
-        /* ignore */
-        return;
-    }
-
-    Serial.print("Unrecognized topic: ");
     Serial.println(topic);
 }
 
@@ -66,7 +67,8 @@ void ICACHE_FLASH_ATTR startMqttClient()
         sprintf(clientId, "ESP_%08X", system_get_chip_id());
         mqtt = new MqttClient(AppSettings.mqttServer, AppSettings.mqttPort, onMessageReceived);
         mqtt->connect(clientId, AppSettings.mqttUser, AppSettings.mqttPass);
-        mqtt->subscribe("/?");
+        mqtt->subscribe("#");
+        //mqtt->subscribe("/?");
         mqtt->subscribe(String("/") + clientId + String("/#"));
         mqttPublishVersion();
     }
