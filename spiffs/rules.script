@@ -1,0 +1,15 @@
+if (n == 40 && s == 0)
+  {
+    print(n);
+    print(s);
+    if (v%2==0)
+    {
+      print(v);
+      updateSensorState(n,1,0);
+    }
+    else
+    {
+      updateSensorState(n,1,1);
+    }
+  }
+}

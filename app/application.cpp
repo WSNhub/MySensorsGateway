@@ -6,8 +6,9 @@
 #include "Libraries/MySensors/MyTransport.h"
 #include "Libraries/MySensors/MyTransportNRF24.h"
 #include "Libraries/MySensors/MyHwESP8266.h"
+#include "Libraries/MyInterpreter/MyInterpreter.h"
 
-#define RADIO_CE_PIN        4   // radio chip enable
+#define RADIO_CE_PIN        2   // radio chip enable
 #define RADIO_SPI_SS_PIN    15  // radio SPI serial select
 MyTransportNRF24 transport(RADIO_CE_PIN, RADIO_SPI_SS_PIN, RF24_PA_LEVEL_GW);
 MyHwESP8266 hw;
@@ -40,6 +41,8 @@ void SendToSensor(String message)
 
 char convBuf[MAX_PAYLOAD*2+1];
 
+MyInterpreter interpreter;
+
 void mqttPublishMessage(String topic, String message);
 void incomingMessage(const MyMessage &message)
 {
@@ -48,21 +51,74 @@ void incomingMessage(const MyMessage &message)
                  message.sender, message.sensor,
                  mGetCommand(message), mGetAck(message),
                  message.type, message.getString(convBuf));
-   
-   String type = message.type == 35 ? "V_VOLUME" : "V_LIGHT";
 
-   //<NODEID>/<SENSOR_ID>/<SENSOR_TYPE>/<VALUE>
-   mqttPublishMessage(message.sender + String("/") +
-                      message.sensor + String("/") +
-                      type, convBuf);
+   msg = message;
+	if (msg.isAck()) {
+//		if (msg.sender==255 && mGetCommand(msg)==C_INTERNAL && msg.type==I_ID_REQUEST) {
+// TODO: sending ACK request on id_response fucks node up. doesn't work.
+// The idea was to confirm id and save to EEPROM_LATEST_NODE_ADDRESS.
+//  }
+	} else {
+		// we have to check every message if its a newly assigned id or not.
+		// Ack on I_ID_RESPONSE does not work, and checking on C_PRESENTATION isn't reliable.
+		/*uint8_t newNodeID = gw.loadState(EEPROM_LATEST_NODE_ADDRESS)+1;
+		if (newNodeID <= MQTT_FIRST_SENSORID) newNodeID = MQTT_FIRST_SENSORID;
+		if (msg.sender==newNodeID) {
+			gw.saveState(EEPROM_LATEST_NODE_ADDRESS,newNodeID);
+		}*/
+		if (mGetCommand(msg)==C_INTERNAL) {
+			if (msg.type==I_CONFIG) {
+				//gw.sendRoute(build(msg, msg.sender, 255, C_INTERNAL, I_CONFIG, 0).set(MQTT_UNIT));
+				return;
+			} else if (msg.type==I_ID_REQUEST && msg.sender==255) {
+				//uint8_t newNodeID = gw.loadState(EEPROM_LATEST_NODE_ADDRESS)+1;
+				//if (newNodeID <= MQTT_FIRST_SENSORID) newNodeID = MQTT_FIRST_SENSORID;
+				//if (newNodeID >= MQTT_LAST_SENSORID) return; // Sorry no more id's left :(
+				//gw.sendRoute(build(msg, msg.sender, 255, C_INTERNAL, I_ID_RESPONSE, 0).set(newNodeID));
+				return;
+			}
+		}
+		if (mGetCommand(msg)!=C_PRESENTATION) {
+			//if (mGetCommand(msg)==C_INTERNAL) msg.type=msg.type+(S_FIRSTCUSTOM-10);	//Special message
+			
+String topic = message.sender + String("/") +
+                      message.sensor + String("/");
+#ifdef MQTT_TRANSLATE_TYPES
+//V_?
+topic += getType(convBuf, &vType[msg.type]);
+#else
+topic += msg.type;
+#endif
+   mqttPublishMessage(topic, message.getString(convBuf));
 
-   msg.set(1);
-   gw.sendRoute(build(msg, message.sender, message.sensor, C_SET, message.type, 0));
+		}
+	}
+
+    interpreter.setVariable('n', message.sender);
+    interpreter.setVariable('s', message.sensor);
+    interpreter.setVariable('v', atoi(message.getString(convBuf)));
+
+#ifndef DISABLE_SPIFFS
+    if (fileExist("rules.script"))
+    {
+        int size = fileGetSize("rules.script");
+        char* progBuf = new char[size + 1];
+        fileGetContent("rules.script", progBuf, size + 1);
+        interpreter.run(progBuf, strlen(progBuf));
+        delete progBuf;
+    }
+#else
+    return FALSE;
+#endif
+
+
+    //char *iArduinoProgBuf = (char *)"if(n==40){if(s==0){print(n);print(s);if(v%2==0){print(v);updateSensorState(n,1,0);}else{updateSensorState(n,1,1);}}}";
+    //interpreter.run(iArduinoProgBuf, strlen(iArduinoProgBuf));
 }
 
 void process()
 {
-  gw.process();
+    gw.process();
 }
 
 void onIndex(HttpRequest &request, HttpResponse &response)
@@ -254,17 +310,32 @@ void startFTP()
 	ftp.addUser("me", "123"); // FTP account
 }
 
+int print(int a)
+{
+  Serial.println(a);
+  return a;
+}
+
+int updateSensorState(int node, int sensor, int value)
+{
+  MyMessage myMsg;
+  myMsg.set(value);
+  gw.sendRoute(build(myMsg, node, sensor, C_SET, 2 /*message.type*/, 0));
+}
+
 // Will be called when system initialization was completed
 void startServers()
 {
     startFTP();
     startWebServer();
 
+    interpreter.registerFunc1((char *)"print", print);
+    interpreter.registerFunc3((char *)"updateSensorState", updateSensorState);
+
     hw_init();
 
     // Initialize gateway at maximum PA level, channel 70 and callback for write operations 
     gw.begin(incomingMessage, 0, true, 0);
-
     t.initializeMs(1, TimerDelegate(process)).start();
 }
 
@@ -319,6 +390,18 @@ void connectFail()
     Serial.println("--> I'm NOT CONNECTED. Need help :(");
 }
 
+void processApplicationCommands(String commandLine, CommandOutput* commandOutput)
+{
+    Vector<String> commandToken;
+    int numToken = splitString(commandLine, ' ' , commandToken);
+
+    if (numToken == 1)
+    {
+        commandOutput->printf("Example subcommands available : \r\n");
+    }
+    commandOutput->printf("This command is handled by the application\r\n");
+}
+
 void init()
 {
     /* Mount the internal storage */
@@ -350,6 +433,9 @@ void init()
 
     Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
     Serial.systemDebugOutput(true); // Enable debug output to serial
+    //commandHandler.registerCommand(CommandDelegate("example","Example Command from Class","Application",processApplicationCommands));
+    //Serial.commandProcessing(true);
+
     AppSettings.load();
 
     WifiStation.enable(false);

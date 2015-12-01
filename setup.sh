@@ -14,11 +14,16 @@ if [ ! -d "tools/Sming" ] ; then
     tar xzvf 1.4.0.tar.gz Sming-1.4.0/Sming
     mv Sming-1.4.0/Sming Sming
     rm -rf Sming-1.4.0
+    rm -rf *.tar.gz
     cd ..
 fi
 
 if [ ! -d "tools/Sming/Libraries/MySensors" ] ; then
     git clone https://github.com/alainmaes/MySensors.git tools/Sming/Libraries/MySensors
+fi
+
+if [ ! -d "tools/Sming/Libraries/MyInterpreter" ] ; then
+    git clone https://github.com/alainmaes/MyInterpreter.git tools/Sming/Libraries/MyInterpreter
 fi
 
 cd tools/raburton/esptool2
