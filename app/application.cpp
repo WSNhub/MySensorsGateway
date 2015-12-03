@@ -44,6 +44,11 @@ char convBuf[MAX_PAYLOAD*2+1];
 MyInterpreter interpreter;
 
 void mqttPublishMessage(String topic, String message);
+#define EEPROM_LATEST_NODE_ADDRESS ((uint8_t)EEPROM_LOCAL_CONFIG_ADDRESS)
+#define MQTT_FIRST_SENSORID	20  		// If you want manually configured nodes below this value. 255 = Disable
+#define MQTT_LAST_SENSORID	254 		// 254 is max! 255 reserved.
+#define MQTT_UNIT		"M"		// Select M for metric or I for imperial.
+#define S_FIRSTCUSTOM 60
 void incomingMessage(const MyMessage &message)
 {
    // Pass along the message from sensors to serial line
@@ -61,25 +66,25 @@ void incomingMessage(const MyMessage &message)
 	} else {
 		// we have to check every message if its a newly assigned id or not.
 		// Ack on I_ID_RESPONSE does not work, and checking on C_PRESENTATION isn't reliable.
-		/*uint8_t newNodeID = gw.loadState(EEPROM_LATEST_NODE_ADDRESS)+1;
+		uint8_t newNodeID = gw.loadState(EEPROM_LATEST_NODE_ADDRESS)+1;
 		if (newNodeID <= MQTT_FIRST_SENSORID) newNodeID = MQTT_FIRST_SENSORID;
 		if (msg.sender==newNodeID) {
 			gw.saveState(EEPROM_LATEST_NODE_ADDRESS,newNodeID);
-		}*/
+		}
 		if (mGetCommand(msg)==C_INTERNAL) {
 			if (msg.type==I_CONFIG) {
-				//gw.sendRoute(build(msg, msg.sender, 255, C_INTERNAL, I_CONFIG, 0).set(MQTT_UNIT));
+				gw.sendRoute(build(msg, msg.sender, 255, C_INTERNAL, I_CONFIG, 0).set(MQTT_UNIT));
 				return;
 			} else if (msg.type==I_ID_REQUEST && msg.sender==255) {
-				//uint8_t newNodeID = gw.loadState(EEPROM_LATEST_NODE_ADDRESS)+1;
-				//if (newNodeID <= MQTT_FIRST_SENSORID) newNodeID = MQTT_FIRST_SENSORID;
-				//if (newNodeID >= MQTT_LAST_SENSORID) return; // Sorry no more id's left :(
-				//gw.sendRoute(build(msg, msg.sender, 255, C_INTERNAL, I_ID_RESPONSE, 0).set(newNodeID));
+				uint8_t newNodeID = gw.loadState(EEPROM_LATEST_NODE_ADDRESS)+1;
+				if (newNodeID <= MQTT_FIRST_SENSORID) newNodeID = MQTT_FIRST_SENSORID;
+				if (newNodeID >= MQTT_LAST_SENSORID) return; // Sorry no more id's left :(
+				gw.sendRoute(build(msg, msg.sender, 255, C_INTERNAL, I_ID_RESPONSE, 0).set(newNodeID));
 				return;
 			}
 		}
 		if (mGetCommand(msg)!=C_PRESENTATION) {
-			//if (mGetCommand(msg)==C_INTERNAL) msg.type=msg.type+(S_FIRSTCUSTOM-10);	//Special message
+			if (mGetCommand(msg)==C_INTERNAL) msg.type=msg.type+(S_FIRSTCUSTOM-10);	//Special message
 			
 String topic = message.sender + String("/") +
                       message.sensor + String("/");
