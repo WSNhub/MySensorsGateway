@@ -1,4 +1,4 @@
-if (n == 40 && s == 0)
+if (n == 21 && s == 0)
   {
     print(n);
     print(s);

@@ -1,8 +1,7 @@
 #include <user_config.h>
 #include <SmingCore/SmingCore.h>
 #include <AppSettings.h>
-#include "Libraries/MySensors/MyConfig.h"
-#include "Libraries/MySensors/MySensor.h"
+#include "Libraries/MySensors/MyGateway.h"
 #include "Libraries/MySensors/MyTransport.h"
 #include "Libraries/MySensors/MyTransportNRF24.h"
 #include "Libraries/MySensors/MyHwESP8266.h"
@@ -12,8 +11,7 @@
 #define RADIO_SPI_SS_PIN    15  // radio SPI serial select
 MyTransportNRF24 transport(RADIO_CE_PIN, RADIO_SPI_SS_PIN, RF24_PA_LEVEL_GW);
 MyHwESP8266 hw;
-MySensor gw(transport, hw);
-Timer t;
+MyGateway gw(transport, hw);
 
 HttpServer server;
 FTPServer ftp;
@@ -22,21 +20,10 @@ BssList networks;
 String network, password;
 Timer connectionTimer;
 
-MyMessage msg;
-MyMessage& build (MyMessage &msg, uint8_t destination, uint8_t sensor, uint8_t command, uint8_t type, bool enableAck) {
-	msg.destination = destination;
-	msg.sender = GATEWAY_ADDRESS;
-	msg.sensor = sensor;
-	msg.type = type;
-	mSetCommand(msg,command);
-	mSetRequestAck(msg,enableAck);
-	mSetAck(msg,false);
-	return msg;
-}
-
 void SendToSensor(String message)
 {
-    gw.sendRoute(build(msg, 22, 1, C_REQ, 2, 0));
+    MyMessage msg;
+    gw.sendRoute(gw.build(msg, 22, 1, C_REQ, 2, 0));
 }
 
 char convBuf[MAX_PAYLOAD*2+1];
@@ -44,60 +31,27 @@ char convBuf[MAX_PAYLOAD*2+1];
 MyInterpreter interpreter;
 
 void mqttPublishMessage(String topic, String message);
-#define EEPROM_LATEST_NODE_ADDRESS ((uint8_t)EEPROM_LOCAL_CONFIG_ADDRESS)
-#define MQTT_FIRST_SENSORID	20  		// If you want manually configured nodes below this value. 255 = Disable
-#define MQTT_LAST_SENSORID	254 		// 254 is max! 255 reserved.
-#define MQTT_UNIT		"M"		// Select M for metric or I for imperial.
-#define S_FIRSTCUSTOM 60
+
 void incomingMessage(const MyMessage &message)
 {
-   // Pass along the message from sensors to serial line
-   Serial.printf("%d;%d;%d;%d;%d;%s\n",
-                 message.sender, message.sensor,
-                 mGetCommand(message), mGetAck(message),
-                 message.type, message.getString(convBuf));
+    // Pass along the message from sensors to serial line
+    Serial.printf("APP RX %d;%d;%d;%d;%d;%s\n",
+                  message.sender, message.sensor,
+                  mGetCommand(message), mGetAck(message),
+                  message.type, message.getString(convBuf));
 
-   msg = message;
-	if (msg.isAck()) {
-//		if (msg.sender==255 && mGetCommand(msg)==C_INTERNAL && msg.type==I_ID_REQUEST) {
-// TODO: sending ACK request on id_response fucks node up. doesn't work.
-// The idea was to confirm id and save to EEPROM_LATEST_NODE_ADDRESS.
-//  }
-	} else {
-		// we have to check every message if its a newly assigned id or not.
-		// Ack on I_ID_RESPONSE does not work, and checking on C_PRESENTATION isn't reliable.
-		uint8_t newNodeID = gw.loadState(EEPROM_LATEST_NODE_ADDRESS)+1;
-		if (newNodeID <= MQTT_FIRST_SENSORID) newNodeID = MQTT_FIRST_SENSORID;
-		if (msg.sender==newNodeID) {
-			gw.saveState(EEPROM_LATEST_NODE_ADDRESS,newNodeID);
-		}
-		if (mGetCommand(msg)==C_INTERNAL) {
-			if (msg.type==I_CONFIG) {
-				gw.sendRoute(build(msg, msg.sender, 255, C_INTERNAL, I_CONFIG, 0).set(MQTT_UNIT));
-				return;
-			} else if (msg.type==I_ID_REQUEST && msg.sender==255) {
-				uint8_t newNodeID = gw.loadState(EEPROM_LATEST_NODE_ADDRESS)+1;
-				if (newNodeID <= MQTT_FIRST_SENSORID) newNodeID = MQTT_FIRST_SENSORID;
-				if (newNodeID >= MQTT_LAST_SENSORID) return; // Sorry no more id's left :(
-				gw.sendRoute(build(msg, msg.sender, 255, C_INTERNAL, I_ID_RESPONSE, 0).set(newNodeID));
-				return;
-			}
-		}
-		if (mGetCommand(msg)!=C_PRESENTATION) {
-			if (mGetCommand(msg)==C_INTERNAL) msg.type=msg.type+(S_FIRSTCUSTOM-10);	//Special message
-			
-String topic = message.sender + String("/") +
-                      message.sensor + String("/");
-#ifdef MQTT_TRANSLATE_TYPES
-//V_?
-topic += getType(convBuf, &vType[msg.type]);
-#else
-topic += msg.type;
-#endif
-   mqttPublishMessage(topic, message.getString(convBuf));
-
-		}
-	}
+    if (mGetCommand(message)!=C_PRESENTATION)
+    {
+        String topic = message.sender + String("/") +
+                       message.sensor + String("/");
+        #ifdef MQTT_TRANSLATE_TYPES
+        //V_?
+        topic += getType(convBuf, &vType[message.type]);
+        #else
+        topic += message.type;
+        #endif
+        mqttPublishMessage(topic, message.getString(convBuf));
+    }
 
     interpreter.setVariable('n', message.sender);
     interpreter.setVariable('s', message.sensor);
@@ -113,17 +67,8 @@ topic += msg.type;
         delete progBuf;
     }
 #else
-    return FALSE;
+    return;
 #endif
-
-
-    //char *iArduinoProgBuf = (char *)"if(n==40){if(s==0){print(n);print(s);if(v%2==0){print(v);updateSensorState(n,1,0);}else{updateSensorState(n,1,1);}}}";
-    //interpreter.run(iArduinoProgBuf, strlen(iArduinoProgBuf));
-}
-
-void process()
-{
-    gw.process();
 }
 
 void onIndex(HttpRequest &request, HttpResponse &response)
@@ -302,6 +247,7 @@ void startWebServer()
 	server.addPath("/mqttconfig", onMqttConfig);
 	server.addPath("/ajax/get-networks", onAjaxNetworkList);
 	server.addPath("/ajax/connect", onAjaxConnect);
+        gw.registerHttpHandlers(server);
 	server.setDefaultHandler(onFile);
 }
 
@@ -325,7 +271,7 @@ int updateSensorState(int node, int sensor, int value)
 {
   MyMessage myMsg;
   myMsg.set(value);
-  gw.sendRoute(build(myMsg, node, sensor, C_SET, 2 /*message.type*/, 0));
+  gw.sendRoute(gw.build(myMsg, node, sensor, C_SET, 2 /*message.type*/, 0));
 }
 
 // Will be called when system initialization was completed
@@ -337,11 +283,7 @@ void startServers()
     interpreter.registerFunc1((char *)"print", print);
     interpreter.registerFunc3((char *)"updateSensorState", updateSensorState);
 
-    hw_init();
-
-    // Initialize gateway at maximum PA level, channel 70 and callback for write operations 
-    gw.begin(incomingMessage, 0, true, 0);
-    t.initializeMs(1, TimerDelegate(process)).start();
+    gw.begin(incomingMessage);
 }
 
 void networkScanCompleted(bool succeeded, BssList list)
@@ -443,14 +385,14 @@ void init()
 
     AppSettings.load();
 
-    WifiStation.enable(false);
+    WifiStation.enable(true);
     //WifiStation.config("WSNatWork", "");
-    //if (AppSettings.exist())
-    //{
-    //    WifiStation.config(AppSettings.ssid, AppSettings.password);
-    //    if (!AppSettings.dhcp && !AppSettings.ip.isNull())
-    //        WifiStation.setIP(AppSettings.ip, AppSettings.netmask, AppSettings.gateway);
-    //}
+    if (AppSettings.exist())
+    {
+        WifiStation.config(AppSettings.ssid, AppSettings.password);
+        if (!AppSettings.dhcp && !AppSettings.ip.isNull())
+            WifiStation.setIP(AppSettings.ip, AppSettings.netmask, AppSettings.gateway);
+    }
     WifiStation.startScan(networkScanCompleted);
 
     // Start AP for configuration
