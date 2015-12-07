@@ -17,6 +17,9 @@ struct ApplicationSettingsStorage
 	String ssid;
 	String password;
 
+        String portalUrl;
+        String portalData;
+
 	bool dhcp = true;
 
 	IPAddress ip;
@@ -41,6 +44,8 @@ struct ApplicationSettingsStorage
 			JsonObject& network = root["network"];
 			ssid = network["ssid"].toString();
 			password = network["password"].toString();
+                        portalUrl = network["portalUrl"].toString();
+			portalData = network["portalData"].toString();
 
 			dhcp = network["dhcp"];
 
@@ -67,6 +72,8 @@ struct ApplicationSettingsStorage
 		root["network"] = network;
 		network["ssid"] = ssid.c_str();
 		network["password"] = password.c_str();
+		network["portalUrl"] = portalUrl.c_str();
+		network["portalData"] = portalData.c_str();
 
 		network["dhcp"] = dhcp;
 

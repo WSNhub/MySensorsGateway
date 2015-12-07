@@ -168,6 +168,11 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
 {
 	if (request.getRequestMethod() == RequestMethod::POST)
 	{
+		AppSettings.ssid = request.getPostParameter("ssid");
+		AppSettings.password = request.getPostParameter("password");
+		AppSettings.portalUrl = request.getPostParameter("portalUrl");
+		AppSettings.portalData = request.getPostParameter("portalData");
+
 		AppSettings.dhcp = request.getPostParameter("dhcp") == "1";
 		AppSettings.ip = request.getPostParameter("ip");
 		AppSettings.netmask = request.getPostParameter("netmask");
@@ -178,6 +183,12 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
 
 	TemplateFileStream *tmpl = new TemplateFileStream("settings.html");
 	auto &vars = tmpl->variables();
+
+    vars["ssid"] = AppSettings.ssid;
+	vars["password"] = AppSettings.password;
+
+    vars["portalUrl"] = AppSettings.portalUrl;
+	vars["portalData"] = AppSettings.portalData;
 
 	bool dhcp = WifiStation.isEnabledDHCP();
 	vars["dhcpon"] = dhcp ? "checked='checked'" : "";
@@ -191,9 +202,9 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
 	}
 	else
 	{
-		vars["ip"] = "192.168.1.77";
-		vars["netmask"] = "255.255.255.0";
-		vars["gateway"] = "192.168.1.1";
+		vars["ip"] = "0.0.0.0";
+		vars["netmask"] = "255.255.255.255";
+		vars["gateway"] = "0.0.0.0";
 	}
 
 	response.sendTemplate(tmpl); // will be automatically deleted
@@ -416,10 +427,47 @@ void wifiCheckState()
     }
 }
 
+HttpClient portalLogin;
+
+void onActivateDataSent(HttpClient& client, bool successful)
+{
+    String response = client.getResponseString();
+    Serial.println("Server response: '" + response + "'");
+}
+
 // Will be called when WiFi station was connected to AP
 void connectOk()
 {
     Serial.println("--> I'm CONNECTED");
+    if (WifiStation.getIP().isNull())
+    {
+        Serial.println("No ip?");
+        return;
+    }
+
+    if (!AppSettings.portalUrl.equals(""))
+    {
+        String mac;
+        uint8 hwaddr[6] = {0};
+	wifi_get_macaddr(STATION_IF, hwaddr);
+	for (int i = 0; i < 6; i++)
+	{
+            if (hwaddr[i] < 0x10) mac += "0";
+                mac += String(hwaddr[i], HEX);
+            if (i < 5) mac += ":";
+        }
+
+        String body = AppSettings.portalData;
+        body.replace("{ip}", WifiStation.getIP().toString());
+        body.replace("{mac}", mac);
+        portalLogin.setPostBody(body.c_str());
+        String url = AppSettings.portalUrl;
+        url.replace("{ip}", WifiStation.getIP().toString());
+        url.replace("{mac}", mac);
+
+        portalLogin.downloadString(
+            url, HttpClientCompletedDelegate(onActivateDataSent));
+    }
 }
 
 // Will be called when WiFi station timeout was reached
@@ -477,14 +525,34 @@ void init()
     AppSettings.load();
 
     WifiStation.enable(true);
-    //WifiStation.config("WSNatWork", "");
     if (AppSettings.exist())
     {
+        if (AppSettings.ssid.equals("") &&
+            !WifiStation.getSSID().equals(""))
+        {
+            AppSettings.ssid = WifiStation.getSSID();
+	    AppSettings.password = WifiStation.getPassword();
+	    AppSettings.save();
+        }
+
         WifiStation.config(AppSettings.ssid, AppSettings.password);
         if (!AppSettings.dhcp && !AppSettings.ip.isNull())
-            WifiStation.setIP(AppSettings.ip, AppSettings.netmask, AppSettings.gateway);
+        {
+            WifiStation.setIP(AppSettings.ip,
+                              AppSettings.netmask,
+                              AppSettings.gateway);
+        }
     }
-    //WifiStation.startScan(networkScanCompleted);
+    else
+    {
+        String SSID = WifiStation.getSSID();
+        if (!SSID.equals(""))
+        {
+            AppSettings.ssid = SSID;
+	    AppSettings.password = WifiStation.getPassword();
+	    AppSettings.save();
+        }
+    }
 
     // Start AP for configuration
     WifiAccessPoint.enable(true);
