@@ -6,7 +6,7 @@
 MODULES = app
 
 ## ESP_HOME sets the path where ESP tools and SDK are located.
-ESP_HOME = /opt/esp-open-sdk
+ESP_HOME ?= /opt/esp-open-sdk
 
 ## SMING_HOME sets the path where Sming framework is located.
 SMING_HOME = ${PWD}/tools/Sming
@@ -42,5 +42,5 @@ SPIFF_SIZE      ?= 262144
 #RBOOT_SPIFFS_0  ?= 0x100000
 #RBOOT_SPIFFS_1  ?= 0x300000
 ## esptool2 path
-ESPTOOL2        = ${PWD}/tools/raburton/esptool2/esptool2
+ESPTOOL2        = ${PWD}/tools/esptool2/esptool2
 

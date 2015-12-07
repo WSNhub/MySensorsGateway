@@ -8,6 +8,10 @@ if [ ! -d "tools/raburton" ] ; then
     git clone https://github.com/raburton/esp8266.git tools/raburton
 fi
 
+if [ ! -d "tools/esptool2" ] ; then
+    git clone https://github.com/raburton/esptool2.git tools/esptool2
+fi
+
 if [ ! -d "tools/Sming" ] ; then
     cd tools
     wget https://github.com/SmingHub/Sming/archive/1.4.0.tar.gz
@@ -26,9 +30,9 @@ if [ ! -d "tools/Sming/Libraries/MyInterpreter" ] ; then
     git clone https://github.com/alainmaes/MyInterpreter.git tools/Sming/Libraries/MyInterpreter
 fi
 
-cd tools/raburton/esptool2
+cd tools/esptool2
 make
-cd ../../../
+cd ../../
 
 cd tools/Sming
 sed -i 's/^#include <mem.h>/\/\/#include <mem.h>/g' rboot/appcode/rboot-api.c
