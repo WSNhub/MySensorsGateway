@@ -29,6 +29,27 @@ void ICACHE_FLASH_ATTR mqttPublishVersion()
 
 // Callback for messages, arrived from MQTT server
 void SendToSensor(String value);
+
+String getValue(String data, char separator, int index)
+{
+  int found = 0;
+  int strIndex[] = {0, -1};
+  int maxIndex = data.length()-1;
+
+  for(int i=0; i<=maxIndex && found<=index; i++){
+    if(data.charAt(i)==separator || i==maxIndex){
+        found++;
+        strIndex[0] = strIndex[1]+1;
+        strIndex[1] = (i == maxIndex) ? i+1 : i;
+    }
+  }
+
+  return found>index ? data.substring(strIndex[0], strIndex[1]) : "";
+}
+
+int updateSensorStateInt(int node, int sensor, int type, int value);
+int getTypeFromString(String type);
+
 void ICACHE_FLASH_ATTR onMessageReceived(String topic, String message)
 {
     /*
@@ -38,12 +59,22 @@ void ICACHE_FLASH_ATTR onMessageReceived(String topic, String message)
      */
 
     //MyMQTT/22/1/V_LIGHT
-    if (topic.equals("MyMQTT/22/1/V_LIGHT"))
+    if (topic.startsWith("MyMQTT/"))
     {
-        Serial.print("Sending state \"");
-        Serial.print(message);
-        Serial.println("\" to led");
-        SendToSensor(message);
+        String node   = getValue(topic, '/', 1);
+        String sensor = getValue(topic, '/', 2);
+        String type   = getValue(topic, '/', 3);
+        Serial.println();
+        Serial.println();
+        Serial.println();
+        Serial.println(node);
+        Serial.println(sensor);
+        Serial.println(type);
+        Serial.println(message);
+
+        updateSensorStateInt(node.toInt(), sensor.toInt(),
+                             getTypeFromString(type),
+                             message.toInt());
     }
 
     if (topic.equals(String("/?")))
