@@ -1,6 +1,7 @@
 #include <user_config.h>
 #include <SmingCore/SmingCore.h>
 #include <AppSettings.h>
+#include <mqtt.h>
 #include "Libraries/MySensors/MyGateway.h"
 #include "Libraries/MySensors/MyTransport.h"
 #include "Libraries/MySensors/MyTransportNRF24.h"
@@ -15,12 +16,6 @@ MyGateway gw(transport, hw);
 
 HttpServer server;
 FTPServer ftp;
-
-void SendToSensor(String message)
-{
-    MyMessage msg;
-    gw.sendRoute(gw.build(msg, 22, 1, C_REQ, 2, 0));
-}
 
 char convBuf[MAX_PAYLOAD*2+1];
 
@@ -239,40 +234,15 @@ void onFile(HttpRequest &request, HttpResponse &response)
     }
 }
 
-extern void checkMqttClient();
-void onMqttConfig(HttpRequest &request, HttpResponse &response)
-{
-    AppSettings.load();
-    if (request.getRequestMethod() == RequestMethod::POST)
-    {
-        AppSettings.mqttUser = request.getPostParameter("user");
-        AppSettings.mqttPass = request.getPostParameter("password");
-        AppSettings.mqttServer = request.getPostParameter("server");
-        AppSettings.mqttPort = atoi(request.getPostParameter("port").c_str());
-        AppSettings.save();
-        if (WifiStation.isConnected())
-            checkMqttClient();
-    }
-
-    TemplateFileStream *tmpl = new TemplateFileStream("mqtt.html");
-    auto &vars = tmpl->variables();
-
-    vars["user"] = AppSettings.mqttUser;
-    vars["password"] = AppSettings.mqttPass;
-    vars["server"] = AppSettings.mqttServer;
-    vars["port"] = AppSettings.mqttPort;
-
-    response.sendTemplate(tmpl); // will be automatically deleted
-}
 
 void startWebServer()
 {
     server.listen(80);
     server.addPath("/", onIpConfig);
     server.addPath("/ipconfig", onIpConfig);
-    server.addPath("/mqttconfig", onMqttConfig);
 
     gw.registerHttpHandlers(server);
+    mqttRegisterHttpHandlers(server);
     server.setDefaultHandler(onFile);
 }
 
@@ -304,18 +274,6 @@ int updateSensorState(int node, int sensor, int value)
   updateSensorStateInt(node, sensor, 2 /*message.type*/, value);
 }
 
-// Will be called when system initialization was completed
-void startServers()
-{
-    startFTP();
-    startWebServer();
-
-    interpreter.registerFunc1((char *)"print", print);
-    interpreter.registerFunc3((char *)"updateSensorState", updateSensorState);
-
-    gw.begin(incomingMessage);
-}
-
 Timer connectionCheckTimer;
 bool wasConnected = FALSE;
 void connectOk();
@@ -342,6 +300,28 @@ void wifiCheckState()
             connectFail();
         }
     }
+}
+
+
+// Will be called when system initialization was completed
+void startServers()
+{
+    // Start AP for configuration
+    WifiAccessPoint.enable(true);
+    WifiAccessPoint.config("MySensors gateway",
+                           "WSNatWork", AUTH_WPA_WPA2_PSK);
+
+    wasConnected = FALSE;
+    connectionCheckTimer.initializeMs(1000,
+                                      wifiCheckState).start(true);
+
+    startFTP();
+    startWebServer();
+
+    interpreter.registerFunc1((char *)"print", print);
+    interpreter.registerFunc3((char *)"updateSensorState", updateSensorState);
+
+    gw.begin(incomingMessage);
 }
 
 HttpClient portalLogin;
@@ -471,14 +451,6 @@ void init()
             AppSettings.save();
         }
     }
-
-    // Start AP for configuration
-    WifiAccessPoint.enable(true);
-    WifiAccessPoint.config("MySensors gateway", "", AUTH_OPEN);
-
-    wasConnected = FALSE;
-    connectionCheckTimer.initializeMs(1000,
-                                      wifiCheckState).start(true);
 
     // Run WEB server on system ready
     System.onReady(startServers);

@@ -30,6 +30,8 @@ struct ApplicationSettingsStorage
         String mqttPass;
         String mqttServer;
         int    mqttPort;
+        String mqttSensorPfx;
+        String mqttControllerPfx;
 
 	void load()
 	{
@@ -58,6 +60,8 @@ struct ApplicationSettingsStorage
 			mqttPass = mqtt["password"].toString();
 			mqttServer = mqtt["server"].toString();
 			mqttPort = mqtt["port"];
+			mqttSensorPfx = mqtt["sensorPfx"].toString();
+			mqttControllerPfx = mqtt["controllerPfx"].toString();
 
 			delete[] jsonString;
 		}
@@ -88,6 +92,8 @@ struct ApplicationSettingsStorage
                 mqtt.addCopy("password", mqttPass);
                 mqtt.addCopy("server", mqttServer);
                 mqtt["port"] = mqttPort;
+                mqtt.addCopy("sensorPfx", mqttSensorPfx);
+                mqtt.addCopy("controllerPfx", mqttControllerPfx);
 
 		//TODO: add direct file stream writing
 		fileSetContent(APP_SETTINGS_FILE, root.toJsonString());
