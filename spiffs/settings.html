@@ -57,6 +57,7 @@
                 <li role="presentation" class="active"><a href="/ipconfig">Network Settings</a></li>
                 <li role="presentation"><a href="/mqttconfig">MQTT Settings</a></li>
                  <li role="presentation"><a href="/sensors.html">Sensors</a></li>
+                 <li role="presentation"><a href="/rules.html">Rules</a></li>
             </ul>
         </nav>
         <h3 class="text-muted">MySensors gateway</h3>
@@ -78,6 +79,15 @@
                         <div class="form-group">
                             <label>Password</label>
                             <input class="form-control" style="width: 250px" type="password" name="password" value="{password}">
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend>Wifi Access Point</legend>
+                    <div class="col-md-offset-2">
+                        <div class="form-group">
+                            <label>Password (min 8 characters)</label>
+                            <input class="form-control" style="width: 250px" type="password" name="apPassword" value="{apPassword}">
                         </div>
                     </div>
                 </fieldset>

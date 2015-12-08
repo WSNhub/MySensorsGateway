@@ -16,9 +16,10 @@ struct ApplicationSettingsStorage
 {
 	String ssid;
 	String password;
+	String apPassword;
 
-        String portalUrl;
-        String portalData;
+    String portalUrl;
+    String portalData;
 
 	bool dhcp = true;
 
@@ -26,12 +27,12 @@ struct ApplicationSettingsStorage
 	IPAddress netmask;
 	IPAddress gateway;
 
-        String mqttUser;
-        String mqttPass;
-        String mqttServer;
-        int    mqttPort;
-        String mqttSensorPfx;
-        String mqttControllerPfx;
+    String mqttUser;
+    String mqttPass;
+    String mqttServer;
+    int    mqttPort;
+    String mqttSensorPfx;
+    String mqttControllerPfx;
 
 	void load()
 	{
@@ -46,7 +47,8 @@ struct ApplicationSettingsStorage
 			JsonObject& network = root["network"];
 			ssid = network["ssid"].toString();
 			password = network["password"].toString();
-                        portalUrl = network["portalUrl"].toString();
+			apPassword = network["apPassword"].toString();
+            portalUrl = network["portalUrl"].toString();
 			portalData = network["portalData"].toString();
 
 			dhcp = network["dhcp"];
@@ -55,7 +57,7 @@ struct ApplicationSettingsStorage
 			netmask = network["netmask"].toString();
 			gateway = network["gateway"].toString();
 
-                        JsonObject& mqtt = root["mqtt"];
+            JsonObject& mqtt = root["mqtt"];
 			mqttUser = mqtt["user"].toString();
 			mqttPass = mqtt["password"].toString();
 			mqttServer = mqtt["server"].toString();
@@ -76,6 +78,7 @@ struct ApplicationSettingsStorage
 		root["network"] = network;
 		network["ssid"] = ssid.c_str();
 		network["password"] = password.c_str();
+		network["apPassword"] = apPassword.c_str();
 		network["portalUrl"] = portalUrl.c_str();
 		network["portalData"] = portalData.c_str();
 
@@ -86,14 +89,14 @@ struct ApplicationSettingsStorage
 		network.addCopy("netmask", netmask.toString());
 		network.addCopy("gateway", gateway.toString());
 
-                JsonObject& mqtt = jsonBuffer.createObject();
+        JsonObject& mqtt = jsonBuffer.createObject();
 		root["mqtt"] = mqtt;
-                mqtt.addCopy("user", mqttUser);
-                mqtt.addCopy("password", mqttPass);
-                mqtt.addCopy("server", mqttServer);
-                mqtt["port"] = mqttPort;
-                mqtt.addCopy("sensorPfx", mqttSensorPfx);
-                mqtt.addCopy("controllerPfx", mqttControllerPfx);
+        mqtt.addCopy("user", mqttUser);
+        mqtt.addCopy("password", mqttPass);
+        mqtt.addCopy("server", mqttServer);
+        mqtt["port"] = mqttPort;
+        mqtt.addCopy("sensorPfx", mqttSensorPfx);
+        mqtt.addCopy("controllerPfx", mqttControllerPfx);
 
 		//TODO: add direct file stream writing
 		fileSetContent(APP_SETTINGS_FILE, root.toJsonString());

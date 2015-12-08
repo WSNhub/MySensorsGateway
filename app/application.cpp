@@ -169,6 +169,17 @@ void wifiConnect()
                           AppSettings.netmask,
                           AppSettings.gateway);
     }
+
+    WifiAccessPoint.enable(true);
+    if (AppSettings.apPassword.equals(""))
+    {
+        WifiAccessPoint.config("MySensors gateway", "", AUTH_OPEN);
+    }
+    else
+    {
+        WifiAccessPoint.config("MySensors gateway",
+                               AppSettings.apPassword, AUTH_WPA_WPA2_PSK);
+    }
 }
 
 void onIpConfig(HttpRequest &request, HttpResponse &response)
@@ -177,6 +188,7 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
     {
         AppSettings.ssid = request.getPostParameter("ssid");
         AppSettings.password = request.getPostParameter("password");
+        AppSettings.apPassword = request.getPostParameter("apPassword");
         AppSettings.portalUrl = request.getPostParameter("portalUrl");
         AppSettings.portalData = request.getPostParameter("portalData");
 
@@ -195,6 +207,7 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
 
     vars["ssid"] = AppSettings.ssid;
     vars["password"] = AppSettings.password;
+    vars["apPassword"] = AppSettings.apPassword;
 
     vars["portalUrl"] = AppSettings.portalUrl;
     vars["portalData"] = AppSettings.portalData;
@@ -234,12 +247,39 @@ void onFile(HttpRequest &request, HttpResponse &response)
     }
 }
 
+void onRules(HttpRequest &request, HttpResponse &response)
+{
+    if (request.getRequestMethod() == RequestMethod::POST)
+    {
+	fileSetContent("rules.script",
+                       request.getPostParameter("rule"));
+    }
+
+    TemplateFileStream *tmpl = new TemplateFileStream("rules.html");
+    auto &vars = tmpl->variables();
+
+    if (fileExist("rules.script"))
+    {
+        int size = fileGetSize("rules.script");
+        char* progBuf = new char[size + 1];
+        fileGetContent("rules.script", progBuf, size + 1);
+        vars["rule"] = String(progBuf);
+        delete progBuf;
+    }
+    else
+    {
+        vars["rule"] = "";
+    }
+
+    response.sendTemplate(tmpl); // will be automatically deleted
+}
 
 void startWebServer()
 {
     server.listen(80);
     server.addPath("/", onIpConfig);
     server.addPath("/ipconfig", onIpConfig);
+    server.addPath("/rules.html", onRules);
 
     gw.registerHttpHandlers(server);
     mqttRegisterHttpHandlers(server);
@@ -308,8 +348,15 @@ void startServers()
 {
     // Start AP for configuration
     WifiAccessPoint.enable(true);
-    WifiAccessPoint.config("MySensors gateway",
-                           "WSNatWork", AUTH_WPA_WPA2_PSK);
+    if (AppSettings.apPassword.equals(""))
+    {
+        WifiAccessPoint.config("MySensors gateway", "", AUTH_OPEN);
+    }
+    else
+    {
+        WifiAccessPoint.config("MySensors gateway",
+                               AppSettings.apPassword, AUTH_WPA_WPA2_PSK);
+    }
 
     wasConnected = FALSE;
     connectionCheckTimer.initializeMs(1000,
