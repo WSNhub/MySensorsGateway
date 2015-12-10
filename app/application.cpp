@@ -19,7 +19,9 @@ FTPServer ftp;
 
 char convBuf[MAX_PAYLOAD*2+1];
 
+#ifndef DISABLE_SPIFFS
 MyInterpreter interpreter;
+#endif
 
 void mqttPublishMessage(String topic, String message);
 
@@ -130,22 +132,16 @@ void incomingMessage(const MyMessage &message)
         mqttPublishMessage(topic, message.getString(convBuf));
     }
 
+#ifndef DISABLE_SPIFFS
+    noInterrupts();
     interpreter.setVariable('n', message.sender);
     interpreter.setVariable('s', message.sensor);
     interpreter.setVariable('v', atoi(message.getString(convBuf)));
-
-#ifndef DISABLE_SPIFFS
-    if (fileExist("rules.script"))
-    {
-        int size = fileGetSize("rules.script");
-        char* progBuf = new char[size + 1];
-        fileGetContent("rules.script", progBuf, size + 1);
-        interpreter.run(progBuf, strlen(progBuf));
-        delete progBuf;
-    }
-#else
-    return;
+    interpreter.run();
+    interrupts();
 #endif
+
+    return;
 }
 
 Timer reconnectTimer;
@@ -249,27 +245,34 @@ void onFile(HttpRequest &request, HttpResponse &response)
 
 void onRules(HttpRequest &request, HttpResponse &response)
 {
+#ifndef DISABLE_SPIFFS
     if (request.getRequestMethod() == RequestMethod::POST)
     {
-	fileSetContent("rules.script",
+	fileSetContent(".rules",
                        request.getPostParameter("rule"));
+        noInterrupts();
+        interpreter.loadFile((char *)".rules");
+        interrupts();
     }
+#endif
 
     TemplateFileStream *tmpl = new TemplateFileStream("rules.html");
     auto &vars = tmpl->variables();
 
-    if (fileExist("rules.script"))
+#ifndef DISABLE_SPIFFS
+    noInterrupts();
+    if (fileExist(".rules"))
     {
-        int size = fileGetSize("rules.script");
-        char* progBuf = new char[size + 1];
-        fileGetContent("rules.script", progBuf, size + 1);
-        vars["rule"] = String(progBuf);
-        delete progBuf;
+        vars["rule"] = fileGetContent(".rules");        
     }
     else
     {
         vars["rule"] = "";
     }
+    interrupts();
+#else
+    vars["rule"] = "";
+#endif
 
     response.sendTemplate(tmpl); // will be automatically deleted
 }
@@ -365,8 +368,11 @@ void startServers()
     startFTP();
     startWebServer();
 
+    noInterrupts();
     interpreter.registerFunc1((char *)"print", print);
     interpreter.registerFunc3((char *)"updateSensorState", updateSensorState);
+    interpreter.loadFile((char *)".rules");
+    interrupts();
 
     gw.begin(incomingMessage);
 }
