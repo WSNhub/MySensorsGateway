@@ -25,19 +25,18 @@
   </head>
   <script>
       $(document).ready(function () {
-          App.GetOWs();
+          App.GetSensors();
       });
 
       var App = {
-          GetOWsURL: '/ajax/getSensors',
-          RemoveOwTempSensorURL: '/ajax/removeSensor',
+          GetSensorsURL: '/ajax/getSensors',
+          RemoveSensorURL: '/ajax/removeSensor',
           Save: null,
-          CurrentNetwork: null,
-          GetOWs: function () {
+          GetSensors: function () {
               (function worker() {
                   $('#floatingCirclesG').show();
                   var ajax = $.ajax({
-                      url: App.GetOWsURL,
+                      url: App.GetSensorsURL,
                       type: 'POST',
                       success: function (data) {
                           App.SetOWs(data);
@@ -55,11 +54,11 @@
               })();
           },
           BindRemoveSensor: function () {
-              $(".remove-owTempSensor-btn").unbind('click');
-              $('.remove-owTempSensor-btn').on('click', function () {
+              $(".remove-sensor-btn").unbind('click');
+              $('.remove-sensor-btn').on('click', function () {
                   var that = this;
                   var item = $(that).parent().parent().parent();
-                  var rom = item.find('h4').text();
+                  var sensor = item.find('h4').text();
                   App.Utilities.ShowLoader(that);
                   if (App.Save) {
                       clearInterval(App.Save);
@@ -69,7 +68,7 @@
                   (function worker() {
                       $('.error').empty();
                       var ajax = $.ajax({
-                          url: App.RemoveOwTempSensorURL,
+                          url: App.RemoveSensorURL,
                           type: 'POST',
                           data: {
                               'rom': rom
@@ -105,12 +104,12 @@
                   }
               });
               $.each(ids, function (key, val) {
-                  App.Utilities.RemoveInput($('.owTempSensor[data-id=' + val + ']'));
+                  App.Utilities.RemoveInput($('.sensor[data-id=' + val + ']'));
               });
           },
           ShowSensorRemove: function () {
-              $(".owTempSensor").unbind('click');
-              $('.owTempSensor').on('click', function (e) {
+              $(".sensor").unbind('click');
+              $('.sensor').on('click', function (e) {
                   $('.removeSensor').each(function () {
                       $(this).hide();
                   })
@@ -119,12 +118,13 @@
           },
           AddOW: function (val) {
               var remove =
-                  '<div class="connect-btn-wrapper"><button class="btn btn-success remove-owTempSensor-btn">Remove</button></div>';
+                  '<div class="connect-btn-wrapper"><button class="btn btn-success remove-sensor-btn">Remove</button></div>';
               
-              $('.owtemperature').append(
-                      '<div class="list-group-item owTempSensor" href="#" data-id="' + val.id + '">' +
+              $('.sensors').append(
+                      '<div class="list-group-item sensor" href="#" data-id="' + val.id + '">' +
                               '<p class="list-group-item-text">' +
-                                  '<h4 class="list-group-item-heading">' + val.rom + '</h4>' +
+                              '<h4 class="list-group-item-heading">' + val.node + '/' + val.sensor + '</h4><br>State: ' + val.value +
+                              '<br>Type: ' + val.type +
                               '</p>' +
                               '<div class="form-group removeSensor"  style="display: none" data-name="'+val.id+'">'+ remove +
                               '</div>'+
@@ -149,7 +149,7 @@
               },
               GetOWId: function () {
                   var ids = [];
-                  $('.owTempSensor').each(function () {
+                  $('.sensor').each(function () {
                       ids.push($(this).attr('data-id'));
                   })
                   return ids;
@@ -211,7 +211,7 @@
               </div>
               <div>
                   <legend>Discovered sensors</legend>
-                  <div class="owtemperature list-group">
+                  <div class="sensors list-group">
               </div>
           </div>
       </div>
