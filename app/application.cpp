@@ -1,5 +1,6 @@
 #include <user_config.h>
 #include <SmingCore/SmingCore.h>
+#include <SmingCore/Network/TelnetServer.h>
 #include <AppSettings.h>
 #include <mqtt.h>
 #include "Libraries/MySensors/MyGateway.h"
@@ -16,6 +17,7 @@ MyGateway gw(transport, hw);
 
 HttpServer server;
 FTPServer ftp;
+TelnetServer telnet;
 
 char convBuf[MAX_PAYLOAD*2+1];
 
@@ -309,7 +311,7 @@ int updateSensorStateInt(int node, int sensor, int type, int value)
 {
   MyMessage myMsg;
   myMsg.set(value);
-  gw.sendRoute(gw.build(myMsg, node, sensor, C_SET, 2 /*message.type*/, 0));
+  gw.sendRoute(gw.build(myMsg, node, sensor, C_SET, type, 0));
 }
 
 int updateSensorState(int node, int sensor, int value)
@@ -367,6 +369,8 @@ void startServers()
 
     startFTP();
     startWebServer();
+    telnet.listen(23);
+    //telnet.setDebug(true);
 
     noInterrupts();
     interpreter.registerFunc1((char *)"print", print);
@@ -438,6 +442,24 @@ void processApplicationCommands(String commandLine, CommandOutput* commandOutput
     commandOutput->printf("This command is handled by the application\r\n");
 }
 
+void processInfoCommand(String commandLine, CommandOutput* out)
+{
+    out->printf("\r\n");
+    //out->printf("Version        : %s\n", build_git_sha);
+    //out->printf("Build time     : %s\n", build_git_time);
+    out->printf("Free Heap      : %d\r\n", system_get_free_heap_size());
+    out->printf("CPU Frequency  : %d MHz\r\n", system_get_cpu_freq());
+    out->printf("System Chip ID : %x\r\n", system_get_chip_id());
+    out->printf("SPI Flash ID   : %x\r\n", spi_flash_get_id());
+    out->printf("SPI Flash Size : %d\r\n", (1 << ((spi_flash_get_id() >> 16) & 0xff)));
+    out->printf("\r\n");
+}
+
+void processRestartCommand(String commandLine, CommandOutput* out)
+{
+    System.restart();
+}
+
 void init()
 {
     /* Mount the internal storage */
@@ -468,9 +490,18 @@ void init()
 #endif
 
     Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
-    Serial.systemDebugOutput(true); // Enable debug output to serial
+    Serial.systemDebugOutput(false); // Enable debug output to serial
 
-    commandHandler.registerCommand(CommandDelegate("example","Example Command from Class","Application",processApplicationCommands));
+    //commandHandler.registerCommand(CommandDelegate("example","Example Command from Class","Application",processApplicationCommands));
+    commandHandler.registerCommand(CommandDelegate("info",
+                                                   "Show system information",
+                                                   "System",
+                                                   processInfoCommand));
+    commandHandler.registerCommand(CommandDelegate("restart",
+                                                   "Restart the system",
+                                                   "System",
+                                                   processRestartCommand));
+
     Serial.commandProcessing(true);
 
     AppSettings.load();
