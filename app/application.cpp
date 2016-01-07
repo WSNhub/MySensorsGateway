@@ -120,7 +120,7 @@ int getTypeFromString(String type)
 void incomingMessage(const MyMessage &message)
 {
     // Pass along the message from sensors to serial line
-    Serial.printf("APP RX %d;%d;%d;%d;%d;%s\n",
+    Debug.printf("APP RX %d;%d;%d;%d;%d;%s\n",
                   message.sender, message.sensor,
                   mGetCommand(message), mGetAck(message),
                   message.type, message.getString(convBuf));
@@ -194,7 +194,7 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
         AppSettings.ip = request.getPostParameter("ip");
         AppSettings.netmask = request.getPostParameter("netmask");
         AppSettings.gateway = request.getPostParameter("gateway");
-        debugf("Updating IP settings: %d", AppSettings.ip.isNull());
+        Debug.printf("Updating IP settings: %d", AppSettings.ip.isNull());
         AppSettings.save();
     
         reconnectTimer.initializeMs(10, wifiConnect).startOnce();
@@ -303,7 +303,7 @@ void startFTP()
 
 int print(int a)
 {
-  Serial.println(a);
+  Debug.println(a);
   return a;
 }
 
@@ -330,7 +330,7 @@ void wifiCheckState()
     {
         if (!wasConnected)
         {
-            Serial.println("CONNECTED");
+            Debug.println("CONNECTED");
             wasConnected = TRUE;
             connectOk();
         }
@@ -340,7 +340,7 @@ void wifiCheckState()
     {
         if (wasConnected)
         {
-            Serial.println("NOT CONNECTED");
+            Debug.println("NOT CONNECTED");
             wasConnected = FALSE;
             connectFail();
         }
@@ -386,16 +386,16 @@ HttpClient portalLogin;
 void onActivateDataSent(HttpClient& client, bool successful)
 {
     String response = client.getResponseString();
-    Serial.println("Server response: '" + response + "'");
+    Debug.println("Server response: '" + response + "'");
 }
 
 // Will be called when WiFi station was connected to AP
 void connectOk()
 {
-    Serial.println("--> I'm CONNECTED");
+    Debug.println("--> I'm CONNECTED");
     if (WifiStation.getIP().isNull())
     {
-        Serial.println("No ip?");
+        Debug.println("No ip?");
         return;
     }
 
@@ -427,7 +427,7 @@ void connectOk()
 // Will be called when WiFi station timeout was reached
 void connectFail()
 {
-    Serial.println("--> I'm NOT CONNECTED. Need help :(");
+    Debug.println("--> I'm NOT CONNECTED. Need help :(");
 }
 
 void processApplicationCommands(String commandLine, CommandOutput* commandOutput)
@@ -468,29 +468,30 @@ void init()
     if (slot == 0)
     {
 #ifdef RBOOT_SPIFFS_0
-        Serial.printf("trying to mount spiffs at %x, length %d\n", RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
+        Debug.printf("trying to mount spiffs at %x, length %d\n", RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
         spiffs_mount_manual(RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
 #else
-        Serial.printf("trying to mount spiffs at %x, length %d\n", 0x40300000, SPIFF_SIZE);
+        Debug.printf("trying to mount spiffs at %x, length %d\n", 0x40300000, SPIFF_SIZE);
         spiffs_mount_manual(0x40300000, SPIFF_SIZE);
 #endif
     }
     else
     {
 #ifdef RBOOT_SPIFFS_1
-        Serial.printf("trying to mount spiffs at %x, length %d\n", RBOOT_SPIFFS_1 + 0x40200000, SPIFF_SIZE);
+        Debug.printf("trying to mount spiffs at %x, length %d\n", RBOOT_SPIFFS_1 + 0x40200000, SPIFF_SIZE);
         spiffs_mount_manual(RBOOT_SPIFFS_1 + 0x40200000, SPIFF_SIZE);
 #else
-        Serial.printf("trying to mount spiffs at %x, length %d\n", 0x40500000, SPIFF_SIZE);
+        Debug.printf("trying to mount spiffs at %x, length %d\n", 0x40500000, SPIFF_SIZE);
         spiffs_mount_manual(0x40500000, SPIFF_SIZE);
 #endif
     }
 #else
-    Serial.println("spiffs disabled");
+    Debug.println("spiffs disabled");
 #endif
 
     Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
     Serial.systemDebugOutput(false); // Enable debug output to serial
+    Debug.start();
 
     //commandHandler.registerCommand(CommandDelegate("example","Example Command from Class","Application",processApplicationCommands));
     commandHandler.registerCommand(CommandDelegate("info",

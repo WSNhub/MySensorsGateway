@@ -1,5 +1,6 @@
 #include <user_config.h>
 #include <SmingCore/SmingCore.h>
+#include <SmingCore/Debug.h>
 #include <AppSettings.h>
 #include <mqtt.h>
 
@@ -61,13 +62,13 @@ void ICACHE_FLASH_ATTR onMessageReceived(String topic, String message)
         String node   = getValue(topic, '/', 1);
         String sensor = getValue(topic, '/', 2);
         String type   = getValue(topic, '/', 3);
-        Serial.println();
-        Serial.println();
-        Serial.println();
-        Serial.println(node);
-        Serial.println(sensor);
-        Serial.println(type);
-        Serial.println(message);
+        Debug.println();
+        Debug.println();
+        Debug.println();
+        Debug.println(node);
+        Debug.println(sensor);
+        Debug.println(type);
+        Debug.println(message);
 
         updateSensorStateInt(node.toInt(), sensor.toInt(),
                              getTypeFromString(type),
@@ -80,7 +81,7 @@ void ICACHE_FLASH_ATTR onMessageReceived(String topic, String message)
         return;
     }
 
-    Serial.println("RX: " + topic + " = " + message);
+    Debug.println("RX: " + topic + " = " + message);
 }
 
 // Run MQTT client
