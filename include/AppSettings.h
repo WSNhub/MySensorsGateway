@@ -45,25 +45,25 @@ struct ApplicationSettingsStorage
             JsonObject& root = jsonBuffer.parseObject(jsonString);
 
             JsonObject& network = root["network"];
-            ssid = network["ssid"].toString();
-            password = network["password"].toString();
-            apPassword = network["apPassword"].toString();
-            portalUrl = network["portalUrl"].toString();
-            portalData = network["portalData"].toString();
+            ssid = (const char *)network["ssid"];
+            password = (const char *)network["password"];
+            apPassword = (const char *)network["apPassword"];
+            portalUrl = (const char *)network["portalUrl"];
+            portalData = (const char *)network["portalData"];
 
             dhcp = network["dhcp"];
 
-            ip = network["ip"].toString();
-            netmask = network["netmask"].toString();
-            gateway = network["gateway"].toString();
+            ip = (const char *)network["ip"];
+            netmask = (const char *)network["netmask"];
+            gateway = (const char *)network["gateway"];
 
             JsonObject& mqtt = root["mqtt"];
-            mqttUser = mqtt["user"].toString();
-            mqttPass = mqtt["password"].toString();
-            mqttServer = mqtt["server"].toString();
+            mqttUser = (const char *)mqtt["user"];
+            mqttPass = (const char *)mqtt["password"];
+            mqttServer = (const char *)mqtt["server"];
             mqttPort = mqtt["port"];
-            mqttSensorPfx = mqtt["sensorPfx"].toString();
-            mqttControllerPfx = mqtt["controllerPfx"].toString();
+            mqttSensorPfx = (const char *)mqtt["sensorPfx"];
+            mqttControllerPfx = (const char *)mqtt["controllerPfx"];
 
             delete[] jsonString;
         }
@@ -85,21 +85,23 @@ struct ApplicationSettingsStorage
         network["dhcp"] = dhcp;
 
         // Make copy by value for temporary string objects
-        network.addCopy("ip", ip.toString());
-        network.addCopy("netmask", netmask.toString());
-        network.addCopy("gateway", gateway.toString());
+        network.set("ip", ip.toString());
+        network.set("netmask", netmask.toString());
+        network.set("gateway", gateway.toString());
 
         JsonObject& mqtt = jsonBuffer.createObject();
         root["mqtt"] = mqtt;
-        mqtt.addCopy("user", mqttUser);
-        mqtt.addCopy("password", mqttPass);
-        mqtt.addCopy("server", mqttServer);
+        mqtt.set("user", mqttUser);
+        mqtt.set("password", mqttPass);
+        mqtt.set("server", mqttServer);
         mqtt["port"] = mqttPort;
-        mqtt.addCopy("sensorPfx", mqttSensorPfx);
-        mqtt.addCopy("controllerPfx", mqttControllerPfx);
+        mqtt.set("sensorPfx", mqttSensorPfx);
+        mqtt.set("controllerPfx", mqttControllerPfx);
 
         //TODO: add direct file stream writing
-        fileSetContent(APP_SETTINGS_FILE, root.toJsonString());
+        String out;
+        root.printTo(out);
+        fileSetContent(APP_SETTINGS_FILE, out);
     }
 
     bool exist() { return fileExist(APP_SETTINGS_FILE); }
