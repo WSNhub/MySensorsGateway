@@ -460,6 +460,18 @@ void processRestartCommand(String commandLine, CommandOutput* out)
     System.restart();
 }
 
+void processDebugCommand(String commandLine, CommandOutput* out)
+{
+    Debug.start();
+}
+
+void processNoDebugCommand(String commandLine, CommandOutput* out)
+{
+    Debug.stop();
+}
+
+extern void otaEnable();
+
 void init()
 {
     /* Mount the internal storage */
@@ -490,7 +502,7 @@ void init()
 #endif
 
     Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
-    Serial.systemDebugOutput(false); // Enable debug output to serial
+    Serial.systemDebugOutput(true); // Enable debug output to serial
     Debug.start();
 
     //commandHandler.registerCommand(CommandDelegate("example","Example Command from Class","Application",processApplicationCommands));
@@ -502,7 +514,14 @@ void init()
                                                    "Restart the system",
                                                    "System",
                                                    processRestartCommand));
-
+    commandHandler.registerCommand(CommandDelegate("NOdebug",
+                                                   "Disable debugging",
+                                                   "System",
+                                                   processNoDebugCommand));
+    commandHandler.registerCommand(CommandDelegate("debug",
+                                                   "Enable debugging",
+                                                   "System",
+                                                   processDebugCommand));
     Serial.commandProcessing(true);
 
     AppSettings.load();
@@ -536,6 +555,8 @@ void init()
             AppSettings.save();
         }
     }
+
+    otaEnable();
 
     // Run WEB server on system ready
     System.onReady(startServers);
