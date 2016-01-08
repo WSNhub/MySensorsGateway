@@ -22,3 +22,19 @@ include $(SMING_HOME)/Makefile-rboot.mk
 else
 include $(SMING_HOME)/Makefile-project.mk
 endif
+
+upload: all
+ifndef FTP_SERVER
+	$(error FTP_SERVER not set. Please configure it in Makefile-user.mk)
+endif
+ifndef FTP_USER
+	$(error FTP_USER not set. Please configure it in Makefile-user.mk)
+endif
+ifndef FTP_PASSWORD
+	$(error FTP_PASSWORD not set. Please configure it in Makefile-user.mk)
+endif
+ifndef FTP_PATH
+	$(error FTP_PATH not set. Please configure it in Makefile-user.mk)
+endif
+	@echo "\nUploading firmware..."
+	@ncftpput -u $(FTP_USER) -p $(FTP_PASSWORD) $(FTP_SERVER) $(FTP_PATH) out/firmware/*
