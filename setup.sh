@@ -14,10 +14,10 @@ fi
 
 if [ ! -d "tools/Sming" ] ; then
     cd tools
-    wget https://github.com/SmingHub/Sming/archive/2.0.0.tar.gz
-    tar xzvf 2.0.0.tar.gz Sming-2.0.0/Sming
-    mv Sming-2.0.0/Sming Sming
-    rm -rf Sming-2.0.0
+    wget https://github.com/SmingHub/Sming/archive/2.1.1.tar.gz
+    tar xzvf 2.1.1.tar.gz Sming-2.1.1/Sming
+    mv Sming-2.1.1/Sming Sming
+    rm -rf Sming-2.1.1
     rm -rf *.tar.gz
     cd ..
 fi
@@ -35,7 +35,6 @@ make
 cd ../../
 
 cd tools/Sming
-#sed -i 's/^#include <mem.h>/\/\/#include <mem.h>/g' rboot/appcode/rboot-api.c
 export SMING_HOME=`pwd`
 make rebuild
 cd spiffy
