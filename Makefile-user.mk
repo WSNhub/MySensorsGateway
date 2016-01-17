@@ -1,3 +1,11 @@
+all: GLOBALS
+
+GLOBALS:
+	echo "Generating globals"
+	git describe --abbrev=7 --dirty --always --tags | awk ' BEGIN {print "#include \"globals.h\""} {print "const char * build_git_sha = \"" $$0"\";"} END {}' > app/globals.c
+	date | awk 'BEGIN {} {print "const char * build_time = \""$$0"\";"} END {} ' >> app/globals.c
+
+
 ## Local build configuration
 ## Parameters configured here will override default and ENV values.
 ## Uncomment and change examples:

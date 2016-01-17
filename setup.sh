@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ ! -f "app/globals.c" ] ; then
+    touch "app/globals.c"
+fi
+
 if [ ! -d "tools" ] ; then
     mkdir tools
 fi
@@ -19,6 +23,7 @@ if [ ! -d "tools/Sming" ] ; then
     mv Sming-2.1.1/Sming Sming
     rm -rf Sming-2.1.1
     rm -rf *.tar.gz
+#    sed -i 's/commandHandler\.registerSystemCommands()\;/\/\/commandHandler\.registerSystemCommands()\;/g' Sming/Services/CommandProcessing/CommandExecutor.cpp 
     cd ..
 fi
 

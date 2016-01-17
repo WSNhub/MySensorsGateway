@@ -2,6 +2,7 @@
 #include <SmingCore/SmingCore.h>
 #include <SmingCore/Network/TelnetServer.h>
 #include <AppSettings.h>
+#include <globals.h>
 #include <mqtt.h>
 #include "Libraries/MySensors/MyGateway.h"
 #include "Libraries/MySensors/MyTransport.h"
@@ -444,14 +445,20 @@ void processApplicationCommands(String commandLine, CommandOutput* commandOutput
 
 void processInfoCommand(String commandLine, CommandOutput* out)
 {
+    out->printf("System information : ESP8266 based MySensors gateway\r\n");
+    out->printf("Build time         : %s\n", build_time);
+    out->printf("Version            : %s\n", build_git_sha);
+    out->printf("Sming Version      : 2.1.1\r\n");
+    out->printf("ESP SDK version    : %s\n", system_get_sdk_version());
     out->printf("\r\n");
-    //out->printf("Version        : %s\n", build_git_sha);
-    //out->printf("Build time     : %s\n", build_git_time);
-    out->printf("Free Heap      : %d\r\n", system_get_free_heap_size());
-    out->printf("CPU Frequency  : %d MHz\r\n", system_get_cpu_freq());
-    out->printf("System Chip ID : %x\r\n", system_get_chip_id());
-    out->printf("SPI Flash ID   : %x\r\n", spi_flash_get_id());
-    out->printf("SPI Flash Size : %d\r\n", (1 << ((spi_flash_get_id() >> 16) & 0xff)));
+    out->printf("Time               : ");
+    out->printf(SystemClock.getSystemTimeString().c_str());
+    out->printf("\r\n");
+    out->printf("Free Heap          : %d\r\n", system_get_free_heap_size());
+    out->printf("CPU Frequency      : %d MHz\r\n", system_get_cpu_freq());
+    out->printf("System Chip ID     : %x\r\n", system_get_chip_id());
+    out->printf("SPI Flash ID       : %x\r\n", spi_flash_get_id());
+    out->printf("SPI Flash Size     : %d\r\n", (1 << ((spi_flash_get_id() >> 16) & 0xff)));
     out->printf("\r\n");
 }
 
@@ -462,12 +469,42 @@ void processRestartCommand(String commandLine, CommandOutput* out)
 
 void processDebugCommand(String commandLine, CommandOutput* out)
 {
-    Debug.start();
+    Vector<String> commandToken;
+    int numToken = splitString(commandLine, ' ' , commandToken);
+
+    if (numToken != 2 ||
+        (commandToken[1] != "on" && commandToken[1] != "off"))
+    {
+        out->printf("usage : \r\n\r\n");
+        out->printf("debug on  : Enable debug\r\n");
+        out->printf("debug off : Disable debug\r\n");
+        return;
+    }
+
+    if (commandToken[1] == "on")
+        Debug.start();
+    else
+        Debug.stop();
 }
 
-void processNoDebugCommand(String commandLine, CommandOutput* out)
+void processCpuCommand(String commandLine, CommandOutput* out)
 {
-    Debug.stop();
+    Vector<String> commandToken;
+    int numToken = splitString(commandLine, ' ' , commandToken);
+
+    if (numToken != 2 ||
+        (commandToken[1] != "80" && commandToken[1] != "160"))
+    {
+        out->printf("usage : \r\n\r\n");
+        out->printf("cpu 80  : Run at 80MHz\r\n");
+        out->printf("cpu 160 : Run at 160MHz\r\n");
+        return;
+    }
+
+    if (commandToken[1] == "80")
+        System.setCpuFrequency(eCF_80MHz);
+    else
+        System.setCpuFrequency(eCF_160MHz);
 }
 
 extern void otaEnable();
@@ -502,27 +539,37 @@ void init()
 #endif
 
     Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
-    Serial.systemDebugOutput(true); // Enable debug output to serial
+    Serial.systemDebugOutput(false); // Enable debug output to serial
+    Serial.commandProcessing(true);
     Debug.start();
 
-    //commandHandler.registerCommand(CommandDelegate("example","Example Command from Class","Application",processApplicationCommands));
+    // set prompt
+    commandHandler.setCommandPrompt("MySensorsGateway > ");
+
+    // remove unneeded system commands
+    commandHandler.unregisterCommand(commandHandler.getCommandDelegate("status"));
+    commandHandler.unregisterCommand(commandHandler.getCommandDelegate("echo"));
+    commandHandler.unregisterCommand(commandHandler.getCommandDelegate("debugon"));
+    commandHandler.unregisterCommand(commandHandler.getCommandDelegate("debugoff"));
+    commandHandler.unregisterCommand(commandHandler.getCommandDelegate("command"));
+
+    // add new commands
     commandHandler.registerCommand(CommandDelegate("info",
                                                    "Show system information",
                                                    "System",
                                                    processInfoCommand));
+    commandHandler.registerCommand(CommandDelegate("debug",
+                                                   "Enable or disable debugging",
+                                                   "System",
+                                                   processDebugCommand));
     commandHandler.registerCommand(CommandDelegate("restart",
                                                    "Restart the system",
                                                    "System",
                                                    processRestartCommand));
-    commandHandler.registerCommand(CommandDelegate("NOdebug",
-                                                   "Disable debugging",
+    commandHandler.registerCommand(CommandDelegate("cpu",
+                                                   "Adjust CPU speed",
                                                    "System",
-                                                   processNoDebugCommand));
-    commandHandler.registerCommand(CommandDelegate("debug",
-                                                   "Enable debugging",
-                                                   "System",
-                                                   processDebugCommand));
-    Serial.commandProcessing(true);
+                                                   processCpuCommand));
 
     AppSettings.load();
 
