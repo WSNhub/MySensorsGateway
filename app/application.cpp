@@ -507,6 +507,16 @@ void processCpuCommand(String commandLine, CommandOutput* out)
         System.setCpuFrequency(eCF_160MHz);
 }
 
+void processBoostonCommand(String commandLine, CommandOutput* out)
+{
+    System.setCpuFrequency(eCF_160MHz);
+}
+
+void processBoostoffCommand(String commandLine, CommandOutput* out)
+{
+    System.setCpuFrequency(eCF_80MHz);
+}
+
 extern void otaEnable();
 
 void init()
@@ -570,6 +580,18 @@ void init()
                                                    "Adjust CPU speed",
                                                    "System",
                                                    processCpuCommand));
+    commandHandler.registerCommand(CommandDelegate("debug",
+                                                   "Enable debugging",
+                                                   "System",
+                                                   processDebugCommand));
+    commandHandler.registerCommand(CommandDelegate("booston",
+                                                   "CPU at 160MHz",
+                                                   "System",
+                                                   processBoostonCommand));
+    commandHandler.registerCommand(CommandDelegate("boostoff",
+                                                   "CPU at 80MHz",
+                                                   "System",
+                                                   processBoostoffCommand));
 
     AppSettings.load();
 
@@ -604,6 +626,9 @@ void init()
     }
 
     otaEnable();
+
+    // boost
+    System.setCpuFrequency(eCF_160MHz);
 
     // Run WEB server on system ready
     System.onReady(startServers);

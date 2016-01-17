@@ -38,3 +38,8 @@ ifndef FTP_PATH
 endif
 	@echo "\nUploading firmware..."
 	@ncftpput -u $(FTP_USER) -p $(FTP_PASSWORD) $(FTP_SERVER) $(FTP_PATH) out/firmware/*
+
+copy: all
+	@sudo rm -f /var/www/firmware/*
+	@sudo cp out/firmware/* /var/www/firmware/
+
