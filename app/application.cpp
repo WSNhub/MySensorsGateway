@@ -17,7 +17,6 @@ MyHwESP8266 hw;
 MyGateway gw(transport, hw);
 
 HttpServer server;
-FTPServer ftp;
 TelnetServer telnet;
 
 char convBuf[MAX_PAYLOAD*2+1];
@@ -78,26 +77,29 @@ void wifiConnect()
                           AppSettings.netmask,
                           AppSettings.gateway);
     }
-
-    WifiAccessPoint.enable(true);
-    if (AppSettings.apPassword.equals(""))
-    {
-        WifiAccessPoint.config("MySensors gateway", "", AUTH_OPEN);
-    }
-    else
-    {
-        WifiAccessPoint.config("MySensors gateway",
-                               AppSettings.apPassword, AUTH_WPA_WPA2_PSK);
-    }
 }
 
 void onIpConfig(HttpRequest &request, HttpResponse &response)
 {
     if (request.getRequestMethod() == RequestMethod::POST)
     {
+        String oldApPass = AppSettings.apPassword;
+        AppSettings.apPassword = request.getPostParameter("apPassword");
+        if (!AppSettings.apPassword.equals(oldApPass))
+        {
+            if (AppSettings.apPassword.equals(""))
+            {
+                WifiAccessPoint.config("MySensors gateway", "", AUTH_OPEN);
+            }
+            else
+            {
+                WifiAccessPoint.config("MySensors gateway",
+                                       AppSettings.apPassword,
+                                       AUTH_WPA_WPA2_PSK);
+            }
+        }
         AppSettings.ssid = request.getPostParameter("ssid");
         AppSettings.password = request.getPostParameter("password");
-        AppSettings.apPassword = request.getPostParameter("apPassword");
         AppSettings.portalUrl = request.getPostParameter("portalUrl");
         AppSettings.portalData = request.getPostParameter("portalData");
 
@@ -202,16 +204,6 @@ void startWebServer()
     server.setDefaultHandler(onFile);
 }
 
-void startFTP()
-{
-    if (!fileExist("index.html"))
-        fileSetContent("index.html", "<h3>Please connect to FTP and upload files from folder 'web/build' (details in code)</h3>");
-
-    // Start FTP server
-    ftp.listen(21);
-    ftp.addUser("me", "123"); // FTP account
-}
-
 int print(int a)
 {
   Debug.println(a);
@@ -278,10 +270,8 @@ void startServers()
     connectionCheckTimer.initializeMs(1000,
                                       wifiCheckState).start(true);
 
-    startFTP();
     startWebServer();
     telnet.listen(23);
-    //telnet.setDebug(true);
 
     noInterrupts();
     interpreter.registerFunc1((char *)"print", print);
