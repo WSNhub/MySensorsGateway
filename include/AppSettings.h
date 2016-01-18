@@ -35,6 +35,7 @@ struct ApplicationSettingsStorage
     String mqttControllerPfx;
 
     bool   cpuBoost = true;
+    bool   useOwnBaseAddress = false;
 
     void load()
     {
@@ -68,6 +69,7 @@ struct ApplicationSettingsStorage
             mqttControllerPfx = (const char *)mqtt["controllerPfx"];
 
             cpuBoost = root["cpuBoost"];
+            useOwnBaseAddress = root["useOwnBaseAddress"];
 
             delete[] jsonString;
         }
@@ -103,6 +105,7 @@ struct ApplicationSettingsStorage
         mqtt.set("controllerPfx", mqttControllerPfx);
 
         root["cpuBoost"] = cpuBoost;
+        root["useOwnBaseAddress"] = useOwnBaseAddress;
 
         //TODO: add direct file stream writing
         String out;

@@ -250,6 +250,7 @@ void wifiCheckState()
     }
 }
 
+uint64_t rfBaseAddress;
 
 // Will be called when system initialization was completed
 void startServers()
@@ -279,7 +280,15 @@ void startServers()
     interpreter.loadFile((char *)".rules");
     interrupts();
 
-    gw.begin(incomingMessage);
+    if (AppSettings.useOwnBaseAddress)
+    {
+        rfBaseAddress = ((uint64_t)system_get_chip_id()) << 8;
+    }
+    else
+    {
+        rfBaseAddress = RF24_BASE_RADIO_ID;
+    }
+    gw.begin(incomingMessage, NULL, rfBaseAddress);
 }
 
 HttpClient portalLogin;
@@ -360,6 +369,9 @@ void processInfoCommand(String commandLine, CommandOutput* out)
     out->printf("SPI Flash ID       : %x\r\n", spi_flash_get_id());
     out->printf("SPI Flash Size     : %d\r\n", (1 << ((spi_flash_get_id() >> 16) & 0xff)));
     out->printf("\r\n");
+    out->printf("RF base address    : %02x", (rfBaseAddress >> 32) & 0xff);
+    out->printf("%08x\r\n", rfBaseAddress);
+    out->printf("\r\n");
 }
 
 void processRestartCommand(String commandLine, CommandOutput* out)
@@ -413,6 +425,33 @@ void processCpuCommand(String commandLine, CommandOutput* out)
     }
 
     AppSettings.save();
+}
+
+void processBaseAddressCommand(String commandLine, CommandOutput* out)
+{
+    Vector<String> commandToken;
+    int numToken = splitString(commandLine, ' ' , commandToken);
+
+    if (numToken != 2 ||
+        (commandToken[1] != "default" && commandToken[1] != "private"))
+    {
+        out->printf("usage : \r\n\r\n");
+        out->printf("base-address default : Use the default MySensors base address\r\n");
+        out->printf("base-address private : Use a base address based on ESP chip ID\r\n");
+        return;
+    }
+
+    if (commandToken[1] == "default")
+    {
+        AppSettings.useOwnBaseAddress = false;
+    }
+    else
+    {
+        AppSettings.useOwnBaseAddress = true;
+    }
+
+    AppSettings.save();
+    System.restart();
 }
 
 extern void otaEnable();
@@ -482,6 +521,10 @@ void init()
                                                    "Enable/disable debugging",
                                                    "System",
                                                    processDebugCommand));
+    commandHandler.registerCommand(CommandDelegate("base-address",
+                                                   "Set the base address to use",
+                                                   "MySensors",
+                                                   processBaseAddressCommand));
 
     AppSettings.load();
 
