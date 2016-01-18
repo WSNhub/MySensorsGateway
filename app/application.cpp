@@ -28,96 +28,6 @@ MyInterpreter interpreter;
 
 void mqttPublishMessage(String topic, String message);
 
-char V_0[] = "TEMP";        //V_TEMP
-char V_1[] = "HUM";        //V_HUM
-char V_2[] = "LIGHT";        //V_LIGHT
-char V_3[] = "DIMMER";        //V_DIMMER
-char V_4[] = "PRESSURE";    //V_PRESSURE
-char V_5[] = "FORECAST";    //V_FORECAST
-char V_6[] = "RAIN";        //V_RAIN
-char V_7[] = "RAINRATE";    //V_RAINRATE
-char V_8[] = "WIND";        //V_WIND
-char V_9[] = "GUST";        //V_GUST
-char V_10[] = "DIRECTON";    //V_DIRECTON
-char V_11[] = "UV";        //V_UV
-char V_12[] = "WEIGHT";        //V_WEIGHT
-char V_13[] = "DISTANCE";    //V_DISTANCE
-char V_14[] = "IMPEDANCE";    //V_IMPEDANCE
-char V_15[] = "ARMED";        //V_ARMED
-char V_16[] = "TRIPPED";    //V_TRIPPED
-char V_17[] = "WATT";        //V_WATT
-char V_18[] = "KWH";        //V_KWH
-char V_19[] = "SCENE_ON";    //V_SCENE_ON
-char V_20[] = "SCENE_OFF";    //V_SCENE_OFF
-char V_21[] = "HEATER";        //V_HEATER
-char V_22[] = "HEATER_SW";    //V_HEATER_SW
-char V_23[] = "LIGHT_LEVEL";    //V_LIGHT_LEVEL
-char V_24[] = "VAR1";        //V_VAR1
-char V_25[] = "VAR2";        //V_VAR2
-char V_26[] = "VAR3";        //V_VAR3
-char V_27[] = "VAR4";        //V_VAR4
-char V_28[] = "VAR5";        //V_VAR5
-char V_29[] = "UP";        //V_UP
-char V_30[] = "DOWN";        //V_DOWN
-char V_31[] = "STOP";        //V_STOP
-char V_32[] = "IR_SEND";    //V_IR_SEND
-char V_33[] = "IR_RECEIVE";    //V_IR_RECEIVE
-char V_34[] = "FLOW";        //V_FLOW
-char V_35[] = "VOLUME";        //V_VOLUME
-char V_36[] = "LOCK_STATUS";    //V_LOCK_STATUS
-char V_37[] = "DUST_LEVEL";    //V_DUST_LEVEL
-char V_38[] = "VOLTAGE";    //V_VOLTAGE
-char V_39[] = "CURRENT";    //V_CURRENT
-char V_40[] = "";        //
-char V_41[] = "";        //
-char V_42[] = "";        //
-char V_43[] = "";        //
-char V_44[] = "";        //
-char V_45[] = "";        //
-char V_46[] = "";        //
-char V_47[] = "";        //
-char V_48[] = "";        //
-char V_49[] = "";        //
-char V_50[] = "";        //
-char V_51[] = "";        //
-char V_52[] = "";        //
-char V_53[] = "";        //
-char V_54[] = "";        //
-char V_55[] = "";        //
-char V_56[] = "";        //
-char V_57[] = "";        //
-char V_58[] = "";        //
-char V_59[] = "";        //
-char V_60[] = "DEFAULT";    //Custom for MQTTGateway
-char V_61[] = "SKETCH_NAME";    //Custom for MQTTGateway
-char V_62[] = "SKETCH_VERSION"; //Custom for MQTTGateway
-char V_63[] = "UNKNOWN";     //Custom for MQTTGateway
-
-//////////////////////////////////////////////////////////////////
-
-const char *vType[] = {
-    V_0, V_1, V_2, V_3, V_4, V_5, V_6, V_7, V_8, V_9, V_10,
-    V_11, V_12, V_13, V_14, V_15, V_16, V_17, V_18, V_19, V_20,
-    V_21, V_22, V_23, V_24, V_25, V_26, V_27, V_28, V_29, V_30,
-    V_31, V_32, V_33, V_34, V_35, V_36, V_37, V_38, V_39, V_40,
-    V_41, V_42, V_43, V_44, V_45, V_46, V_47, V_48, V_49, V_50,
-    V_51, V_52, V_53, V_54, V_55, V_56, V_57, V_58, V_59, V_60,
-    V_61, V_62, V_63
-};
-
-int getTypeFromString(String type)
-{
-    for (int x = 0; x < 64; x++)
-    {
-        if (type.substring(2).equals(vType[x]))
-        {
-            return x;
-        }
-    }
-
-    return 0;
-}
-
 void incomingMessage(const MyMessage &message)
 {
     // Pass along the message from sensors to serial line
@@ -128,7 +38,7 @@ void incomingMessage(const MyMessage &message)
 
     if (mGetCommand(message) == C_SET)
     {
-        const char *type = vType[message.type];
+        String type = gw.getSensorTypeString(message.type);
         String topic = message.sender + String("/") +
                        message.sensor + String("/") +
                        "V_" + type;
@@ -502,19 +412,17 @@ void processCpuCommand(String commandLine, CommandOutput* out)
     }
 
     if (commandToken[1] == "80")
+    {
         System.setCpuFrequency(eCF_80MHz);
+        AppSettings.cpuBoost = false;
+    }
     else
+    {
         System.setCpuFrequency(eCF_160MHz);
-}
+        AppSettings.cpuBoost = true;
+    }
 
-void processBoostonCommand(String commandLine, CommandOutput* out)
-{
-    System.setCpuFrequency(eCF_160MHz);
-}
-
-void processBoostoffCommand(String commandLine, CommandOutput* out)
-{
-    System.setCpuFrequency(eCF_80MHz);
+    AppSettings.save();
 }
 
 extern void otaEnable();
@@ -581,17 +489,9 @@ void init()
                                                    "System",
                                                    processCpuCommand));
     commandHandler.registerCommand(CommandDelegate("debug",
-                                                   "Enable debugging",
+                                                   "Enable/disable debugging",
                                                    "System",
                                                    processDebugCommand));
-    commandHandler.registerCommand(CommandDelegate("booston",
-                                                   "CPU at 160MHz",
-                                                   "System",
-                                                   processBoostonCommand));
-    commandHandler.registerCommand(CommandDelegate("boostoff",
-                                                   "CPU at 80MHz",
-                                                   "System",
-                                                   processBoostoffCommand));
 
     AppSettings.load();
 
@@ -627,8 +527,11 @@ void init()
 
     otaEnable();
 
-    // boost
-    System.setCpuFrequency(eCF_160MHz);
+    // CPU boost
+    if (AppSettings.cpuBoost)
+        System.setCpuFrequency(eCF_160MHz);
+    else
+        System.setCpuFrequency(eCF_80MHz);
 
     // Run WEB server on system ready
     System.onReady(startServers);

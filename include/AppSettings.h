@@ -34,6 +34,8 @@ struct ApplicationSettingsStorage
     String mqttSensorPfx;
     String mqttControllerPfx;
 
+    bool   cpuBoost = true;
+
     void load()
     {
         DynamicJsonBuffer jsonBuffer;
@@ -64,6 +66,8 @@ struct ApplicationSettingsStorage
             mqttPort = mqtt["port"];
             mqttSensorPfx = (const char *)mqtt["sensorPfx"];
             mqttControllerPfx = (const char *)mqtt["controllerPfx"];
+
+            cpuBoost = root["cpuBoost"];
 
             delete[] jsonString;
         }
@@ -97,6 +101,8 @@ struct ApplicationSettingsStorage
         mqtt["port"] = mqttPort;
         mqtt.set("sensorPfx", mqttSensorPfx);
         mqtt.set("controllerPfx", mqttControllerPfx);
+
+        root["cpuBoost"] = cpuBoost;
 
         //TODO: add direct file stream writing
         String out;

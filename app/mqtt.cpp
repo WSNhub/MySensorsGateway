@@ -3,6 +3,7 @@
 #include <SmingCore/Debug.h>
 #include <AppSettings.h>
 #include <mqtt.h>
+#include "Libraries/MySensors/MyGateway.h"
 
 // Forward declarations
 void onMessageReceived(String topic, String message);
@@ -71,7 +72,7 @@ void ICACHE_FLASH_ATTR onMessageReceived(String topic, String message)
         Debug.println(message);
 
         updateSensorStateInt(node.toInt(), sensor.toInt(),
-                             getTypeFromString(type),
+                             MyGateway::getSensorTypeFromString(type),
                              message.toInt());
     }
 
