@@ -79,6 +79,24 @@ void wifiConnect()
     }
 }
 
+Timer softApSetPasswordTimer;
+void softApSetPassword()
+{
+    WifiAccessPoint.enable(false);
+    WifiAccessPoint.enable(true);
+
+    if (AppSettings.apPassword.equals(""))
+    {
+	WifiAccessPoint.config("MySensors gateway", "", AUTH_OPEN);
+    }
+    else
+    {
+	WifiAccessPoint.config("MySensors gateway",
+			       AppSettings.apPassword,
+			       AUTH_WPA_WPA2_PSK);
+    }
+}
+
 void onIpConfig(HttpRequest &request, HttpResponse &response)
 {
     if (request.getRequestMethod() == RequestMethod::POST)
@@ -87,17 +105,9 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
         AppSettings.apPassword = request.getPostParameter("apPassword");
         if (!AppSettings.apPassword.equals(oldApPass))
         {
-            if (AppSettings.apPassword.equals(""))
-            {
-                WifiAccessPoint.config("MySensors gateway", "", AUTH_OPEN);
-            }
-            else
-            {
-                WifiAccessPoint.config("MySensors gateway",
-                                       AppSettings.apPassword,
-                                       AUTH_WPA_WPA2_PSK);
-            }
+            softApSetPasswordTimer.initializeMs(10, softApSetPassword).startOnce();
         }
+
         AppSettings.ssid = request.getPostParameter("ssid");
         AppSettings.password = request.getPostParameter("password");
         AppSettings.portalUrl = request.getPostParameter("portalUrl");
