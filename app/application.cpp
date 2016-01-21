@@ -18,6 +18,7 @@ MyGateway gw(transport, hw);
 
 HttpServer server;
 TelnetServer telnet;
+static boolean first_time = TRUE;
 
 char convBuf[MAX_PAYLOAD*2+1];
 
@@ -298,7 +299,6 @@ void startServers()
     {
         rfBaseAddress = RF24_BASE_RADIO_ID;
     }
-    gw.begin(incomingMessage, NULL, rfBaseAddress);
 }
 
 HttpClient portalLogin;
@@ -313,6 +313,12 @@ void onActivateDataSent(HttpClient& client, bool successful)
 void connectOk()
 {
     Debug.println("--> I'm CONNECTED");
+    if (first_time) 
+    {
+      first_time = FALSE;
+      // start getting sensor data
+      gw.begin(incomingMessage, NULL, rfBaseAddress);
+    }
     if (WifiStation.getIP().isNull())
     {
         Debug.println("No ip?");
@@ -539,6 +545,9 @@ void init()
     AppSettings.load();
 
     WifiStation.enable(true);
+    // why not ?
+    WifiAccessPoint.enable(true);
+
     if (AppSettings.exist())
     {
         if (AppSettings.ssid.equals("") &&
