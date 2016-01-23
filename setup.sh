@@ -23,16 +23,16 @@ if [ ! -d "tools/Sming" ] ; then
     mv Sming-2.1.1/Sming Sming
     rm -rf Sming-2.1.1
     rm -rf *.tar.gz
-#    sed -i 's/commandHandler\.registerSystemCommands()\;/\/\/commandHandler\.registerSystemCommands()\;/g' Sming/Services/CommandProcessing/CommandExecutor.cpp 
+    sed -i 's/commandHandler\.registerSystemCommands()\;/\/\/commandHandler\.registerSystemCommands()\;/g' Sming/Services/CommandProcessing/CommandExecutor.cpp 
     cd ..
 fi
 
 if [ ! -d "tools/Sming/Libraries/MySensors" ] ; then
-    git clone https://github.com/alainmaes/MySensors.git tools/Sming/Libraries/MySensors
+    git clone https://github.com/WSNhub/MySensors.git tools/Sming/Libraries/MySensors
 fi
 
 if [ ! -d "tools/Sming/Libraries/MyInterpreter" ] ; then
-    git clone https://github.com/alainmaes/MyInterpreter.git tools/Sming/Libraries/MyInterpreter
+    git clone https://github.com/WSNhub/MyInterpreter.git tools/Sming/Libraries/MyInterpreter
 fi
 
 cd tools/esptool2
