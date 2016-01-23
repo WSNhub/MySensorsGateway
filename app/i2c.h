@@ -14,10 +14,12 @@ class MyI2C
   private:
     void i2cCheckDigitalState();
     void i2cCheckAnalogState();
+    void i2cCheckRTCState();
 
   private:
     Timer            i2cCheckDigitalTimer;
     Timer            i2cCheckAnalogTimer;
+    Timer            i2cCheckRTCTimer;
 
     bool             mcp23017Present[7] = { false, false, false, false,
                                             false, false, false };

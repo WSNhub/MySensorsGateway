@@ -4,6 +4,7 @@
 #include <AppSettings.h>
 #include <globals.h>
 #include <mqtt.h>
+#include <i2c.h>
 #include "Libraries/MySensors/MyGateway.h"
 #include "Libraries/MySensors/MyTransport.h"
 #include "Libraries/MySensors/MyTransportNRF24.h"
@@ -15,6 +16,7 @@
 MyTransportNRF24 transport(RADIO_CE_PIN, RADIO_SPI_SS_PIN, RF24_PA_LEVEL_GW);
 MyHwESP8266 hw;
 MyGateway gw(transport, hw);
+MyI2C I2C_dev;
 
 HttpServer server;
 TelnetServer telnet;
@@ -543,6 +545,8 @@ void init()
                                                    processBaseAddressCommand));
 
     AppSettings.load();
+
+    I2C_dev.begin();
 
     WifiStation.enable(true);
     // why not ?
