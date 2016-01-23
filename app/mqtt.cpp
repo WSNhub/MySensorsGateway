@@ -70,6 +70,9 @@ void ICACHE_FLASH_ATTR onMessageReceived(String topic, String message)
         Debug.println(sensor);
         Debug.println(type);
         Debug.println(message);
+        //strip leading V_
+        type.remove(0,2);
+        Debug.println(MyGateway::getSensorTypeFromString(type));
 
         updateSensorStateInt(node.toInt(), sensor.toInt(),
                              MyGateway::getSensorTypeFromString(type),
