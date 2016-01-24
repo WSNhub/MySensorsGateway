@@ -23,7 +23,6 @@ if [ ! -d "tools/Sming" ] ; then
     mv Sming-2.1.1/Sming Sming
     rm -rf Sming-2.1.1
     rm -rf *.tar.gz
-    sed -i 's/commandHandler\.registerSystemCommands()\;/\/\/commandHandler\.registerSystemCommands()\;/g' Sming/Services/CommandProcessing/CommandExecutor.cpp 
     cd ..
 fi
 
@@ -34,6 +33,17 @@ fi
 if [ ! -d "tools/Sming/Libraries/MyInterpreter" ] ; then
     git clone https://github.com/WSNhub/MyInterpreter.git tools/Sming/Libraries/MyInterpreter
 fi
+
+if [ ! -e "app/mutex.c" ]; then
+    ln -s ../tools/raburton/mutex/mutex.c app/mutex.c
+fi
+
+if [ ! -e "app/mutex.h" ]; then
+    ln -s ../tools/raburton/mutex/mutex.h app/mutex.h
+fi
+
+# Now apply patches if any is present
+patch -p0 < patches/CommandHandler.patch
 
 cd tools/esptool2
 make

@@ -28,6 +28,37 @@ char convBuf[MAX_PAYLOAD*2+1];
 MyInterpreter interpreter;
 #endif
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "mutex.h"
+#ifdef __cplusplus
+}
+#endif
+
+class MyMutex
+{
+  public:
+    MyMutex()
+    {
+        CreateMutux(&mutex);
+    };
+    void Lock()
+    {
+        while (!GetMutex(&mutex))
+            delay(0);
+    };
+    void Unlock()
+    {
+        ReleaseMutex(&mutex);
+    };
+  private:
+    mutex_t mutex;
+};
+
+MyMutex interpreterMutex;
+
 void mqttPublishMessage(String topic, String message);
 
 void incomingMessage(const MyMessage &message)
@@ -48,12 +79,12 @@ void incomingMessage(const MyMessage &message)
     }
 
 #ifndef DISABLE_SPIFFS
-    noInterrupts();
+    interpreterMutex.Lock();
     interpreter.setVariable('n', message.sender);
     interpreter.setVariable('s', message.sensor);
     interpreter.setVariable('v', atoi(message.getString(convBuf)));
     interpreter.run();
-    interrupts();
+    interpreterMutex.Unlock();
 #endif
 
     return;
@@ -178,9 +209,9 @@ void onRules(HttpRequest &request, HttpResponse &response)
     {
 	fileSetContent(".rules",
                        request.getPostParameter("rule"));
-        noInterrupts();
+        interpreterMutex.Lock();
         interpreter.loadFile((char *)".rules");
-        interrupts();
+        interpreterMutex.Unlock();
     }
 #endif
 
@@ -188,7 +219,7 @@ void onRules(HttpRequest &request, HttpResponse &response)
     auto &vars = tmpl->variables();
 
 #ifndef DISABLE_SPIFFS
-    noInterrupts();
+    interpreterMutex.Lock();
     if (fileExist(".rules"))
     {
         vars["rule"] = fileGetContent(".rules");        
@@ -197,7 +228,7 @@ void onRules(HttpRequest &request, HttpResponse &response)
     {
         vars["rule"] = "";
     }
-    interrupts();
+    interpreterMutex.Unlock();
 #else
     vars["rule"] = "";
 #endif
@@ -287,11 +318,11 @@ void startServers()
     startWebServer();
     telnet.listen(23);
 
-    noInterrupts();
+    interpreterMutex.Lock();
     interpreter.registerFunc1((char *)"print", print);
     interpreter.registerFunc3((char *)"updateSensorState", updateSensorState);
     interpreter.loadFile((char *)".rules");
-    interrupts();
+    interpreterMutex.Unlock();
 
     if (AppSettings.useOwnBaseAddress)
     {

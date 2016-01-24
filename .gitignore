@@ -1,7 +1,7 @@
 tools
 out
 firmware
-include/mutex.h
+app/mutex.h
 app/mutex.c
 app/globals.c
 *~
