@@ -3,8 +3,8 @@
 #include <SmingCore/Network/TelnetServer.h>
 #include <AppSettings.h>
 #include <globals.h>
-#include <mqtt.h>
 #include <i2c.h>
+#include <openHabMqttController.h>
 #include "Libraries/MySensors/MyGateway.h"
 #include "Libraries/MySensors/MyTransport.h"
 #include "Libraries/MySensors/MyTransportNRF24.h"
@@ -59,8 +59,6 @@ class MyMutex
 
 MyMutex interpreterMutex;
 
-void mqttPublishMessage(String topic, String message);
-
 void incomingMessage(const MyMessage &message)
 {
     // Pass along the message from sensors to serial line
@@ -75,7 +73,7 @@ void incomingMessage(const MyMessage &message)
         String topic = message.sender + String("/") +
                        message.sensor + String("/") +
                        "V_" + type;
-        mqttPublishMessage(topic, message.getString(convBuf));
+        controller.notifyChange(topic, message.getString(convBuf));
     }
 
 #ifndef DISABLE_SPIFFS
@@ -244,7 +242,7 @@ void startWebServer()
     server.addPath("/rules.html", onRules);
 
     gw.registerHttpHandlers(server);
-    mqttRegisterHttpHandlers(server);
+    controller.registerHttpHandlers(server);
     server.setDefaultHandler(onFile);
 }
 
@@ -281,7 +279,6 @@ void wifiCheckState()
             wasConnected = TRUE;
             connectOk();
         }
-        checkMqttClient();
     }
     else
     {
