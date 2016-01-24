@@ -9,7 +9,7 @@ void CloudController::begin()
 {
     checkTimer.initializeMs(
         1000,
-        TimerDelegate(&CloudController::checkMqttClient,
+        TimerDelegate(&CloudController::oneSecondTimerHandler,
 	              this)).start(true);
 }
 
@@ -248,4 +248,97 @@ next_entry:
 #endif
 }
 
-CloudController controller;
+void CloudController::oneSecondTimerHandler()
+{
+    if (!WifiStation.isConnected() && state > CloudControllerStateWaitingWifi)
+    {
+        Debug.println("LOST CONNECTION");
+        //?? Stop MQTT?
+        state = CloudControllerStateWaitingWifi;
+        return;
+    }
+
+    switch (state)
+    {
+        case CloudControllerStateInit:
+            Debug.println("Init state not expected in timer handler");
+            break;
+
+        case CloudControllerStateWaitingWifi:
+            if (WifiStation.isConnected())
+            {
+                Debug.println("CONNECTED");
+                state = CloudControllerStateWifiConnected;
+            }
+            break;
+
+        case CloudControllerStateWifiConnected:
+            activate();
+            break;
+
+        case CloudControllerStateActivated:
+            startMqttClient();
+            break;
+
+        case CloudControllerStateMqttConnecting:
+            checkMqttClient();
+            break;
+
+        case CloudControllerStateMqttConnected:
+            Debug.println("MQTT CONNECTED");
+            break;
+
+        case CloudControllerStateMqttSubscribed:
+            //Debug.println("MQTT SUBSCRIBED");
+            break;
+    }
+}
+
+#define ACTIVATION_URL "http://dummie.be/activate.php"
+
+void CloudController::activate()
+{
+#if 0
+    if (!AppSettings.getAcctLogin().equals("") &&
+        !AppSettings.getAcctPwd().equals(""))
+    {
+        String body = "device="+String(system_get_chip_id(), HEX)+
+                      "&login="+AppSettings.getAcctLogin()+
+                      "&password="+AppSettings.getAcctPwd();
+        activation.setPostBody(body.c_str());
+        activation.downloadString(ACTIVATION_URL, HttpClientCompletedDelegate(&CloudController::onActivateDataSent, this));
+    }
+#endif
+}
+
+void CloudController::onActivateDataSent(HttpClient& client, bool successful)
+{
+#if 0
+    String response = client.getResponseString();
+    Debug.printf("Server response: '%s'\n", response.c_str());
+    if (successful && response.length() > 0)
+    {
+        DynamicJsonBuffer jsonBuffer;
+        char* jsonString = new char[response.length() + 1];
+        memcpy(jsonString, response.c_str(), response.length());
+        jsonString[response.length()] = 0;
+        JsonObject& root = jsonBuffer.parseObject(jsonString);
+
+        String status = (const char *)root["status"];
+        if (status.equals("success"))
+        {
+            String token = (const char *)root["token"];
+            if (token != AppSettings.getDeviceToken())
+            {
+                AppSettings.setDeviceToken(token);
+                AppSettings.save();
+            }
+            state = ThingStateActivated;            
+        }
+
+        delete[] jsonString;        
+    }
+#endif
+}
+
+CloudController cloudController;

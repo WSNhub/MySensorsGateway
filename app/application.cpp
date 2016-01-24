@@ -4,7 +4,7 @@
 #include <AppSettings.h>
 #include <globals.h>
 #include <i2c.h>
-#include <openHabMqttController.h>
+#include <CloudController.h>
 #include "Libraries/MySensors/MyGateway.h"
 #include "Libraries/MySensors/MyTransport.h"
 #include "Libraries/MySensors/MyTransportNRF24.h"
@@ -28,6 +28,7 @@ char convBuf[MAX_PAYLOAD*2+1];
 MyInterpreter interpreter;
 #endif
 
+Controller controller = cloudController;
 
 #ifdef __cplusplus
 extern "C" {

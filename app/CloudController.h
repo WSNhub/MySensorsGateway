@@ -16,7 +16,7 @@ typedef enum state
     CloudControllerStateMqttSubscribed,
 } CloudControllerState;
 
-class CloudController : private Controller
+class CloudController : public Controller
 {
   public:
     void begin();
@@ -31,7 +31,9 @@ class CloudController : private Controller
     void checkMqttClient();
     void stopMqttClient();
     void onMessageReceived(String topic, String message);
-
+    void oneSecondTimerHandler();
+    void activate();
+    void onActivateDataSent(HttpClient& client, bool successful);
   private:
     CloudControllerState  state;
     int                   incarnation = 0;
@@ -42,6 +44,6 @@ class CloudController : private Controller
     char                  clientId[33];
 };
 
-extern CloudController controller;
+extern CloudController cloudController;
 
 #endif //INCLUDE_CLOUD_CONTROLLER_H_

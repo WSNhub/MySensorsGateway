@@ -6,7 +6,7 @@
 #include <controller.h>
 #include <mqtt.h>
 
-class OpenHabMqttController : private Controller
+class OpenHabMqttController : public Controller
 {
   public:
     void begin();
@@ -21,6 +21,6 @@ class OpenHabMqttController : private Controller
     Timer checkTimer;
 };
 
-extern OpenHabMqttController controller;
+extern OpenHabMqttController openHabMqttController;
 
 #endif //INCLUDE_OPENHAB_MQTT_CONTROLLER_H_
