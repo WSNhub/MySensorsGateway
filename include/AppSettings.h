@@ -37,6 +37,10 @@ struct ApplicationSettingsStorage
     bool   cpuBoost = true;
     bool   useOwnBaseAddress = false;
 
+    String cloudDeviceToken;
+    String cloudLogin;
+    String cloudPassword;
+
     void load()
     {
         DynamicJsonBuffer jsonBuffer;
@@ -70,6 +74,10 @@ struct ApplicationSettingsStorage
 
             cpuBoost = root["cpuBoost"];
             useOwnBaseAddress = root["useOwnBaseAddress"];
+
+            cloudDeviceToken = (const char *)root["cloudDeviceToken"];
+            cloudLogin = (const char *)root["cloudLogin"];
+            cloudPassword = (const char *)root["cloudPassword"];
 
             delete[] jsonString;
         }
@@ -106,6 +114,10 @@ struct ApplicationSettingsStorage
 
         root["cpuBoost"] = cpuBoost;
         root["useOwnBaseAddress"] = useOwnBaseAddress;
+
+        root.set("cloudDeviceToken", cloudDeviceToken);
+        root.set("cloudLogin", cloudLogin);
+        root.set("cloudPassword", cloudPassword);
 
         //TODO: add direct file stream writing
         String out;

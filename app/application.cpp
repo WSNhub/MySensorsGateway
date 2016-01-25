@@ -28,7 +28,7 @@ char convBuf[MAX_PAYLOAD*2+1];
 MyInterpreter interpreter;
 #endif
 
-Controller controller = cloudController;
+CloudController *controller = &cloudController;
 
 #ifdef __cplusplus
 extern "C" {
@@ -74,7 +74,7 @@ void incomingMessage(const MyMessage &message)
         String topic = message.sender + String("/") +
                        message.sensor + String("/") +
                        "V_" + type;
-        controller.notifyChange(topic, message.getString(convBuf));
+        controller->notifyChange(topic, message.getString(convBuf));
     }
 
 #ifndef DISABLE_SPIFFS
@@ -243,7 +243,7 @@ void startWebServer()
     server.addPath("/rules.html", onRules);
 
     gw.registerHttpHandlers(server);
-    controller.registerHttpHandlers(server);
+    controller->registerHttpHandlers(server);
     server.setDefaultHandler(onFile);
 }
 
@@ -335,6 +335,8 @@ void startServers()
     {
         rfBaseAddress = RF24_BASE_RADIO_ID;
     }
+
+    controller->begin();
 }
 
 HttpClient portalLogin;
@@ -538,19 +540,12 @@ void init()
 #endif
 
     Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
-    Serial.systemDebugOutput(false); // Enable debug output to serial
+    Serial.systemDebugOutput(true); // Enable debug output to serial
     Serial.commandProcessing(true);
     Debug.start();
 
     // set prompt
     commandHandler.setCommandPrompt("MySensorsGateway > ");
-
-    // remove unneeded system commands
-    commandHandler.unregisterCommand(commandHandler.getCommandDelegate("status"));
-    commandHandler.unregisterCommand(commandHandler.getCommandDelegate("echo"));
-    commandHandler.unregisterCommand(commandHandler.getCommandDelegate("debugon"));
-    commandHandler.unregisterCommand(commandHandler.getCommandDelegate("debugoff"));
-    commandHandler.unregisterCommand(commandHandler.getCommandDelegate("command"));
 
     // add new commands
     commandHandler.registerCommand(CommandDelegate("info",

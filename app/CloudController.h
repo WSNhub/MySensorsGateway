@@ -35,6 +35,7 @@ class CloudController : public Controller
     void activate();
     void onActivateDataSent(HttpClient& client, bool successful);
   private:
+    HttpClient            activation;
     CloudControllerState  state;
     int                   incarnation = 0;
     int                   numChecks = 0;

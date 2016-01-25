@@ -46,7 +46,7 @@ void CloudController::mqttPublishIdAndVersion()
 
 void CloudController::startMqttClient()
 {
-    String token = ""; //TODO AppSettings.getDeviceToken();
+    String token = AppSettings.cloudDeviceToken;
 
     if (token.equals(""))
         return;
@@ -261,7 +261,8 @@ void CloudController::oneSecondTimerHandler()
     switch (state)
     {
         case CloudControllerStateInit:
-            Debug.println("Init state not expected in timer handler");
+            state = CloudControllerStateWaitingWifi;
+            Debug.println("INIT");
             break;
 
         case CloudControllerStateWaitingWifi:
@@ -298,22 +299,19 @@ void CloudController::oneSecondTimerHandler()
 
 void CloudController::activate()
 {
-#if 0
-    if (!AppSettings.getAcctLogin().equals("") &&
-        !AppSettings.getAcctPwd().equals(""))
+    if (!AppSettings.cloudLogin.equals("") &&
+        !AppSettings.cloudPassword.equals(""))
     {
         String body = "device="+String(system_get_chip_id(), HEX)+
-                      "&login="+AppSettings.getAcctLogin()+
-                      "&password="+AppSettings.getAcctPwd();
+                      "&login="+AppSettings.cloudLogin+
+                      "&password="+AppSettings.cloudPassword;
         activation.setPostBody(body.c_str());
         activation.downloadString(ACTIVATION_URL, HttpClientCompletedDelegate(&CloudController::onActivateDataSent, this));
     }
-#endif
 }
 
 void CloudController::onActivateDataSent(HttpClient& client, bool successful)
 {
-#if 0
     String response = client.getResponseString();
     Debug.printf("Server response: '%s'\n", response.c_str());
     if (successful && response.length() > 0)
@@ -328,17 +326,16 @@ void CloudController::onActivateDataSent(HttpClient& client, bool successful)
         if (status.equals("success"))
         {
             String token = (const char *)root["token"];
-            if (token != AppSettings.getDeviceToken())
+            if (token != AppSettings.cloudDeviceToken)
             {
-                AppSettings.setDeviceToken(token);
+                AppSettings.cloudDeviceToken = token;
                 AppSettings.save();
             }
-            state = ThingStateActivated;            
+            state = CloudControllerStateActivated;            
         }
 
         delete[] jsonString;        
     }
-#endif
 }
 
 CloudController cloudController;
