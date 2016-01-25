@@ -297,15 +297,20 @@ uint64_t rfBaseAddress;
 // Will be called when system initialization was completed
 void startServers()
 {
+    char id[16];
+
     // Start AP for configuration
     WifiAccessPoint.enable(true);
+    sprintf(id, "%x", system_get_chip_id());
+
     if (AppSettings.apPassword.equals(""))
     {
-        WifiAccessPoint.config("MySensors gateway", "", AUTH_OPEN);
+        WifiAccessPoint.config((String)"MySensors gateway " + id,
+                               "", AUTH_OPEN);
     }
     else
     {
-        WifiAccessPoint.config("MySensors gateway",
+        WifiAccessPoint.config((String)"MySensors gateway " + id,
                                AppSettings.apPassword, AUTH_WPA_WPA2_PSK);
     }
 
