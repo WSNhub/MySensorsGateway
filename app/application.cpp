@@ -113,20 +113,24 @@ void wifiConnect()
 }
 
 Timer softApSetPasswordTimer;
-void softApSetPassword()
+void softApEnable()
 {
+    char id[16];
+
     WifiAccessPoint.enable(false);
     WifiAccessPoint.enable(true);
 
+    // Start AP for configuration
+    sprintf(id, "%x", system_get_chip_id());
     if (AppSettings.apPassword.equals(""))
     {
-	WifiAccessPoint.config("MySensors gateway", "", AUTH_OPEN);
+        WifiAccessPoint.config((String)"MySensors gateway " + id,
+                               "", AUTH_OPEN);
     }
     else
     {
-	WifiAccessPoint.config("MySensors gateway",
-			       AppSettings.apPassword,
-			       AUTH_WPA_WPA2_PSK);
+        WifiAccessPoint.config((String)"MySensors gateway " + id,
+                               AppSettings.apPassword, AUTH_WPA_WPA2_PSK);
     }
 }
 
@@ -138,7 +142,7 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
         AppSettings.apPassword = request.getPostParameter("apPassword");
         if (!AppSettings.apPassword.equals(oldApPass))
         {
-            softApSetPasswordTimer.initializeMs(10, softApSetPassword).startOnce();
+            softApSetPasswordTimer.initializeMs(10, softApEnable).startOnce();
         }
 
         AppSettings.ssid = request.getPostParameter("ssid");
@@ -297,22 +301,8 @@ uint64_t rfBaseAddress;
 // Will be called when system initialization was completed
 void startServers()
 {
-    char id[16];
-
     // Start AP for configuration
-    WifiAccessPoint.enable(true);
-    sprintf(id, "%x", system_get_chip_id());
-
-    if (AppSettings.apPassword.equals(""))
-    {
-        WifiAccessPoint.config((String)"MySensors gateway " + id,
-                               "", AUTH_OPEN);
-    }
-    else
-    {
-        WifiAccessPoint.config((String)"MySensors gateway " + id,
-                               AppSettings.apPassword, AUTH_WPA_WPA2_PSK);
-    }
+    softApEnable();
 
     wasConnected = FALSE;
     connectionCheckTimer.initializeMs(1000,
