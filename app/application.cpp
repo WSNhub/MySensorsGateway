@@ -508,6 +508,11 @@ void processBaseAddressCommand(String commandLine, CommandOutput* out)
     System.restart();
 }
 
+void processShowConfigCommand(String commandLine, CommandOutput* out)
+{
+    out->println(fileGetContent(".settings.conf"));
+}
+
 extern void otaEnable();
 
 void init()
@@ -575,6 +580,10 @@ void init()
                                                    "Enable/disable debugging",
                                                    "System",
                                                    processDebugCommand));
+    commandHandler.registerCommand(CommandDelegate("showConfig",
+                                                   "Show the current configuration",
+                                                   "System",
+                                                   processShowConfigCommand));
     commandHandler.registerCommand(CommandDelegate("base-address",
                                                    "Set the base address to use",
                                                    "MySensors",
