@@ -6,3 +6,4 @@ app/mutex.c
 app/globals.c
 *~
 *.swp
+spiffs/\.*
