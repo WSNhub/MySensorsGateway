@@ -308,6 +308,10 @@ void CloudController::activate()
         activation.setPostBody(body.c_str());
         activation.downloadString(ACTIVATION_URL, HttpClientCompletedDelegate(&CloudController::onActivateDataSent, this));
     }
+    else
+    {
+        Debug.println("Activation credentials missing...");
+    }
 }
 
 void CloudController::onActivateDataSent(HttpClient& client, bool successful)
