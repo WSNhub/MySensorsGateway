@@ -117,6 +117,7 @@ void incomingMessage(const MyMessage &message)
 }
 
 Timer reconnectTimer;
+
 void wifiConnect()
 {
     WifiStation.enable(false);
@@ -530,6 +531,7 @@ void processShowConfigCommand(String commandLine, CommandOutput* out)
     out->println(fileGetContent(".settings.conf"));
 }
 
+
 extern void otaEnable();
 
 void init()
@@ -643,6 +645,7 @@ void init()
         System.setCpuFrequency(eCF_160MHz);
     else
         System.setCpuFrequency(eCF_80MHz);
+	
 
     // Run WEB server on system ready
     System.onReady(startServers);

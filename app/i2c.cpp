@@ -1,15 +1,51 @@
 #include <user_config.h>
 #include <SmingCore/SmingCore.h>
 #include <SmingCore/Debug.h>
+#include <Libraries/Adafruit_SSD1306/Adafruit_SSD1306.h>
+
 #include <AppSettings.h>
 #include "i2c.h"
 #include "Sodaq_DS3231.h"
-
 //year, month, date, hour, min, sec and week-day(starts from 0 and goes to 6)
 //writing any non-existent time-data may interfere with normal operation of the RTC.
 //Take care of week-day also.
 static char weekDay[][4] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 MyDateTime dt(2016, 1, 22, 17, 34, 0, 6);
+Adafruit_SSD1306 display(-1); // reset Pin required but later ignored if set to False
+
+void MyI2C::showOLED()
+{
+	display.clearDisplay();
+	// text display tests
+	display.setTextSize(1);
+	display.setTextColor(WHITE);
+	display.setCursor(0,0);
+        display.println("MySensors gateway");
+	display.setTextSize(1);
+	display.setCursor(0,9);
+        if (WifiStation.isConnected())
+        {
+          display.println(WifiStation.getIP().toString());
+        } 
+        else
+        {
+	  display.setTextColor(BLACK, WHITE); // 'inverted' text
+          display.println("connecting ...");
+	  display.setTextColor(WHITE);
+        }
+	display.setCursor(0,18);
+        display.println(SystemClock.getSystemTimeString().c_str());
+	display.setCursor(0,27);
+        display.print("HEAP :");
+	display.setTextColor(BLACK, WHITE); // 'inverted' text
+        display.println(system_get_free_heap_size());
+
+	display.setTextColor(WHITE);
+
+	//display.setTextColor(BLACK, WHITE); // 'inverted' text
+	//display.setTextSize(3);
+	display.display();
+}
 
 
 void MyI2C::i2cCheckDigitalState()
@@ -71,6 +107,7 @@ void MyI2C::begin()
     bool analogFound = FALSE;
     bool lcdFound = FALSE;
     bool RTCFound = FALSE;
+    bool OLEDFound = FALSE;
     byte error, address;
 
     Wire.pins(4, 5); // needed to swap : SCL, SDA  : will fix PCB !!!!
@@ -163,7 +200,7 @@ void MyI2C::begin()
                 Wire.endTransmission(); // end tranmission
                 pcf8591Outputs[address - 0x48] = 0;
             }
-            else if (/*address == 0x57 && */ address == 0x68)
+            else if (address == 0x68)
             {
                 struct tm   time,stime;
                 bool  flag;
@@ -181,10 +218,24 @@ void MyI2C::begin()
                 Debug.printf("minute %d\n",now.minute());
                 Debug.printf("second %d\n",now.second());
                 Debug.printf("day of week %s\n",weekDay[now.DdayOfWeek()]);
-
                 rtc.convertTemperature();             //convert current temperature into registers
                 Debug.printf(" %02f deg C\n", rtc.getTemperature()); //read registers and display the temperature
- 
+            } 
+            else if (address == 0x57)
+            {
+                Debug.printf("Found ATtiny %x\n", address);
+            }
+            else if (address == 0x3c)
+            {
+                OLEDFound = TRUE;
+                Debug.printf("Found OLED %x\n", address);
+                // by default, we'll generate the high voltage from the 3.3v line internally! (neat!)`
+                // initialize with the I2C addr 0x3D (for the 128x64)
+                // bool:reset set to TRUE or FALSE depending on you display
+                display.begin(SSD1306_SWITCHCAPVCC, SSD1306_I2C_ADDRESS, FALSE);
+                // display.begin(SSD1306_SWITCHCAPVCC);
+                display.display();
+
             }
             else
             {
@@ -206,6 +257,11 @@ void MyI2C::begin()
     if (RTCFound)
     {
         i2cCheckRTCTimer.initializeMs(10000, TimerDelegate(&MyI2C::i2cCheckRTCState, this)).start(true);
+    }
+
+    if (OLEDFound)
+    {
+        i2cOLEDTimer.initializeMs(1000, TimerDelegate(&MyI2C::showOLED, this)).start(true);
     }
 
 
