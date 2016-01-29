@@ -4,6 +4,7 @@
 #include <AppSettings.h>
 #include <globals.h>
 #include <i2c.h>
+#include <MyMutex.h>
 #include "Libraries/MySensors/MyGateway.h"
 #include "Libraries/MySensors/MyTransport.h"
 #include "Libraries/MySensors/MyTransportNRF24.h"
@@ -56,34 +57,6 @@ char convBuf[MAX_PAYLOAD*2+1];
 #ifndef DISABLE_SPIFFS
 MyInterpreter interpreter;
 #endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "mutex.h"
-#ifdef __cplusplus
-}
-#endif
-
-class MyMutex
-{
-  public:
-    MyMutex()
-    {
-        CreateMutux(&mutex);
-    };
-    void Lock()
-    {
-        while (!GetMutex(&mutex))
-            delay(0);
-    };
-    void Unlock()
-    {
-        ReleaseMutex(&mutex);
-    };
-  private:
-    mutex_t mutex;
-};
 
 MyMutex interpreterMutex;
 
