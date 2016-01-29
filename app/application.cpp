@@ -91,7 +91,6 @@ void incomingMessage(const MyMessage &message)
 }
 
 Timer reconnectTimer;
-
 void wifiConnect()
 {
     WifiStation.enable(false);

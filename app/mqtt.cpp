@@ -11,6 +11,7 @@ void onMessageReceived(String topic, String message);
 // MQTT client
 MqttClient *mqtt = NULL;
 char clientId[33];
+bool MqttConfigured = FALSE;
 
 
 void ICACHE_FLASH_ATTR mqttPublishMessage(String topic, String message)
@@ -102,6 +103,7 @@ void ICACHE_FLASH_ATTR startMqttClient()
         mqtt->connect(clientId, AppSettings.mqttUser, AppSettings.mqttPass);
         mqtt->subscribe("#");
         mqttPublishVersion();
+        MqttConfigured = TRUE;
     }
 }
 
@@ -116,6 +118,8 @@ void ICACHE_FLASH_ATTR checkMqttClient()
 void onMqttConfig(HttpRequest &request, HttpResponse &response)
 {
     AppSettings.load();
+    MqttConfigured = FALSE;
+
     if (request.getRequestMethod() == RequestMethod::POST)
     {
         AppSettings.mqttUser = request.getPostParameter("user");
@@ -147,3 +151,5 @@ void ICACHE_FLASH_ATTR mqttRegisterHttpHandlers(HttpServer &server)
     server.addPath("/mqttconfig", onMqttConfig);
 }
 
+bool isMqttConfigured(void) {return(MqttConfigured);}
+String MqttServer(void) {return(AppSettings.mqttServer);}
