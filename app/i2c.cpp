@@ -163,7 +163,7 @@ void MyI2C::begin()
                 Wire.endTransmission(); // end tranmission
                 pcf8591Outputs[address - 0x48] = 0;
             }
-            else if (/*address == 0x57 && */ address == 0x68)
+            else if (address == 0x68)
             {
                 struct tm   time,stime;
                 bool  flag;
@@ -181,10 +181,16 @@ void MyI2C::begin()
                 Debug.printf("minute %d\n",now.minute());
                 Debug.printf("second %d\n",now.second());
                 Debug.printf("day of week %s\n",weekDay[now.DdayOfWeek()]);
-
                 rtc.convertTemperature();             //convert current temperature into registers
                 Debug.printf(" %02f deg C\n", rtc.getTemperature()); //read registers and display the temperature
- 
+            } 
+            else if (address == 0x57)
+            {
+                Debug.printf("Found ATtiny %x\n", address);
+            }
+            else if (address == 0x3c)
+            {
+                Debug.printf("Found OLED %x\n", address);
             }
             else
             {

@@ -5,6 +5,8 @@
 #include <globals.h>
 #include <mqtt.h>
 #include <i2c.h>
+#include <Libraries/Adafruit_SSD1306/Adafruit_SSD1306.h>
+
 #include "Libraries/MySensors/MyGateway.h"
 #include "Libraries/MySensors/MyTransport.h"
 #include "Libraries/MySensors/MyTransportNRF24.h"
@@ -23,6 +25,8 @@ TelnetServer telnet;
 static boolean first_time = TRUE;
 
 char convBuf[MAX_PAYLOAD*2+1];
+
+Adafruit_SSD1306 display(-1); // reset Pin required but later ignored if set to False
 
 #ifndef DISABLE_SPIFFS
 MyInterpreter interpreter;
@@ -91,6 +95,9 @@ void incomingMessage(const MyMessage &message)
 }
 
 Timer reconnectTimer;
+Timer OLEDTimer;
+
+
 void wifiConnect()
 {
     WifiStation.enable(false);
@@ -503,6 +510,41 @@ void processShowConfigCommand(String commandLine, CommandOutput* out)
     out->println(fileGetContent(".settings.conf"));
 }
 
+void showOLED()
+{
+	display.clearDisplay();
+	// text display tests
+	display.setTextSize(1);
+	display.setTextColor(WHITE);
+	display.setCursor(0,0);
+        display.println("MySensors gateway");
+	display.setTextSize(1);
+	display.setCursor(0,9);
+        if (WifiStation.isConnected())
+        {
+          display.println(WifiStation.getIP().toString());
+        } 
+        else
+        {
+	  display.setTextColor(BLACK, WHITE); // 'inverted' text
+          display.println("connecting ...");
+	  display.setTextColor(WHITE);
+        }
+	display.setCursor(0,18);
+        display.println(SystemClock.getSystemTimeString().c_str());
+	display.setCursor(0,27);
+        display.print("HEAP :");
+	display.setTextColor(BLACK, WHITE); // 'inverted' text
+        display.println(system_get_free_heap_size());
+
+	display.setTextColor(WHITE);
+
+	//display.setTextColor(BLACK, WHITE); // 'inverted' text
+	//display.setTextSize(3);
+	display.display();
+}
+
+
 extern void otaEnable();
 
 void init()
@@ -623,6 +665,14 @@ void init()
         System.setCpuFrequency(eCF_160MHz);
     else
         System.setCpuFrequency(eCF_80MHz);
+	
+    // by default, we'll generate the high voltage from the 3.3v line internally! (neat!)`
+    // initialize with the I2C addr 0x3D (for the 128x64)
+    // bool:reset set to TRUE or FALSE depending on you display
+    display.begin(SSD1306_SWITCHCAPVCC, SSD1306_I2C_ADDRESS, FALSE);
+    // display.begin(SSD1306_SWITCHCAPVCC);
+    display.display();
+    OLEDTimer.initializeMs(1000, showOLED).start();
 
     // Run WEB server on system ready
     System.onReady(startServers);
