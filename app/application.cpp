@@ -337,15 +337,28 @@ void onActivateDataSent(HttpClient& client, bool successful)
     Debug.println("Server response: '" + response + "'");
 }
 
+void ntpTimeResultHandler(NtpClient& client, time_t ntpTime)
+{
+    SystemClock.setTime(ntpTime, eTZ_UTC);
+    Debug.print("NTP Time_t = ");
+    Debug.print(ntpTime);
+    Debug.print(" Time = ");
+    Debug.println(SystemClock.getSystemTimeString());
+    I2C_dev.setRtcTime(ntpTime);
+}
+
+NtpClient ntpClient(NTP_DEFAULT_SERVER, 0, ntpTimeResultHandler);
+
 // Will be called when WiFi station was connected to AP
 void connectOk()
 {
     Debug.println("--> I'm CONNECTED");
     if (first_time) 
     {
-      first_time = FALSE;
-      // start getting sensor data
-      gw.begin(incomingMessage, NULL, rfBaseAddress);
+        first_time = FALSE;
+        // start getting sensor data
+        gw.begin(incomingMessage, NULL, rfBaseAddress);
+        ntpClient.requestTime();
     }
     if (WifiStation.getIP().isNull())
     {
@@ -503,6 +516,10 @@ void processShowConfigCommand(String commandLine, CommandOutput* out)
     out->println(fileGetContent(".settings.conf"));
 }
 
+void i2cChangeHandler(String object, String value)
+{
+    controller.notifyChange(object, value);
+}
 
 extern void otaEnable();
 
@@ -575,7 +592,7 @@ void init()
 
     AppSettings.load();
 
-    I2C_dev.begin();
+    I2C_dev.begin(i2cChangeHandler);
 
     WifiStation.enable(true);
     // why not ?

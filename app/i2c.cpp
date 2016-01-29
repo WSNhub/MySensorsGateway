@@ -16,6 +16,8 @@ Adafruit_SSD1306 display(-1); // reset Pin required but later ignored if set to 
 
 void MyI2C::showOLED()
 {
+	mutex.Lock();
+
 	display.clearDisplay();
 	// text display tests
 	display.setTextSize(1);
@@ -60,13 +62,83 @@ void MyI2C::showOLED()
 	//display.setTextColor(BLACK, WHITE); // 'inverted' text
 	//display.setTextSize(3);
 	display.display();
+
+	mutex.Unlock();
 }
 
+void MyI2C::i2cPublishMcpOutputs(byte address, bool forcePublish)
+{
+    uint8_t outputs;
+
+    /* read the actual value */
+    Wire.beginTransmission(address);
+    Wire.write(0x12); //port A
+    Wire.endTransmission();
+    Wire.requestFrom(address, 1);
+    outputs=Wire.read();
+
+    /* apply the inversions and publish */
+    uint8_t outputInvert = 0; //TODO AppSettings.getMcpOutputInvert(address - 0x20);
+    for (int j = 0; j < 8; j++)
+    {
+        if (outputInvert & (1 << j))
+        {
+            if (outputs & (1 << j))
+            {
+                //The bit is set, clear it
+                outputs &= ~(1 << j);
+            }
+            else
+            {
+                //The bit is not set, set it
+                outputs |= (1 << j);
+            }
+        }
+
+        if (forcePublish ||
+            (mcp23017Outputs[address - 0x20] & (1 << j)) != (outputs & (1 << j)))
+        {
+            if (changeDlg)
+                changeDlg(String("output-d") +
+                          String((j + 1) + (8 * (address - 0x20))),
+                          outputs & (1 << j) ? "on" : "off");
+        }
+    }
+
+    mcp23017Outputs[address - 0x20] = outputs;
+}
+
+void MyI2C::i2cPublishMcpInputs(byte address, bool forcePublish)
+{
+    uint8_t inputs;
+
+    /* read the actual value */
+    Wire.beginTransmission(address);
+    Wire.write(0x13); //port B
+    Wire.endTransmission();
+    Wire.requestFrom(address, 1);
+    inputs=Wire.read();
+
+    for (int j = 0; j < 8; j++)
+    {
+        if (forcePublish ||
+            (mcp23017Inputs[address - 0x20] & (1 << j)) != (inputs & (1 << j)))
+        {
+            if (changeDlg)
+                changeDlg(String("input-d") +
+                          String((j + 1) + (8 * (address - 0x20))),
+                          inputs & (1 << j) ? "on" : "off");
+        }
+    }
+
+    mcp23017Inputs[address - 0x20] = inputs;
+}
 
 void MyI2C::i2cCheckDigitalState()
 {
-/*    #define FORCE_PUBLISH_DIG_IVL 600
-    static int forcePublish = FORCE_PUBLISH_DIG_IVL; //every 60 seconds
+    static int forcePublish = FORCE_PUBLISH_DIG_IVL;
+
+    mutex.Lock();
 
     forcePublish--;
     for (int i = 0; i < 7; i++)
@@ -80,13 +152,59 @@ void MyI2C::i2cCheckDigitalState()
     }
 
     if (forcePublish == 0)
-        forcePublish = FORCE_PUBLISH_DIG_IVL;*/
+        forcePublish = FORCE_PUBLISH_DIG_IVL;
+
+    mutex.Unlock();
+}
+
+void MyI2C::i2cPublishPcfOutputs(byte address, bool forcePublish)
+{
+    /* The value can not be read back */
+    /*
+    if (forcePublish)
+    {
+        if (changeDlg)
+                changeDlg(String("outputs/a") +
+                          String(1 + (address - 0x48)),
+                          String(pcf8591Outputs[address - 0x48]));
+    }
+    */
+}
+
+void MyI2C::i2cPublishPcfInputs(byte address, bool forcePublish)
+{
+    byte value[4];
+
+    /* read the actual values */
+    Wire.beginTransmission(address); // wake up PCF8591
+    Wire.write(0x04); // control byte - read ADC0 then auto-increment
+    Wire.endTransmission(); // end tranmission
+    Wire.requestFrom(address, 5);
+    value[0]=Wire.read();
+    value[0]=Wire.read();
+    value[1]=Wire.read();
+    value[2]=Wire.read();
+    value[3]=Wire.read();
+
+    for (int j = 0; j < 4; j++)
+    {
+        if (forcePublish ||
+            pcf8591Inputs[j + (4 * (address - 0x48))] != value[j])
+        {
+            if (changeDlg)
+                changeDlg(String("input-a") +
+                          String((j + 1) + (4 * (address - 0x48))),
+                          String(value[j]));
+        }
+        pcf8591Inputs[j + (4 * (address - 0x48))] = value[j];
+    }
 }
 
 void MyI2C::i2cCheckAnalogState()
 {
-/*    #define FORCE_PUBLISH_ANALOG_IVL 60
-    static int forcePublish = FORCE_PUBLISH_ANALOG_IVL; //every 60 seconds
+    static int forcePublish = FORCE_PUBLISH_ANALOG_IVL;
+
+    mutex.Lock();
 
     forcePublish--;
     for (int i = 0; i < 8; i++)
@@ -100,30 +218,35 @@ void MyI2C::i2cCheckAnalogState()
     }
 
     if (forcePublish == 0)
-        forcePublish = FORCE_PUBLISH_ANALOG_IVL;*/
+        forcePublish = FORCE_PUBLISH_ANALOG_IVL;
+
+    mutex.Unlock();
 }
 
 void MyI2C::i2cCheckRTCState()
 {
-  MyDateTime now = rtc.now(); //get the current date-time from RTC
-  Debug.printf("From RTC\n");
-  Debug.printf("%d-%d-%d\n",now.date(),now.month(),now.year());
-  Debug.printf("%d:%d:%d\n",now.hour(),now.minute(),now.second());
-  Debug.printf("day of week : %s\n",weekDay[now.DdayOfWeek()]);
+    mutex.Lock();
 
-  rtc.convertTemperature();             //convert current temperature into registers
-  Debug.printf("Plug temperature %02f deg C\n", rtc.getTemperature()); //read registers and display the temperature
+    //MyDateTime now = rtc.now(); //get the current date-time from RTC
+    //Debug.printf("From RTC\n");
+    //Debug.printf("%d-%d-%d\n",now.date(),now.month(),now.year());
+    //Debug.printf("%d:%d:%d\n",now.hour(),now.minute(),now.second());
+    //Debug.printf("day of week : %s\n",weekDay[now.DdayOfWeek()]);
+    SystemClock.setTime(rtc.now().getEpoch(), eTZ_UTC);
+
+    rtc.convertTemperature();             //convert current temperature into registers
+    Debug.printf("Plug temperature %02f deg C\n", rtc.getTemperature()); //read registers and display the temperature
+    if (changeDlg)
+        changeDlg("RTC-temperature", String(rtc.getTemperature()));
+
+    mutex.Unlock();
 }
 
-
-void MyI2C::begin()
+void MyI2C::begin(I2CChangeDelegate dlg)
 {
-    bool digitalFound = FALSE;
-    bool analogFound = FALSE;
-    bool lcdFound = FALSE;
-    bool RTCFound = FALSE;
-    bool OLEDFound = FALSE;
     byte error, address;
+
+    changeDlg = dlg;
 
     Wire.pins(4, 5); // needed to swap : SCL, SDA  : will fix PCB !!!!
     Wire.begin();
@@ -223,16 +346,21 @@ void MyI2C::begin()
                 RTCFound = TRUE;
                 Debug.printf("Found RTC DS3213 at address %x\n", address);
                 rtc.begin(address);
+                SystemClock.setTime(rtc.now().getEpoch(), eTZ_UTC);
+                Debug.print(" Time = ");
+                Debug.println(SystemClock.getSystemTimeString());
+     
                 //rtc.setMyDateTime(dt); //one time Adjust date-time as defined 'dt' above 
-                MyDateTime now = rtc.now(); //get the current date-time from RTC
-                Debug.printf("From RTC\n");
-                Debug.printf("year %d\n",now.year());
-                Debug.printf("month %d\n",now.month());
-                Debug.printf("day %d\n",now.date());
-                Debug.printf("hour %d\n",now.hour());
-                Debug.printf("minute %d\n",now.minute());
-                Debug.printf("second %d\n",now.second());
-                Debug.printf("day of week %s\n",weekDay[now.DdayOfWeek()]);
+                //MyDateTime now = rtc.now(); //get the current date-time from RTC
+                //Debug.printf("From RTC\n");
+                //Debug.printf("year %d\n",now.year());
+                //Debug.printf("month %d\n",now.month());
+                //Debug.printf("day %d\n",now.date());
+                //Debug.printf("hour %d\n",now.hour());
+                //Debug.printf("minute %d\n",now.minute());
+                //Debug.printf("second %d\n",now.second());
+                //Debug.printf("day of week %s\n",weekDay[now.DdayOfWeek()]);
+
                 rtc.convertTemperature();             //convert current temperature into registers
                 Debug.printf(" %02f deg C\n", rtc.getTemperature()); //read registers and display the temperature
             } 
@@ -270,14 +398,13 @@ void MyI2C::begin()
 
     if (RTCFound)
     {
-        i2cCheckRTCTimer.initializeMs(10000, TimerDelegate(&MyI2C::i2cCheckRTCState, this)).start(true);
+        i2cCheckRTCTimer.initializeMs(60000, TimerDelegate(&MyI2C::i2cCheckRTCState, this)).start(true);
     }
 
     if (OLEDFound)
     {
         i2cOLEDTimer.initializeMs(1000, TimerDelegate(&MyI2C::showOLED, this)).start(true);
     }
-
 
     if (!digitalFound && !analogFound && !lcdFound && !RTCFound)
     {
@@ -286,3 +413,15 @@ void MyI2C::begin()
  
 }
 
+void MyI2C::setRtcTime(uint32_t ts)
+{
+    if (RTCFound)
+        rtc.setEpoch(ts);
+}
+
+uint32_t MyI2C::getRtcTime()
+{
+    if (RTCFound)
+        return rtc.now().getEpoch();
+    return 0;
+}

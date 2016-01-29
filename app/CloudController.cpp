@@ -127,8 +127,7 @@ void CloudController::onMessageReceived(String topic, String message)
 {
     //if (!topic.equals(mqtt_thing_topic))
     {
-        Debug.printf("Unrecognized topic: %s message: %s",
-               topic.c_str(), message.c_str());
+        Debug.printf("Unrecognized message: %s", message.c_str());
         return;
     }
 
