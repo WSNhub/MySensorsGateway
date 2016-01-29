@@ -5,6 +5,7 @@
 
 #include <AppSettings.h>
 #include "i2c.h"
+#include "mqtt.h"
 #include "Sodaq_DS3231.h"
 //year, month, date, hour, min, sec and week-day(starts from 0 and goes to 6)
 //writing any non-existent time-data may interfere with normal operation of the RTC.
@@ -25,6 +26,7 @@ void MyI2C::showOLED()
 	display.setCursor(0,9);
         if (WifiStation.isConnected())
         {
+          display.print("AP  :");
           display.println(WifiStation.getIP().toString());
         } 
         else
@@ -34,8 +36,21 @@ void MyI2C::showOLED()
 	  display.setTextColor(WHITE);
         }
 	display.setCursor(0,18);
-        display.println(SystemClock.getSystemTimeString().c_str());
+        if (isMqttConfigured())
+        {
+          display.print("MQTT:");
+          display.println(MqttServer());
+        }
+        else
+        {
+	  display.setTextColor(BLACK, WHITE); // 'inverted' text
+          display.println("configure MQTT !");
+	  display.setTextColor(WHITE);
+        }
+
 	display.setCursor(0,27);
+        display.println(SystemClock.getSystemTimeString().c_str());
+	display.setCursor(0,36);
         display.print("HEAP :");
 	display.setTextColor(BLACK, WHITE); // 'inverted' text
         display.println(system_get_free_heap_size());
@@ -235,7 +250,6 @@ void MyI2C::begin()
                 display.begin(SSD1306_SWITCHCAPVCC, SSD1306_I2C_ADDRESS, FALSE);
                 // display.begin(SSD1306_SWITCHCAPVCC);
                 display.display();
-
             }
             else
             {
