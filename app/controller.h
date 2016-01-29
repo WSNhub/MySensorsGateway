@@ -7,10 +7,10 @@
 class Controller
 {
   public:
-    virtual void begin() {};
-    virtual void notifyChange(String object, String value) {};
-    virtual void registerHttpHandlers(HttpServer &server) {};
-    virtual void registerCommandHandlers() {};
+    virtual void begin() = 0;
+    virtual void notifyChange(String object, String value) = 0;
+    virtual void registerHttpHandlers(HttpServer &server) = 0;
+    virtual void registerCommandHandlers() = 0;
 };
 
 #endif //INCLUDE_CONTROLLER_H_

@@ -31,4 +31,3 @@ void OpenHabMqttController::checkConnection()
         checkMqttClient();
 }
 
-OpenHabMqttController openHabMqttController;

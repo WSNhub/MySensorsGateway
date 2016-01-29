@@ -4,19 +4,48 @@
 #include <AppSettings.h>
 #include <globals.h>
 #include <i2c.h>
-#include <CloudController.h>
 #include "Libraries/MySensors/MyGateway.h"
 #include "Libraries/MySensors/MyTransport.h"
 #include "Libraries/MySensors/MyTransportNRF24.h"
 #include "Libraries/MySensors/MyHwESP8266.h"
 #include "Libraries/MyInterpreter/MyInterpreter.h"
 
+/*
+ * Here the controller type is decided. By default the openHab MQTT
+ * controller is expected. This should normally not change, the cloud
+ * controller requires a subscription.
+ */
+#define CONTROLLER_TYPE_OPENHAB 1
+#define CONTROLLER_TYPE_CLOUD   2
+#ifndef CONTROLLER_TYPE
+  #define CONTROLLER_TYPE CONTROLLER_TYPE_OPENHAB
+#endif
+#if CONTROLLER_TYPE == CONTROLLER_TYPE_OPENHAB
+  #include <openHabMqttController.h>
+  OpenHabMqttController controller;
+#elif CONTROLLER_TYPE == CONTROLLER_TYPE_CLOUD
+  #include <CloudController.h>
+  CloudController controller;  
+#else
+  #error Wrong CONTROLLER_TYPE value
+#endif
+
+/*
+ * At this point the transport layer for MySensors is prepared.
+ * It is possible to change ping here but it is strongly disadvised.
+ */
 #define RADIO_CE_PIN        2   // radio chip enable
 #define RADIO_SPI_SS_PIN    15  // radio SPI serial select
 MyTransportNRF24 transport(RADIO_CE_PIN, RADIO_SPI_SS_PIN, RF24_PA_LEVEL_GW);
 MyHwESP8266 hw;
 MyGateway gw(transport, hw);
+
+/*
+ * The I2C implementation takes care of initializing things like I/O
+ * expanders, the RTC chip and the OLED.
+ */
 MyI2C I2C_dev;
+
 
 HttpServer server;
 TelnetServer telnet;
@@ -27,8 +56,6 @@ char convBuf[MAX_PAYLOAD*2+1];
 #ifndef DISABLE_SPIFFS
 MyInterpreter interpreter;
 #endif
-
-CloudController *controller = &cloudController;
 
 #ifdef __cplusplus
 extern "C" {
@@ -74,7 +101,7 @@ void incomingMessage(const MyMessage &message)
         String topic = message.sender + String("/") +
                        message.sensor + String("/") +
                        "V_" + type;
-        controller->notifyChange(topic, message.getString(convBuf));
+        controller.notifyChange(topic, message.getString(convBuf));
     }
 
 #ifndef DISABLE_SPIFFS
@@ -247,7 +274,7 @@ void startWebServer()
     server.addPath("/rules.html", onRules);
 
     gw.registerHttpHandlers(server);
-    controller->registerHttpHandlers(server);
+    controller.registerHttpHandlers(server);
     server.setDefaultHandler(onFile);
 }
 
@@ -326,7 +353,7 @@ void startServers()
         rfBaseAddress = RF24_BASE_RADIO_ID;
     }
 
-    controller->begin();
+    controller.begin();
 }
 
 HttpClient portalLogin;

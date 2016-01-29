@@ -45,6 +45,4 @@ class CloudController : public Controller
     char                  clientId[33];
 };
 
-extern CloudController cloudController;
-
 #endif //INCLUDE_CLOUD_CONTROLLER_H_

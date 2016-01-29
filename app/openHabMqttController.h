@@ -21,6 +21,4 @@ class OpenHabMqttController : public Controller
     Timer checkTimer;
 };
 
-extern OpenHabMqttController openHabMqttController;
-
 #endif //INCLUDE_OPENHAB_MQTT_CONTROLLER_H_

@@ -342,4 +342,3 @@ void CloudController::onActivateDataSent(HttpClient& client, bool successful)
     }
 }
 
-CloudController cloudController;
