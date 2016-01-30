@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
         // length measurement of mutex lock
-        #define MEASURE_LOCK
+        //#define MEASURE_LOCK
         #ifdef MEASURE_LOCK
         #define SCOPE_PIN 16 // GPIO
         #endif

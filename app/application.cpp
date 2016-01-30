@@ -634,8 +634,10 @@ void init()
         System.setCpuFrequency(eCF_160MHz);
     else
         System.setCpuFrequency(eCF_80MHz);
- 
+
+   #ifdef MEASURE_LOCK
    pinMode(SCOPE_PIN, OUTPUT);
+   #endif
 	
     // Run WEB server on system ready
     System.onReady(startServers);
