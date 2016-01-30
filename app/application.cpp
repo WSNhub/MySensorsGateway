@@ -634,8 +634,9 @@ void init()
         System.setCpuFrequency(eCF_160MHz);
     else
         System.setCpuFrequency(eCF_80MHz);
+ 
+   pinMode(SCOPE_PIN, OUTPUT);
 	
-
     // Run WEB server on system ready
     System.onReady(startServers);
 }

@@ -14,6 +14,7 @@ extern "C" {
 }
 #endif
 
+
 class MyMutex
 {
   public:
@@ -21,13 +22,21 @@ class MyMutex
     {
         CreateMutux(&mutex);
     };
+
     void Lock()
     {
+        #ifdef MEASURE_LOCK
+        digitalWrite(SCOPE_PIN, true);
+        #endif
         while (!GetMutex(&mutex))
             delay(0);
     };
+
     void Unlock()
     {
+        #ifdef MEASURE_LOCK
+        digitalWrite(SCOPE_PIN, false);
+        #endif
         ReleaseMutex(&mutex);
     };
   private:

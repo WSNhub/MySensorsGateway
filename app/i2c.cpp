@@ -399,7 +399,7 @@ void MyI2C::begin(I2CChangeDelegate dlg)
 
     if (RTCFound)
     {
-        i2cCheckRTCTimer.initializeMs(60000, TimerDelegate(&MyI2C::i2cCheckRTCState, this)).start(true);
+        i2cCheckRTCTimer.initializeMs(1000, TimerDelegate(&MyI2C::i2cCheckRTCState, this)).start(true);
     }
 
     if (OLEDFound)
