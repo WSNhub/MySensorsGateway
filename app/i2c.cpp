@@ -346,6 +346,7 @@ void MyI2C::begin(I2CChangeDelegate dlg)
                 RTCFound = TRUE;
                 Debug.printf("Found RTC DS3213 at address %x\n", address);
                 rtc.begin(address);
+                SystemClock.setTimeZone(1); //TODO make this configurable!
                 SystemClock.setTime(rtc.now().getEpoch(), eTZ_UTC);
                 Debug.print(" Time = ");
                 Debug.println(SystemClock.getSystemTimeString());
