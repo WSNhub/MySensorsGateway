@@ -12,6 +12,7 @@
 #include <SmingCore/Clock.h>
 #include <Wiring/WiringFrameworkIncludes.h>
 #include "Sodaq_DS3231.h"
+#include "i2c.h"
 
 #define EPOCH_TIME_OFF 946684800  // This is 2000-jan-01 00:00:00 in epoch time
 #define SECONDS_PER_DAY 86400L
@@ -145,46 +146,6 @@ uint32_t MyDateTime::getEpoch() const
     return get() + EPOCH_TIME_OFF;
 }
 
-/*
- * Format an integer as %0*d
- *
- * Arduino formatting sucks.
- */
-#if 0
-static void add0Nd(String &str, uint16_t val, size_t width)
-{
-    if (width >= 5 && val < 1000) {
-	str += '0';
-    }
-    if (width >= 4 && val < 100) {
-	str += '0';
-    }
-    if (width >= 3 && val < 100) {
-	str += '0';
-    }
-    if (width >= 2 && val < 10) {
-	str += '0';
-    }
-    str += val;
-}
-
-static inline void add04d(String &str, uint16_t val) { add0Nd(str, val, 4); }
-static inline void add02d(String &str, uint16_t val) { add0Nd(str, val, 2); }
-void MyDateTime::addToString(String & str) const
-{
-    add04d(str, year());
-    str += '-';
-    add02d(str, month());
-    str += '-';
-    add02d(str, date());
-    str += ' ';
-    add02d(str, hour());
-    str += ':';
-    add02d(str, minute());
-    str += ':';
-    add02d(str, second());
-}
-#endif
 
 static uint8_t bcd2bin (uint8_t val) { return val - 6 * (val >> 4); }
 static uint8_t bin2bcd (uint8_t val) { return val + 6 * (val / 10); }
@@ -194,20 +155,29 @@ static uint8_t bin2bcd (uint8_t val) { return val + 6 * (val / 10); }
 
 uint8_t Sodaq_DS3231::readRegister(uint8_t regaddress)
 {
+    uint8_t read;
+
+    i2cmutex.Lock();
     Wire.beginTransmission(DS3231_address);
     Wire.write((byte)regaddress);
     Wire.endTransmission();
 
     Wire.requestFrom(DS3231_address, 1);
-    return Wire.read();
+    read = Wire.read();
+    i2cmutex.Unlock();
+
+    return read;
 }
 
 void Sodaq_DS3231::writeRegister(uint8_t regaddress,uint8_t value)
 {
+
+    i2cmutex.Lock();
     Wire.beginTransmission(DS3231_address);
     Wire.write((byte)regaddress);
     Wire.write((byte)value);
     Wire.endTransmission();
+    i2cmutex.Unlock();
 }
 
 uint8_t Sodaq_DS3231::begin(byte address) {
@@ -232,6 +202,7 @@ uint8_t Sodaq_DS3231::begin(byte address) {
 //writing any non-existent time-data may interfere with normal operation of the RTC
 void Sodaq_DS3231::setMyDateTime(const MyDateTime& dt) {
 
+  i2cmutex.Lock();
   Wire.beginTransmission(DS3231_address);
   Wire.write((byte)DS3231_SEC_REG);  //beginning from SEC Register address
 
@@ -243,6 +214,7 @@ void Sodaq_DS3231::setMyDateTime(const MyDateTime& dt) {
   Wire.write((byte)bin2bcd(dt.month()));
   Wire.write((byte)bin2bcd(dt.year() - 2000));  
   Wire.endTransmission();
+  i2cmutex.Unlock();
 
 }
 
@@ -261,6 +233,8 @@ void Sodaq_DS3231::setEpoch(uint32_t ts)
 
 //Read the current time-date and return it in MyDateTime format
 MyDateTime Sodaq_DS3231::now() {
+
+  i2cmutex.Lock();
   Wire.beginTransmission(DS3231_address);
   Wire.write((byte)0x00);	
   Wire.endTransmission();
@@ -276,7 +250,8 @@ MyDateTime Sodaq_DS3231::now() {
   uint8_t d = bcd2bin(Wire.read());
   uint8_t m = bcd2bin(Wire.read());
   uint16_t y = bcd2bin(Wire.read()) + 2000;
-  
+  i2cmutex.Unlock();
+
   return MyDateTime (y, m, d, hh, mm, ss, wd);
 }
 
@@ -317,38 +292,6 @@ void Sodaq_DS3231::enableInterrupts(uint8_t periodicity)
        break;
    }
 }
-
-#if 0
-//Enable HH/MM/SS interrupt on /INTA pin. All interrupts works like single-shot counter
-void Sodaq_DS3231::enableInterrupts(uint8_t hh24, uint8_t mm, uint8_t ss)
-{
-    unsigned char ctReg=0;
-    ctReg |= 0b00011101; 
-    writeRegister(DS3231_CONTROL_REG, ctReg);     //CONTROL Register Address
-
-    writeRegister(DS3231_AL1SEC_REG,  0b00000000 | bin2bcd(ss) ); //Clr AM1
-    writeRegister(DS3231_AL1MIN_REG,  0b00000000 | bin2bcd(mm)); //Clr AM2
-    writeRegister(DS3231_AL1HOUR_REG, (0b00000000 | (bin2bcd(hh24) & 0b10111111))); //Clr AM3
-    writeRegister(DS3231_AL1WDAY_REG, 0b10000000 ); //set AM4
-}
-
-//Disable Interrupts. This is equivalent to begin() method.
-void Sodaq_DS3231::disableInterrupts()
-{
-    begin(); //Restore to initial value.
-}
-
-//Clears the interrrupt flag in status register. 
-//This is equivalent to preparing the DS3231 /INT pin to high for MCU to get ready for recognizing the next INT0 interrupt
-void Sodaq_DS3231::clearINTStatus()
-{
-    // Clear interrupt flag 
-    uint8_t statusReg = readRegister(DS3231_STATUS_REG);
-    statusReg &= 0b11111110;
-    writeRegister(DS3231_STATUS_REG, statusReg);
-
-}
-#endif 
 
 //force temperature sampling and converting to registers. If this function is not used the temperature is sampled once 64 Sec.
 void Sodaq_DS3231::convertTemperature()

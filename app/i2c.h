@@ -11,6 +11,7 @@
 #define FORCE_PUBLISH_ANALOG_IVL 60
 
 typedef Delegate<void(String, String)> I2CChangeDelegate;
+extern MyMutex i2cmutex;
 
 class MyI2C
 {
@@ -37,8 +38,7 @@ class MyI2C
     void showOLED();
 
   private:
-    MyMutex           mutex;
-    
+     
     I2CChangeDelegate changeDlg;
 
     bool              digitalFound = FALSE;

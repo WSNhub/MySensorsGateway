@@ -13,10 +13,12 @@
 static char weekDay[][4] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 MyDateTime dt(2016, 1, 22, 17, 34, 0, 6);
 Adafruit_SSD1306 display(-1); // reset Pin required but later ignored if set to False
+MyMutex i2cmutex;
+
 
 void MyI2C::showOLED()
 {
-	mutex.Lock();
+	i2cmutex.Lock();
 
 	display.clearDisplay();
 	// text display tests
@@ -63,7 +65,7 @@ void MyI2C::showOLED()
 	//display.setTextSize(3);
 	display.display();
 
-	mutex.Unlock();
+	i2cmutex.Unlock();
 }
 
 void MyI2C::i2cPublishMcpOutputs(byte address, bool forcePublish)
@@ -138,7 +140,7 @@ void MyI2C::i2cCheckDigitalState()
 {
     static int forcePublish = FORCE_PUBLISH_DIG_IVL;
 
-    mutex.Lock();
+    i2cmutex.Lock();
 
     forcePublish--;
     for (int i = 0; i < 7; i++)
@@ -154,7 +156,7 @@ void MyI2C::i2cCheckDigitalState()
     if (forcePublish == 0)
         forcePublish = FORCE_PUBLISH_DIG_IVL;
 
-    mutex.Unlock();
+    i2cmutex.Unlock();
 }
 
 void MyI2C::i2cPublishPcfOutputs(byte address, bool forcePublish)
@@ -204,7 +206,7 @@ void MyI2C::i2cCheckAnalogState()
 {
     static int forcePublish = FORCE_PUBLISH_ANALOG_IVL;
 
-    mutex.Lock();
+    i2cmutex.Lock();
 
     forcePublish--;
     for (int i = 0; i < 8; i++)
@@ -220,13 +222,11 @@ void MyI2C::i2cCheckAnalogState()
     if (forcePublish == 0)
         forcePublish = FORCE_PUBLISH_ANALOG_IVL;
 
-    mutex.Unlock();
+    i2cmutex.Unlock();
 }
 
 void MyI2C::i2cCheckRTCState()
 {
-    mutex.Lock();
-
     //MyDateTime now = rtc.now(); //get the current date-time from RTC
     //Debug.printf("From RTC\n");
     //Debug.printf("%d-%d-%d\n",now.date(),now.month(),now.year());
@@ -238,8 +238,6 @@ void MyI2C::i2cCheckRTCState()
     Debug.printf("Plug temperature %02f deg C\n", rtc.getTemperature()); //read registers and display the temperature
     if (changeDlg)
         changeDlg("RTC-temperature", String(rtc.getTemperature()));
-
-    mutex.Unlock();
 }
 
 void MyI2C::begin(I2CChangeDelegate dlg)

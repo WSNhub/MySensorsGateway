@@ -47,7 +47,6 @@ MyGateway gw(transport, hw);
  */
 MyI2C I2C_dev;
 
-
 HttpServer server;
 TelnetServer telnet;
 static boolean first_time = TRUE;
