@@ -271,6 +271,12 @@ int updateSensorState(int node, int sensor, int value)
   updateSensorStateInt(node, sensor, 2 /*message.type*/, value);
 }
 
+Timer heapCheckTimer;
+void heapCheckUsage()
+{
+    controller.notifyChange("memory", String(system_get_free_heap_size()));    
+}
+
 Timer connectionCheckTimer;
 bool wasConnected = FALSE;
 void connectOk();
@@ -310,6 +316,8 @@ void startServers()
     connectionCheckTimer.initializeMs(1000,
                                       wifiCheckState).start(true);
 
+    heapCheckTimer.initializeMs(60000, heapCheckUsage).start(true);
+
     startWebServer();
     telnet.listen(23);
 
@@ -342,9 +350,7 @@ void onActivateDataSent(HttpClient& client, bool successful)
 void ntpTimeResultHandler(NtpClient& client, time_t ntpTime)
 {
     SystemClock.setTime(ntpTime, eTZ_UTC);
-    Debug.print("NTP Time_t = ");
-    Debug.print(ntpTime);
-    Debug.print(" Time = ");
+    Debug.print("Time after NTP sync: ");
     Debug.println(SystemClock.getSystemTimeString());
     I2C_dev.setRtcTime(ntpTime);
 }
