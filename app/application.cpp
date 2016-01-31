@@ -4,6 +4,7 @@
 #include <AppSettings.h>
 #include <globals.h>
 #include <i2c.h>
+#include <ow.h>
 #include <MyMutex.h>
 #include "Libraries/MySensors/MyGateway.h"
 #include "Libraries/MySensors/MyTransport.h"
@@ -46,6 +47,8 @@ MyGateway gw(transport, hw);
  * expanders, the RTC chip and the OLED.
  */
 MyI2C I2C_dev;
+
+OW OW_dev;
 
 HttpServer server;
 TelnetServer telnet;
@@ -592,6 +595,7 @@ void init()
     AppSettings.load();
 
     I2C_dev.begin(i2cChangeHandler);
+    OW_dev.begin(i2cChangeHandler);
 
     WifiStation.enable(true);
     // why not ?
