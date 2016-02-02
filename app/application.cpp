@@ -10,6 +10,7 @@
 #include "Libraries/MySensors/MyTransport.h"
 #include "Libraries/MySensors/MyTransportNRF24.h"
 #include "Libraries/MySensors/MyHwESP8266.h"
+#include "Libraries/MySensors/MySigningAtsha204Soft.h"
 #include "Libraries/MyInterpreter/MyInterpreter.h"
 
 /*
@@ -40,6 +41,12 @@
 #define RADIO_SPI_SS_PIN    15  // radio SPI serial select
 MyTransportNRF24 transport(RADIO_CE_PIN, RADIO_SPI_SS_PIN, RF24_PA_LEVEL_GW);
 MyHwESP8266 hw;
+
+//Uncomment if you want signing
+//uint8_t HMAC_KEY[32] = { 0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 };
+//MySigningAtsha204Soft signer(true /* requestSignatures */,
+//                             HMAC_KEY);
+//MyGateway gw(transport, hw, signer);
 MyGateway gw(transport, hw);
 
 /*
