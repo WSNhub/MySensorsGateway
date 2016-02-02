@@ -127,7 +127,7 @@ void CloudController::onMessageReceived(String topic, String message)
 {
     //if (!topic.equals(mqtt_thing_topic))
     {
-        Debug.printf("Unrecognized message: %s", message.c_str());
+        Debug.printf("Unrecognized message: %s\n", message.c_str());
         return;
     }
 
@@ -286,6 +286,7 @@ void CloudController::oneSecondTimerHandler()
 
         case CloudControllerStateMqttConnected:
             Debug.println("MQTT CONNECTED");
+            checkMqttClient();
             break;
 
         case CloudControllerStateMqttSubscribed:
