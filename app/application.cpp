@@ -58,6 +58,7 @@ MyI2C I2C_dev;
 OW OW_dev;
 
 HttpServer server;
+FTPServer ftp;
 TelnetServer telnet;
 static boolean first_time = TRUE;
 
@@ -260,6 +261,16 @@ void startWebServer()
     server.setDefaultHandler(onFile);
 }
 
+void startFTP()
+{
+    if (!fileExist("index.html"))
+        fileSetContent("index.html", "<h3>Please connect to FTP and upload files from folder 'web/build' (details in code)</h3>");
+
+    // Start FTP server
+    ftp.listen(21);
+    ftp.addUser("me", "123"); // FTP account
+}
+
 int print(int a)
 {
   Debug.println(a);
@@ -325,6 +336,7 @@ void startServers()
 
     heapCheckTimer.initializeMs(60000, heapCheckUsage).start(true);
 
+    startFTP();
     startWebServer();
     telnet.listen(23);
 
