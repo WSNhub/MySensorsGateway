@@ -52,3 +52,5 @@ SPIFF_SIZE      ?= 262144
 ## esptool2 path
 ESPTOOL2        = ${PWD}/tools/esptool2/esptool2
 
+USER_CFLAGS = "-DCONTROLLER_TYPE=CONTROLLER_TYPE_OPENHAB"
+

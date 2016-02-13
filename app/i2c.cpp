@@ -344,6 +344,7 @@ void MyI2C::begin(I2CChangeDelegate dlg)
                 Wire.endTransmission(); // end tranmission
                 pcf8591Outputs[address - 0x48] = 0;
             }
+#if 0
             else if (address == 0x68)
             {
                 struct tm   time,stime;
@@ -371,6 +372,7 @@ void MyI2C::begin(I2CChangeDelegate dlg)
                 rtc.convertTemperature();             //convert current temperature into registers
                 Debug.printf(" %02f deg C\n", rtc.getTemperature()); //read registers and display the temperature
             } 
+#endif
             else if (address == 0x57)
             {
                 Debug.printf("Found ATtiny %x\n", address);

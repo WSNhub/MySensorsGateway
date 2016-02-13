@@ -101,6 +101,7 @@ void ICACHE_FLASH_ATTR startMqttClient()
         sprintf(clientId, "ESP_%08X", system_get_chip_id());
         mqtt = new MqttClient(AppSettings.mqttServer, AppSettings.mqttPort, onMessageReceived);
         mqtt->connect(clientId, AppSettings.mqttUser, AppSettings.mqttPass);
+        mqtt->setKeepAlive(5);
         mqtt->subscribe("#");
         mqttPublishVersion();
         MqttConfigured = TRUE;
