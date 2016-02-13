@@ -443,6 +443,7 @@ void processInfoCommand(String commandLine, CommandOutput* out)
     out->printf("Version            : %s\n", build_git_sha);
     out->printf("Sming Version      : 2.1.1\r\n");
     out->printf("ESP SDK version    : %s\n", system_get_sdk_version());
+    out->printf("MySensors version  : %s\n", gw.version());
     out->printf("\r\n");
     out->printf("Time               : ");
     out->printf(SystemClock.getSystemTimeString().c_str());
