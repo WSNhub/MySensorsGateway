@@ -4,7 +4,6 @@
 #include <AppSettings.h>
 #include <globals.h>
 #include <i2c.h>
-#include <MyMutex.h>
 #include "Libraries/MySensors/MyGateway.h"
 #include "Libraries/MySensors/MyTransport.h"
 #include "Libraries/MySensors/MyTransportNRF24.h"
@@ -55,7 +54,7 @@ char convBuf[MAX_PAYLOAD*2+1];
 MyInterpreter interpreter;
 #endif
 
-MyMutex interpreterMutex;
+Mutex interpreterMutex;
 
 void incomingMessage(const MyMessage &message)
 {
@@ -516,7 +515,7 @@ void processInfoCommand(String commandLine, CommandOutput* out)
     out->printf("System information : ESP8266 based MySensors gateway\r\n");
     out->printf("Build time         : %s\n", build_time);
     out->printf("Version            : %s\n", build_git_sha);
-    out->printf("Sming Version      : 2.1.1\r\n");
+    out->printf("Sming Version      : %s\n", SMING_VERSION);
     out->printf("ESP SDK version    : %s\n", system_get_sdk_version());
     out->printf("MySensors version  : %s\n", gw.version());
     out->printf("\r\n");

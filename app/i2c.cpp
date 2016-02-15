@@ -16,12 +16,10 @@
 #include "HCRTC.h"
 
 Adafruit_SSD1306 display(-1); // reset Pin required but later ignored if set to False
-MyMutex i2cmutex;
-
 
 void MyI2C::showOLED()
 {
-	i2cmutex.Lock();
+	Wire.lock();
 
 	display.clearDisplay();
 	// text display tests
@@ -68,7 +66,7 @@ void MyI2C::showOLED()
 	//display.setTextSize(3);
 	display.display();
 
-	i2cmutex.Unlock();
+	Wire.unlock();
 }
 
 void MyI2C::i2cPublishMcpOutputs(byte address, bool forcePublish)
@@ -143,7 +141,7 @@ void MyI2C::i2cCheckDigitalState()
 {
     static int forcePublish = FORCE_PUBLISH_DIG_IVL;
 
-    i2cmutex.Lock();
+    Wire.lock();
 
     forcePublish--;
     for (int i = 0; i < 7; i++)
@@ -159,7 +157,7 @@ void MyI2C::i2cCheckDigitalState()
     if (forcePublish == 0)
         forcePublish = FORCE_PUBLISH_DIG_IVL;
 
-    i2cmutex.Unlock();
+    Wire.unlock();
 }
 
 void MyI2C::i2cPublishPcfOutputs(byte address, bool forcePublish)
@@ -209,7 +207,7 @@ void MyI2C::i2cCheckAnalogState()
 {
     static int forcePublish = FORCE_PUBLISH_ANALOG_IVL;
 
-    i2cmutex.Lock();
+    Wire.lock();
 
     forcePublish--;
     for (int i = 0; i < 8; i++)
@@ -225,7 +223,7 @@ void MyI2C::i2cCheckAnalogState()
     if (forcePublish == 0)
         forcePublish = FORCE_PUBLISH_ANALOG_IVL;
 
-    i2cmutex.Unlock();
+    Wire.unlock();
 }
 
 void MyI2C::i2cCheckRTCState()

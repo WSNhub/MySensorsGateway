@@ -157,14 +157,14 @@ uint8_t Sodaq_DS3231::readRegister(uint8_t regaddress)
 {
     uint8_t read;
 
-    i2cmutex.Lock();
+    Wire.lock();
     Wire.beginTransmission(DS3231_address);
     Wire.write((byte)regaddress);
     Wire.endTransmission();
 
     Wire.requestFrom(DS3231_address, 1);
     read = Wire.read();
-    i2cmutex.Unlock();
+    Wire.unlock();
 
     return read;
 }
@@ -172,12 +172,12 @@ uint8_t Sodaq_DS3231::readRegister(uint8_t regaddress)
 void Sodaq_DS3231::writeRegister(uint8_t regaddress,uint8_t value)
 {
 
-    i2cmutex.Lock();
+    Wire.lock();
     Wire.beginTransmission(DS3231_address);
     Wire.write((byte)regaddress);
     Wire.write((byte)value);
     Wire.endTransmission();
-    i2cmutex.Unlock();
+    Wire.unlock();
 }
 
 uint8_t Sodaq_DS3231::begin(byte address) {
@@ -202,7 +202,7 @@ uint8_t Sodaq_DS3231::begin(byte address) {
 //writing any non-existent time-data may interfere with normal operation of the RTC
 void Sodaq_DS3231::setMyDateTime(const MyDateTime& dt) {
 
-  i2cmutex.Lock();
+  Wire.lock();
   Wire.beginTransmission(DS3231_address);
   Wire.write((byte)DS3231_SEC_REG);  //beginning from SEC Register address
 
@@ -214,7 +214,7 @@ void Sodaq_DS3231::setMyDateTime(const MyDateTime& dt) {
   Wire.write((byte)bin2bcd(dt.month()));
   Wire.write((byte)bin2bcd(dt.year() - 2000));  
   Wire.endTransmission();
-  i2cmutex.Unlock();
+  Wire.unlock();
 
 }
 
@@ -234,7 +234,7 @@ void Sodaq_DS3231::setEpoch(uint32_t ts)
 //Read the current time-date and return it in MyDateTime format
 MyDateTime Sodaq_DS3231::now() {
 
-  i2cmutex.Lock();
+  Wire.lock();
   Wire.beginTransmission(DS3231_address);
   Wire.write((byte)0x00);	
   Wire.endTransmission();
@@ -250,7 +250,7 @@ MyDateTime Sodaq_DS3231::now() {
   uint8_t d = bcd2bin(Wire.read());
   uint8_t m = bcd2bin(Wire.read());
   uint16_t y = bcd2bin(Wire.read()) + 2000;
-  i2cmutex.Unlock();
+  Wire.unlock();
 
   return MyDateTime (y, m, d, hh, mm, ss, wd);
 }
