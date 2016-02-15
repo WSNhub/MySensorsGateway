@@ -12,6 +12,8 @@
 #include <SHA204Definitions.h>
 #include "SHA204I2C.h"
 
+#include "HCRTC.h"
+
 //year, month, date, hour, min, sec and week-day(starts from 0 and goes to 6)
 //writing any non-existent time-data may interfere with normal operation of the RTC.
 //Take care of week-day also.
@@ -344,9 +346,35 @@ void MyI2C::begin(I2CChangeDelegate dlg)
                 Wire.endTransmission(); // end tranmission
                 pcf8591Outputs[address - 0x48] = 0;
             }
-#if 0
             else if (address == 0x68)
             {
+                Debug.printf("Found RTC DS3213 at address %x\n", address);
+                HCRTC HCRTC;
+
+    HCRTC.RTCRead(0x68);
+    Serial.print(HCRTC.GetDay());
+    Serial.print("/");
+    Serial.print(HCRTC.GetMonth());
+    Serial.print("/");
+    Serial.print(HCRTC.GetYear());
+    Serial.print(" ");
+   
+    Serial.print(HCRTC.GetHour());
+    Serial.print(":");
+    Serial.print(HCRTC.GetMinute());
+    Serial.print(":");
+    Serial.print(HCRTC.GetSecond());
+    
+    //DOW is 'day of the week'. It is a number from 1 to 7. Monday is 1 and Sunday is 7
+    Serial.print(" DOW:");
+    Serial.println(HCRTC.GetWeekday());
+    
+    /* Now output the same thing but using string functions instead: */
+    Serial.print(HCRTC.GetDateString());
+    Serial.print(" ");
+    Serial.println(HCRTC.GetTimeString());
+
+#if 0
                 struct tm   time,stime;
                 bool  flag;
 
@@ -371,8 +399,8 @@ void MyI2C::begin(I2CChangeDelegate dlg)
 
                 rtc.convertTemperature();             //convert current temperature into registers
                 Debug.printf(" %02f deg C\n", rtc.getTemperature()); //read registers and display the temperature
-            } 
 #endif
+            } 
             else if (address == 0x57)
             {
                 Debug.printf("Found ATtiny %x\n", address);
