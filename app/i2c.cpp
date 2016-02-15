@@ -2,6 +2,7 @@
 #include <SmingCore/SmingCore.h>
 #include <SmingCore/Debug.h>
 #include <Libraries/Adafruit_SSD1306/Adafruit_SSD1306.h>
+#include <globals.h>
 
 #include <AppSettings.h>
 #include "i2c.h"
@@ -12,11 +13,6 @@
 #include <SHA204Definitions.h>
 #include "SHA204I2C.h"
 
-//year, month, date, hour, min, sec and week-day(starts from 0 and goes to 6)
-//writing any non-existent time-data may interfere with normal operation of the RTC.
-//Take care of week-day also.
-static char weekDay[][4] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
-MyDateTime dt(2016, 1, 22, 17, 34, 0, 6);
 Adafruit_SSD1306 display(-1); // reset Pin required but later ignored if set to False
 MyMutex i2cmutex;
 
@@ -356,17 +352,6 @@ void MyI2C::begin(I2CChangeDelegate dlg)
                 SystemClock.setTime(rtc.now().getEpoch(), eTZ_UTC);
                 Debug.print(" Time = ");
                 Debug.println(SystemClock.getSystemTimeString());
-     
-                //rtc.setMyDateTime(dt); //one time Adjust date-time as defined 'dt' above 
-                //MyDateTime now = rtc.now(); //get the current date-time from RTC
-                //Debug.printf("From RTC\n");
-                //Debug.printf("year %d\n",now.year());
-                //Debug.printf("month %d\n",now.month());
-                //Debug.printf("day %d\n",now.date());
-                //Debug.printf("hour %d\n",now.hour());
-                //Debug.printf("minute %d\n",now.minute());
-                //Debug.printf("second %d\n",now.second());
-                //Debug.printf("day of week %s\n",weekDay[now.DdayOfWeek()]);
 
                 rtc.convertTemperature();             //convert current temperature into registers
                 Debug.printf(" %02f deg C\n", rtc.getTemperature()); //read registers and display the temperature
