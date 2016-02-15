@@ -4,7 +4,6 @@
 #include <AppSettings.h>
 #include <globals.h>
 #include <i2c.h>
-#include <ow.h>
 #include <MyMutex.h>
 #include "Libraries/MySensors/MyGateway.h"
 #include "Libraries/MySensors/MyTransport.h"
@@ -13,16 +12,6 @@
 #include "Libraries/MySensors/MySigningAtsha204Soft.h"
 #include "Libraries/MyInterpreter/MyInterpreter.h"
 
-/*
- * Here the controller type is decided. By default the openHab MQTT
- * controller is expected. This should normally not change, the cloud
- * controller requires a subscription.
- */
-#define CONTROLLER_TYPE_OPENHAB 1
-#define CONTROLLER_TYPE_CLOUD   2
-#ifndef CONTROLLER_TYPE
-  #error CONTROLLER_TYPE undefined
-#endif
 #if CONTROLLER_TYPE == CONTROLLER_TYPE_OPENHAB
   #include <openHabMqttController.h>
   OpenHabMqttController controller;
@@ -54,8 +43,6 @@ MyGateway gw(transport, hw, signer);
  * expanders, the RTC chip and the OLED.
  */
 MyI2C I2C_dev;
-
-//OW OW_dev;
 
 HttpServer server;
 FTPServer ftp;
@@ -709,7 +696,6 @@ void init()
     AppSettings.load();
 
     I2C_dev.begin(i2cChangeHandler);
-    //OW_dev.begin(i2cChangeHandler);
 
     WifiStation.enable(true);
     // why not ?

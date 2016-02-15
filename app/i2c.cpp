@@ -2,6 +2,7 @@
 #include <SmingCore/SmingCore.h>
 #include <SmingCore/Debug.h>
 #include <Libraries/Adafruit_SSD1306/Adafruit_SSD1306.h>
+#include <globals.h>
 
 #include <AppSettings.h>
 #include "i2c.h"
@@ -14,11 +15,6 @@
 
 #include "HCRTC.h"
 
-//year, month, date, hour, min, sec and week-day(starts from 0 and goes to 6)
-//writing any non-existent time-data may interfere with normal operation of the RTC.
-//Take care of week-day also.
-static char weekDay[][4] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
-MyDateTime dt(2016, 1, 22, 17, 34, 0, 6);
 Adafruit_SSD1306 display(-1); // reset Pin required but later ignored if set to False
 MyMutex i2cmutex;
 
@@ -348,33 +344,7 @@ void MyI2C::begin(I2CChangeDelegate dlg)
             }
             else if (address == 0x68)
             {
-                Debug.printf("Found RTC DS3213 at address %x\n", address);
-                HCRTC HCRTC;
-
-    HCRTC.RTCRead(0x68);
-    Serial.print(HCRTC.GetDay());
-    Serial.print("/");
-    Serial.print(HCRTC.GetMonth());
-    Serial.print("/");
-    Serial.print(HCRTC.GetYear());
-    Serial.print(" ");
-   
-    Serial.print(HCRTC.GetHour());
-    Serial.print(":");
-    Serial.print(HCRTC.GetMinute());
-    Serial.print(":");
-    Serial.print(HCRTC.GetSecond());
-    
-    //DOW is 'day of the week'. It is a number from 1 to 7. Monday is 1 and Sunday is 7
-    Serial.print(" DOW:");
-    Serial.println(HCRTC.GetWeekday());
-    
-    /* Now output the same thing but using string functions instead: */
-    Serial.print(HCRTC.GetDateString());
-    Serial.print(" ");
-    Serial.println(HCRTC.GetTimeString());
-
-#if 0
+#if PLATFORM_TYPE == PLATFORM_TYPE_GENERIC
                 struct tm   time,stime;
                 bool  flag;
 
@@ -385,20 +355,35 @@ void MyI2C::begin(I2CChangeDelegate dlg)
                 SystemClock.setTime(rtc.now().getEpoch(), eTZ_UTC);
                 Debug.print(" Time = ");
                 Debug.println(SystemClock.getSystemTimeString());
-     
-                //rtc.setMyDateTime(dt); //one time Adjust date-time as defined 'dt' above 
-                //MyDateTime now = rtc.now(); //get the current date-time from RTC
-                //Debug.printf("From RTC\n");
-                //Debug.printf("year %d\n",now.year());
-                //Debug.printf("month %d\n",now.month());
-                //Debug.printf("day %d\n",now.date());
-                //Debug.printf("hour %d\n",now.hour());
-                //Debug.printf("minute %d\n",now.minute());
-                //Debug.printf("second %d\n",now.second());
-                //Debug.printf("day of week %s\n",weekDay[now.DdayOfWeek()]);
 
                 rtc.convertTemperature();             //convert current temperature into registers
                 Debug.printf(" %02f deg C\n", rtc.getTemperature()); //read registers and display the temperature
+#elif PLATFORM_TYPE == PLATFORM_TYPE_SDSHIELD
+                Debug.printf("Found RTC DS1307 at address %x\n", address);
+                HCRTC HCRTC;
+                HCRTC.RTCRead(0x68);
+                Serial.print(HCRTC.GetDay());
+                Serial.print("/");
+                Serial.print(HCRTC.GetMonth());
+                Serial.print("/");
+                Serial.print(HCRTC.GetYear());
+                Serial.print(" ");
+                Serial.print(HCRTC.GetHour());
+                Serial.print(":");
+                Serial.print(HCRTC.GetMinute());
+                Serial.print(":");
+                Serial.print(HCRTC.GetSecond());
+    
+                //DOW is 'day of the week'. It is a number from 1 to 7. Monday is 1 and Sunday is 7
+                Serial.print(" DOW:");
+                Serial.println(HCRTC.GetWeekday());
+    
+                /* Now output the same thing but using string functions instead: */
+                Serial.print(HCRTC.GetDateString());
+                Serial.print(" ");
+                Serial.println(HCRTC.GetTimeString());
+#else
+    #error "Unknown platform type"
 #endif
             } 
             else if (address == 0x57)

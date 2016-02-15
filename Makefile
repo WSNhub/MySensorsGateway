@@ -5,16 +5,37 @@
 # Should be used to set project-specific parameters
 include ./Makefile-user.mk
 
-# Important parameters check.
-# We need to make sure SMING_HOME and ESP_HOME variables are set.
-# You can use Makefile-user.mk in each project or use enviromental variables to set it globally.
- 
-ifndef SMING_HOME
-$(error SMING_HOME is not set. Please configure it in Makefile-user.mk)
-endif
-ifndef ESP_HOME
-$(error ESP_HOME is not set. Please configure it in Makefile-user.mk)
-endif
+all: GLOBALS spiff_clean
+
+GLOBALS:
+	echo "Generating globals"
+	git describe --abbrev=7 --dirty --always --tags | awk ' BEGIN {print "#include \"globals.h\""} {print "const char * build_git_sha = \"" $$0"\";"} END {}' > app/globals.c
+	date | awk 'BEGIN {} {print "const char * build_time = \""$$0"\";"} END {} ' >> app/globals.c
+
+#Add your source directories here separated by space
+MODULES = app
+
+## ESP_HOME sets the path where ESP tools and SDK are located.
+ESP_HOME ?= /opt/esp-open-sdk
+
+## SMING_HOME sets the path where Sming framework is located.
+SMING_HOME = ${PWD}/tools/Sming
+
+#### rBoot options ####
+RBOOT_ENABLED   ?= 1
+RBOOT_BIG_FLASH ?= 1
+SPI_SIZE        ?= 4M
+SPIFF_FILES     ?= spiffs
+SPIFF_SIZE      ?= 262144
+ESPTOOL2        = ${PWD}/tools/esptool2/esptool2
+
+#### APPLICATION defaults ####
+CONTROLLER_TYPE ?= OPENHAB
+PLATFORM_TYPE ?= GENERIC
+
+#### Set the USER_CFLAGS for compilation ####
+USER_CFLAGS += "-DCONTROLLER_TYPE=CONTROLLER_TYPE_$(CONTROLLER_TYPE)"
+USER_CFLAGS += "-DPLATFORM_TYPE=PLATFORM_TYPE_$(PLATFORM_TYPE)"
 
 # Include main Sming Makefile
 ifeq ($(RBOOT_ENABLED), 1)
