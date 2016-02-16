@@ -4,6 +4,8 @@
 #include <AppSettings.h>
 #include <globals.h>
 #include <i2c.h>
+#include <IOExpansion.h>
+#include <RTClock.h>
 #include "Libraries/MySensors/MyGateway.h"
 #include "Libraries/MySensors/MyTransport.h"
 #include "Libraries/MySensors/MyTransportNRF24.h"
@@ -42,6 +44,8 @@ MyGateway gw(transport, hw, signer);
  * expanders, the RTC chip and the OLED.
  */
 MyI2C I2C_dev;
+IOExpansion ioExpansion;
+RTClock rtcDev;
 
 HttpServer server;
 FTPServer ftp;
@@ -357,7 +361,7 @@ void ntpTimeResultHandler(NtpClient& client, time_t ntpTime)
     SystemClock.setTime(ntpTime, eTZ_UTC);
     Debug.print("Time after NTP sync: ");
     Debug.println(SystemClock.getSystemTimeString());
-    I2C_dev.setRtcTime(ntpTime);
+    rtcDev.setTime(ntpTime);
 }
 
 NtpClient ntpClient(NTP_DEFAULT_SERVER, 0, ntpTimeResultHandler);
@@ -629,7 +633,6 @@ void init()
 {
     /* Mount the internal storage */
     int slot = rboot_get_current_rom();
-#ifndef DISABLE_SPIFFS
     if (slot == 0)
     {
 #ifdef RBOOT_SPIFFS_0
@@ -650,9 +653,6 @@ void init()
         spiffs_mount_manual(0x40500000, SPIFF_SIZE);
 #endif
     }
-#else
-    Debug.println("spiffs disabled");
-#endif
 
     Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
     Serial.systemDebugOutput(true); // Enable debug output to serial
@@ -695,6 +695,8 @@ void init()
     AppSettings.load();
 
     I2C_dev.begin(i2cChangeHandler);
+    ioExpansion.begin(i2cChangeHandler);
+    rtcDev.begin(i2cChangeHandler);
 
     WifiStation.enable(true);
     // why not ?
