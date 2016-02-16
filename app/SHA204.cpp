@@ -752,3 +752,442 @@ uint8_t SHA204::write(uint8_t *tx_buffer, uint8_t *rx_buffer,
     return send_and_receive(&tx_buffer[0], WRITE_RSP_SIZE, &rx_buffer[0],
                             WRITE_DELAY, WRITE_EXEC_MAX - WRITE_DELAY);
 }
+
+
+void SHA204::dump_configuration()
+{
+  uint8_t tx_buffer[SHA204_CMD_SIZE_MAX];
+  uint8_t rx_buffer[SHA204_RSP_SIZE_MAX];
+  uint8_t ret_code;
+
+  for (int i=0; i < 88; i += 4)
+  {
+    ret_code = read(tx_buffer, rx_buffer, SHA204_ZONE_CONFIG, i);
+    if (ret_code != 0)
+    {
+      Serial.print("Failed to read config. Response: "); Serial.println(ret_code, HEX);
+      break;
+    }
+    if (i == 0x00)
+    {
+      Serial.print("           SN[0:1]           |         SN[2:3]           | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x04)
+    {
+      Serial.print("                          Revnum                         | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        Serial.print("   ");
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x08)
+    {
+      Serial.print("                          SN[4:7]                        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        Serial.print("   ");
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x0C)
+    {
+      Serial.print("    SN[8]    |  Reserved13   | I2CEnable | Reserved15    | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j < 3)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x10)
+    {
+      Serial.print("  I2CAddress |  TempOffset   |  OTPmode  | SelectorMode  | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j < 3)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x14)
+    {
+      Serial.print("         SlotConfig00        |       SlotConfig01        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x18)
+    {
+      Serial.print("         SlotConfig02        |       SlotConfig03        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x1C)
+    {
+      Serial.print("         SlotConfig04        |       SlotConfig05        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x20)
+    {
+      Serial.print("         SlotConfig06        |       SlotConfig07        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x24)
+    {
+      Serial.print("         SlotConfig08        |       SlotConfig09        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x28)
+    {
+      Serial.print("         SlotConfig0A        |       SlotConfig0B        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x2C)
+    {
+      Serial.print("         SlotConfig0C        |       SlotConfig0D        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x30)
+    {
+      Serial.print("         SlotConfig0E        |       SlotConfig0F        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x34)
+    {
+      Serial.print("  UseFlag00  | UpdateCount00 | UseFlag01 | UpdateCount01 | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j < 3)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x38)
+    {
+      Serial.print("  UseFlag02  | UpdateCount02 | UseFlag03 | UpdateCount03 | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j < 3)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x3C)
+    {
+      Serial.print("  UseFlag04  | UpdateCount04 | UseFlag05 | UpdateCount05 | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j < 3)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x40)
+    {
+      Serial.print("  UseFlag06  | UpdateCount06 | UseFlag07 | UpdateCount07 | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j < 3)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x44)
+    {
+      Serial.print("                      LastKeyUse[0:3]                    | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        Serial.print("   ");
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x48)
+    {
+      Serial.print("                      LastKeyUse[4:7]                    | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        Serial.print("   ");
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x4C)
+    {
+      Serial.print("                      LastKeyUse[8:B]                    | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        Serial.print("   ");
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x50)
+    {
+      Serial.print("                      LastKeyUse[C:F]                    | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        Serial.print("   ");
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x54)
+    {
+      Serial.print("  UserExtra  |    Selector   | LockValue |  LockConfig   | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j < 3)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+  }
+}
+
