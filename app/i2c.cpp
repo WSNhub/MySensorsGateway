@@ -123,34 +123,12 @@ void MyI2C::begin(I2CChangeDelegate dlg)
             }
             else if (address == 0x64)
             {
+                SHA204I2C sha204;
                 Debug.printf("Found Atsha204 %x\n", address);
-                uint8_t response[SHA204_RSP_SIZE_MIN];
-                byte returnValue;
-                SHA204I2C sha204dev;
-                uint8_t serialNumber[9];
+                sha204.init(); // Be sure to wake up device right as I2C goes up otherwise you'll have NACK issues 
+                sha204.dump_configuration();
                 // TODO : MUTEX !!! 
                 // On my Wemos proto, ATSHA is the only component on the bus.
-
-                sha204dev.init(); // Be sure to wake up device right as I2C goes up otherwise you'll have NACK issues 
-
-                //BEGIN of TESTCODE
-                returnValue = sha204dev.serialNumber(serialNumber);
-                for (int i=0; i<9; i++) {
-                    Debug.print(serialNumber[i], HEX);
-                    Debug.print(" ");
-                }
-                Debug.println();
-                Debug.println("Asking the SHA204's serial number. Response should be:");
-                Debug.println("1 23 x x x x x x x EE");
-                Debug.println("-------"); 
-
-                returnValue = sha204dev.resync(4, &response[0]);
-                for (int i=0; i<SHA204_RSP_SIZE_MIN; i++) {
-                    Debug.print(response[i], HEX);
-                    Debug.print(" ");
-                }
-                Debug.println();
-                //END of TESTCODE
 
             }
             else if (address == 0x3c)
