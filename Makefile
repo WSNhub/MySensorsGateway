@@ -20,6 +20,7 @@ ESP_HOME ?= /opt/esp-open-sdk
 
 ## SMING_HOME sets the path where Sming framework is located.
 SMING_HOME = ${PWD}/tools/Sming
+SMING_HOME = ${PWD}/tools/Sming/Sming
 
 #### rBoot options ####
 RBOOT_ENABLED   ?= 1

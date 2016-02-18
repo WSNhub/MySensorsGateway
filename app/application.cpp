@@ -4,7 +4,8 @@
 #include <AppSettings.h>
 #include <globals.h>
 #include <i2c.h>
-#include <MyMutex.h>
+#include <IOExpansion.h>
+#include <RTClock.h>
 #include "Libraries/MySensors/MyGateway.h"
 #include "Libraries/MySensors/MyTransport.h"
 #include "Libraries/MySensors/MyTransportNRF24.h"
@@ -43,6 +44,8 @@ MyGateway gw(transport, hw);
  * expanders, the RTC chip and the OLED.
  */
 MyI2C I2C_dev;
+IOExpansion ioExpansion;
+RTClock rtcDev;
 
 HttpServer server;
 FTPServer ftp;
@@ -55,7 +58,7 @@ char convBuf[MAX_PAYLOAD*2+1];
 MyInterpreter interpreter;
 #endif
 
-MyMutex interpreterMutex;
+Mutex interpreterMutex;
 
 void incomingMessage(const MyMessage &message)
 {
@@ -358,7 +361,7 @@ void ntpTimeResultHandler(NtpClient& client, time_t ntpTime)
     SystemClock.setTime(ntpTime, eTZ_UTC);
     Debug.print("Time after NTP sync: ");
     Debug.println(SystemClock.getSystemTimeString());
-    I2C_dev.setRtcTime(ntpTime);
+    rtcDev.setTime(ntpTime);
 }
 
 NtpClient ntpClient(NTP_DEFAULT_SERVER, 0, ntpTimeResultHandler);
@@ -411,16 +414,104 @@ void connectFail()
     Debug.println("--> I'm NOT CONNECTED. Need help :(");
 }
 
-void processApplicationCommands(String commandLine, CommandOutput* commandOutput)
-{
-    Vector<String> commandToken;
-    int numToken = splitString(commandLine, ' ' , commandToken);
+#include <Libraries/SDCard/SDCard.h>
 
-    if (numToken == 1)
-    {
-        commandOutput->printf("Example subcommands available : \r\n");
+void stat_file(char* fname)
+{
+    FRESULT fr;
+    FILINFO fno;
+    uint8_t size = 0;
+    fr = f_stat(fname, &fno);
+    switch (fr) {
+
+    case FR_OK:
+    	Serial.printf("%u\t", fno.fsize);
+
+    	if (fno.fattrib & AM_DIR)
+    	{	Serial.print("[ "); size+= 2;}
+
+        Serial.print(fname);
+        size += strlen(fname);
+
+        if (fno.fattrib & AM_DIR)
+        {	Serial.print(" ]"); size+= 2;}
+
+        Serial.print("\t");
+        if(size < 8)
+        	Serial.print("\t");
+
+
+        Serial.printf("%u/%02u/%02u, %02u:%02u\t",
+               (fno.fdate >> 9) + 1980, fno.fdate >> 5 & 15, fno.fdate & 31,
+               fno.ftime >> 11, fno.ftime >> 5 & 63);
+        Serial.printf("%c%c%c%c%c\n",
+               (fno.fattrib & AM_DIR) ? 'D' : '-',
+               (fno.fattrib & AM_RDO) ? 'R' : '-',
+               (fno.fattrib & AM_HID) ? 'H' : '-',
+               (fno.fattrib & AM_SYS) ? 'S' : '-',
+               (fno.fattrib & AM_ARC) ? 'A' : '-');
+        break;
+
+    case FR_NO_FILE:
+        Serial.printf("n/a\n");
+        break;
+
+    default:
+        Serial.printf("Error(%d)\n", fr);
     }
-    commandOutput->printf("This command is handled by the application\r\n");
+}
+
+FRESULT ls (
+    const char* path        /* Start node to be scanned (also used as work area) */
+)
+{
+    FRESULT res;
+    FILINFO fno;
+    DIR dir;
+    int i;
+    char *fn;   /* This function assumes non-Unicode configuration */
+
+    res = f_opendir(&dir, path);                       /* Open the directory */
+    if (res == FR_OK) {
+        i = strlen(path);
+        for (;;) {
+            res = f_readdir(&dir, &fno);                   /* Read a directory item */
+            if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
+            if (fno.fname[0] == '.') continue;             /* Ignore dot entry */
+
+            stat_file(fno.fname);
+        }
+        f_closedir(&dir);
+    }
+
+    return res;
+}
+
+void processSD(String commandLine, CommandOutput* commandOutput)
+{
+#define PIN_CARD_DO 12	/* Master In Slave Out */
+#define PIN_CARD_DI 13	/* Master Out Slave In */
+#define PIN_CARD_CK 14	/* Serial Clock */
+#define PIN_CARD_SS 0	/* Slave Select */
+
+FIL file;
+	FRESULT fRes;
+	uint32_t actual;
+
+	Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
+	Serial.systemDebugOutput(true); // Allow debug output to serial
+
+	SDCardSPI = new SPISoft(PIN_CARD_DO, PIN_CARD_DI, PIN_CARD_CK, PIN_CARD_SS);
+	SDCard_begin();
+
+	Serial.print("\nSDCard example - !!! see code for HW setup !!! \n\n");
+
+	/*Use of some interesting functions*/
+
+	Serial.print("1. Listing files in the root folder:\n");
+	Serial.print("Size\tName\t\tDate\t\tAttributes\n");
+
+	ls("/");
 }
 
 void processInfoCommand(String commandLine, CommandOutput* out)
@@ -428,7 +519,7 @@ void processInfoCommand(String commandLine, CommandOutput* out)
     out->printf("System information : ESP8266 based MySensors gateway\r\n");
     out->printf("Build time         : %s\n", build_time);
     out->printf("Version            : %s\n", build_git_sha);
-    out->printf("Sming Version      : 2.1.1\r\n");
+    out->printf("Sming Version      : %s\n", SMING_VERSION);
     out->printf("ESP SDK version    : %s\n", system_get_sdk_version());
     out->printf("MySensors version  : %s\n", gw.version());
     out->printf("\r\n");
@@ -542,7 +633,6 @@ void init()
 {
     /* Mount the internal storage */
     int slot = rboot_get_current_rom();
-#ifndef DISABLE_SPIFFS
     if (slot == 0)
     {
 #ifdef RBOOT_SPIFFS_0
@@ -563,9 +653,6 @@ void init()
         spiffs_mount_manual(0x40500000, SPIFF_SIZE);
 #endif
     }
-#else
-    Debug.println("spiffs disabled");
-#endif
 
     Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
     Serial.systemDebugOutput(true); // Enable debug output to serial
@@ -592,10 +679,10 @@ void init()
                                                    "Adjust CPU speed",
                                                    "System",
                                                    processCpuCommand));
-    commandHandler.registerCommand(CommandDelegate("debug",
-                                                   "Enable/disable debugging",
+    commandHandler.registerCommand(CommandDelegate("sd",
+                                                   "Test SD",
                                                    "System",
-                                                   processDebugCommand));
+                                                   processSD));
     commandHandler.registerCommand(CommandDelegate("showConfig",
                                                    "Show the current configuration",
                                                    "System",
@@ -608,6 +695,8 @@ void init()
     AppSettings.load();
 
     I2C_dev.begin(i2cChangeHandler);
+    ioExpansion.begin(i2cChangeHandler);
+    rtcDev.begin(i2cChangeHandler);
 
     WifiStation.enable(true);
     // why not ?
