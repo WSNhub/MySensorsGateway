@@ -6,6 +6,7 @@
 #include <i2c.h>
 #include <IOExpansion.h>
 #include <RTClock.h>
+#include <Wifi.h>
 #include "Libraries/MySensors/MyGateway.h"
 #include "Libraries/MySensors/MyTransport.h"
 #include "Libraries/MySensors/MyTransportNRF24.h"
@@ -25,7 +26,7 @@
 
 /*
  * At this point the transport layer for MySensors is prepared.
- * It is possible to change ping here but it is strongly disadvised.
+ * It is possible to change pin here but it is strongly disadvised.
  */
 #define RADIO_CE_PIN        2   // radio chip enable
 #define RADIO_SPI_SS_PIN    15  // radio SPI serial select
@@ -115,25 +116,9 @@ void wifiConnect()
 }
 
 Timer softApSetPasswordTimer;
-void softApEnable()
+void apEnable()
 {
-    char id[16];
-
-    WifiAccessPoint.enable(false);
-    WifiAccessPoint.enable(true);
-
-    // Start AP for configuration
-    sprintf(id, "%x", system_get_chip_id());
-    if (AppSettings.apPassword.equals(""))
-    {
-        WifiAccessPoint.config((String)"MySensors gateway " + id,
-                               "", AUTH_OPEN);
-    }
-    else
-    {
-        WifiAccessPoint.config((String)"MySensors gateway " + id,
-                               AppSettings.apPassword, AUTH_WPA_WPA2_PSK);
-    }
+     Wifi.softApEnable();
 }
 
 void onIpConfig(HttpRequest &request, HttpResponse &response)
@@ -144,7 +129,7 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
         AppSettings.apPassword = request.getPostParameter("apPassword");
         if (!AppSettings.apPassword.equals(oldApPass))
         {
-            softApSetPasswordTimer.initializeMs(10, softApEnable).startOnce();
+            softApSetPasswordTimer.initializeMs(500, apEnable).startOnce();
         }
 
         AppSettings.ssid = request.getPostParameter("ssid");
@@ -287,45 +272,11 @@ void heapCheckUsage()
     controller.notifyChange("memory", String(system_get_free_heap_size()));    
 }
 
-Timer connectionCheckTimer;
-bool wasConnected = FALSE;
-void connectOk();
-void connectFail();
-
-void wifiCheckState()
-{
-    if (WifiStation.isConnected())
-    {
-        if (!wasConnected)
-        {
-            Debug.println("CONNECTED");
-            wasConnected = TRUE;
-            connectOk();
-        }
-    }
-    else
-    {
-        if (wasConnected)
-        {
-            Debug.println("NOT CONNECTED");
-            wasConnected = FALSE;
-            connectFail();
-        }
-    }
-}
-
 uint64_t rfBaseAddress;
 
 // Will be called when system initialization was completed
 void startServers()
 {
-    // Start AP for configuration
-    softApEnable();
-
-    wasConnected = FALSE;
-    connectionCheckTimer.initializeMs(1000,
-                                      wifiCheckState).start(true);
-
     heapCheckTimer.initializeMs(60000, heapCheckUsage).start(true);
 
     startFTP();
@@ -350,14 +301,6 @@ void startServers()
     controller.begin();
 }
 
-HttpClient portalLogin;
-
-void onActivateDataSent(HttpClient& client, bool successful)
-{
-    String response = client.getResponseString();
-    Debug.println("Server response: '" + response + "'");
-}
-
 void ntpTimeResultHandler(NtpClient& client, time_t ntpTime)
 {
     SystemClock.setTime(ntpTime, eTZ_UTC);
@@ -369,51 +312,19 @@ void ntpTimeResultHandler(NtpClient& client, time_t ntpTime)
 NtpClient ntpClient(NTP_DEFAULT_SERVER, 0, ntpTimeResultHandler);
 
 // Will be called when WiFi station was connected to AP
-void connectOk()
+void wifiCb(bool connected)
 {
-    Debug.println("--> I'm CONNECTED");
-    if (first_time) 
+    if (connected)
     {
-        first_time = FALSE;
-        // start getting sensor data
-        gw.begin(incomingMessage, NULL, rfBaseAddress);
-        ntpClient.requestTime();
-    }
-    if (WifiStation.getIP().isNull())
-    {
-        Debug.println("No ip?");
-        return;
-    }
-
-    if (!AppSettings.portalUrl.equals(""))
-    {
-        String mac;
-        uint8 hwaddr[6] = {0};
-        wifi_get_macaddr(STATION_IF, hwaddr);
-        for (int i = 0; i < 6; i++)
+        Debug.println("--> I'm CONNECTED");
+        if (first_time) 
         {
-            if (hwaddr[i] < 0x10) mac += "0";
-                mac += String(hwaddr[i], HEX);
-            if (i < 5) mac += ":";
+            first_time = FALSE;
+            // start getting sensor data
+            gw.begin(incomingMessage, NULL, rfBaseAddress);
+            ntpClient.requestTime();
         }
-
-        String body = AppSettings.portalData;
-        body.replace("{ip}", WifiStation.getIP().toString());
-        body.replace("{mac}", mac);
-        portalLogin.setPostBody(body.c_str());
-        String url = AppSettings.portalUrl;
-        url.replace("{ip}", WifiStation.getIP().toString());
-        url.replace("{mac}", mac);
-
-        portalLogin.downloadString(
-            url, HttpClientCompletedDelegate(onActivateDataSent));
     }
-}
-
-// Will be called when WiFi station timeout was reached
-void connectFail()
-{
-    Debug.println("--> I'm NOT CONNECTED. Need help :(");
 }
 
 #include <Libraries/SDCard/SDCard.h>
@@ -629,31 +540,21 @@ void i2cChangeHandler(String object, String value)
     controller.notifyChange(object, value);
 }
 
-extern void otaEnable();
-
 void init()
 {
     /* Mount the internal storage */
     int slot = rboot_get_current_rom();
     if (slot == 0)
     {
-#ifdef RBOOT_SPIFFS_0
-        Debug.printf("trying to mount spiffs at %x, length %d\n", RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
-        spiffs_mount_manual(RBOOT_SPIFFS_0 + 0x40200000, SPIFF_SIZE);
-#else
-        Debug.printf("trying to mount spiffs at %x, length %d\n", 0x40300000, SPIFF_SIZE);
+        Debug.printf("trying to mount spiffs at %x, length %d\n",
+                     0x40300000, SPIFF_SIZE);
         spiffs_mount_manual(0x40300000, SPIFF_SIZE);
-#endif
     }
     else
     {
-#ifdef RBOOT_SPIFFS_1
-        Debug.printf("trying to mount spiffs at %x, length %d\n", RBOOT_SPIFFS_1 + 0x40200000, SPIFF_SIZE);
-        spiffs_mount_manual(RBOOT_SPIFFS_1 + 0x40200000, SPIFF_SIZE);
-#else
-        Debug.printf("trying to mount spiffs at %x, length %d\n", 0x40500000, SPIFF_SIZE);
+        Debug.printf("trying to mount spiffs at %x, length %d\n",
+                     0x40500000, SPIFF_SIZE);
         spiffs_mount_manual(0x40500000, SPIFF_SIZE);
-#endif
     }
 
     Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
@@ -700,40 +601,7 @@ void init()
     ioExpansion.begin(i2cChangeHandler);
     rtcDev.begin(i2cChangeHandler);
 
-    WifiStation.enable(true);
-    // why not ?
-    WifiAccessPoint.enable(true);
-
-    if (AppSettings.exist())
-    {
-        if (AppSettings.ssid.equals("") &&
-            !WifiStation.getSSID().equals(""))
-        {
-            AppSettings.ssid = WifiStation.getSSID();
-            AppSettings.password = WifiStation.getPassword();
-            AppSettings.save();
-        }
-
-        WifiStation.config(AppSettings.ssid, AppSettings.password);
-        if (!AppSettings.dhcp && !AppSettings.ip.isNull())
-        {
-            WifiStation.setIP(AppSettings.ip,
-                              AppSettings.netmask,
-                              AppSettings.gateway);
-        }
-    }
-    else
-    {
-        String SSID = WifiStation.getSSID();
-        if (!SSID.equals(""))
-        {
-            AppSettings.ssid = SSID;
-            AppSettings.password = WifiStation.getPassword();
-            AppSettings.save();
-        }
-    }
-
-    otaEnable();
+    Wifi.begin(wifiCb);
 
     // CPU boost
     if (AppSettings.cpuBoost)
