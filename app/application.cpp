@@ -32,12 +32,14 @@
 MyTransportNRF24 transport(RADIO_CE_PIN, RADIO_SPI_SS_PIN, RF24_PA_LEVEL_GW);
 MyHwESP8266 hw;
 
-//Uncomment if you want signing
-//uint8_t HMAC_KEY[32] = { 0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 };
-//MySigningAtsha204Soft signer(true /* requestSignatures */,
-//                             HMAC_KEY);
-//MyGateway gw(transport, hw, signer);
+#if SIGNING_ENABLE
+uint8_t HMAC_KEY[32] = SIGNING_HMAC;
+MySigningAtsha204Soft signer(true /* requestSignatures */,
+                             HMAC_KEY);
+MyGateway gw(transport, hw, signer);
+#else
 MyGateway gw(transport, hw);
+#endif
 
 /*
  * The I2C implementation takes care of initializing things like I/O
