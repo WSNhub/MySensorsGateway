@@ -1,4 +1,6 @@
-# MySensorsDemo
+[![Build](https://travis-ci.org/WSNhub/MySensorsGateway.svg?branch=master)](https://travis-ci.org/WSNhub/MySensorsGateway)
+
+# MySensorsGateway
 
 ## Install prerequisites
 ##### Ubuntu
