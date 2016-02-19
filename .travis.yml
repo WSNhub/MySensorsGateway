@@ -25,4 +25,4 @@ script:
   - export MY_HOME=$TRAVIS_BUILD_DIR
   - cd $MY_HOME
   - ./setup.sh
-  - make test
+  - make
