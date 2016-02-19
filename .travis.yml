@@ -24,5 +24,7 @@ install:
 script:
   - export MY_HOME=$TRAVIS_BUILD_DIR
   - cd $MY_HOME
+  - export ESP_HOME=$TRAVIS_BUILD_DIR/opt/esp-alt-sdk  
+  - export PATH=$PATH:$TRAVIS_BUILD_DIR/opt/esp-alt-sdk/utils/
   - ./setup.sh
   - make
