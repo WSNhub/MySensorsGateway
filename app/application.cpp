@@ -1,5 +1,5 @@
 #include <user_config.h>
-#include <SmingCore/SmingCore.h>
+#include <SmingCore.h>
 #include <SmingCore/Network/TelnetServer.h>
 #include <AppSettings.h>
 #include <globals.h>
@@ -7,10 +7,7 @@
 #include <IOExpansion.h>
 #include <RTClock.h>
 #include <Wifi.h>
-#include "Libraries/MySensors/MyGateway.h"
-#include "Libraries/MySensors/MyTransport.h"
-#include "Libraries/MySensors/MyTransportNRF24.h"
-#include "Libraries/MySensors/MyHwESP8266.h"
+#include <MyGateway.h>
 #include "Libraries/MySensors/MySigningAtsha204Soft.h"
 #include "Libraries/MyInterpreter/MyInterpreter.h"
 
@@ -609,7 +606,7 @@ void init()
     else
         System.setCpuFrequency(eCF_80MHz);
 
-   #ifdef MEASURE_LOCK
+   #if MEASURE_ENABLE
    pinMode(SCOPE_PIN, OUTPUT);
    #endif
 	

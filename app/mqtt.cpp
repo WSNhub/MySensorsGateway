@@ -3,7 +3,7 @@
 #include <SmingCore/Debug.h>
 #include <AppSettings.h>
 #include <mqtt.h>
-#include "Libraries/MySensors/MyGateway.h"
+#include <MyGateway.h>
 
 // Forward declarations
 void onMessageReceived(String topic, String message);

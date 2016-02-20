@@ -5,14 +5,11 @@
 extern "C" {
 #endif
 
-        // length measurement of mutex lock
-        //#define MEASURE_LOCK
-        #ifdef MEASURE_LOCK
-        #define SCOPE_PIN 16 // GPIO
-        #endif
-
 	// UART config
 	#define SERIAL_BAUD_RATE 115200
+
+        // for Logic state analyser measurements
+        #define SCOPE_PIN 16 // GPIO
 
 	// ESP SDK config
 	#define LWIP_OPEN_SRC
