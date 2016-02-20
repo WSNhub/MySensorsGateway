@@ -35,6 +35,10 @@ if [ ! -d "tools/Sming/Sming/Libraries/MyInterpreter" ] ; then
     git clone https://github.com/WSNhub/MyInterpreter.git tools/Sming/Sming/Libraries/MyInterpreter
 fi
 
+if [ ! -d "tools/Sming/Sming/Libraries/SD" ] ; then
+    git clone https://github.com/WSNhub/SD.git tools/Sming/Sming/Libraries/SD
+fi
+
 cd tools/esptool2
 make
 cd ../../
