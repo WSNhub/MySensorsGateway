@@ -68,6 +68,11 @@ void incomingMessage(const MyMessage &message)
                   mGetCommand(message), mGetAck(message),
                   message.type, message.getString(convBuf));
 
+    if (gw.getSensorTypeString(message.type) == "VAR2") 
+    {
+        Debug.printf("received pong\n");
+    }
+
     if (mGetCommand(message) == C_SET)
     {
         String type = gw.getSensorTypeString(message.type);
@@ -603,6 +608,43 @@ void processBaseAddressCommand(String commandLine, CommandOutput* out)
     System.restart();
 }
 
+void ping(void)
+{
+    int node = 22;
+    int sensor = 1; 
+    String type = "VAR1";
+    int message = 1;
+    /* send ping */
+    updateSensorStateInt(node, sensor,
+                         MyGateway::getSensorTypeFromString(type),
+                         message);
+}
+
+Timer pingpongTimer;
+void processPongCommand(String commandLine, CommandOutput* out)
+{
+    Vector<String> commandToken;
+    int numToken = splitString(commandLine, ' ' , commandToken);
+
+    if (numToken != 2 ||
+        (commandToken[1] != "start" && commandToken[1] != "stop"))
+    {
+        out->printf("usage : \r\n\r\n");
+        out->printf("pong stop : stop ping-pong node test\r\n");
+        out->printf("pong start : start ping-pong node test\r\n");
+        return;
+    }
+
+    if (commandToken[1] == "start")
+    {
+        pingpongTimer.initializeMs(500, ping).start();
+    }
+    else
+    {
+        pingpongTimer.initializeMs(500, ping).stop();
+    }
+}
+
 void processShowConfigCommand(String commandLine, CommandOutput* out)
 {
     out->println(fileGetContent(".settings.conf"));
@@ -667,7 +709,10 @@ void init()
                                                    "Set the base address to use",
                                                    "MySensors",
                                                    processBaseAddressCommand));
-
+    commandHandler.registerCommand(CommandDelegate("pong",
+                                                   "link quality test",
+                                                   "MySensors",
+                                                   processPongCommand));
     AppSettings.load();
 
     I2C_dev.begin(i2cChangeHandler);
