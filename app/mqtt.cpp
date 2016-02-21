@@ -50,6 +50,7 @@ String getValue(String data, char separator, int index)
 int updateSensorStateInt(int node, int sensor, int type, int value);
 int getTypeFromString(String type);
 
+
 void ICACHE_FLASH_ATTR onMessageReceived(String topic, String message)
 {
     /*
