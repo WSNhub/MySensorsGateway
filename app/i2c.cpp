@@ -72,10 +72,17 @@ void MyI2C::begin(I2CChangeDelegate dlg)
 
     changeDlg = dlg;
 
+#if PLATFORM_TYPE == PLATFORM_TYPE_GENERIC
     // Belows works on Wemos with swapped ATSHA204 pinning as in datasheet !
     Wire.pins(4, 5); // needed to swap : SCL, SDA  : will fix PCB !!!!
     // Belows works on Wemos with ATSHA204 pinning as in datasheet
     //Wire.pins(5, 4); // needed to swap : SCL, SDA  : will fix PCB !!!!
+#elif PLATFORM_TYPE == PLATFORM_TYPE_SDSHIELD
+    Wire.pins(5, 4); // SCL, SDA
+#else
+    #error "Unknown platform type"
+#endif
+
     Wire.begin();
 
     for (address=0; address < 127; address++)
