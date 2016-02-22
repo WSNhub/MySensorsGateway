@@ -39,8 +39,3 @@ make
 ```shell
 make flash
 ```
-
-## ToDo
-Add OTA (from rboot sample)
-
-Add MQTT (from MQTT sample)
