@@ -10,7 +10,6 @@
 #include <SDCard.h>
 #include <MyGateway.h>
 #include "Libraries/MySensors/MySigningAtsha204Soft.h"
-#include "Libraries/MyInterpreter/MyInterpreter.h"
 
 #if CONTROLLER_TYPE == CONTROLLER_TYPE_OPENHAB
   #include <openHabMqttController.h>
@@ -62,12 +61,6 @@ static boolean first_time = TRUE;
 
 char convBuf[MAX_PAYLOAD*2+1];
 
-#ifndef DISABLE_SPIFFS
-MyInterpreter interpreter;
-#endif
-
-Mutex interpreterMutex;
-
 void incomingMessage(const MyMessage &message)
 {
     // Pass along the message from sensors to serial line
@@ -89,15 +82,6 @@ void incomingMessage(const MyMessage &message)
                        "V_" + type;
         controller.notifyChange(topic, message.getString(convBuf));
     }
-
-#ifndef DISABLE_SPIFFS
-    interpreterMutex.Lock();
-    interpreter.setVariable('n', message.sender);
-    interpreter.setVariable('s', message.sensor);
-    interpreter.setVariable('v', atoi(message.getString(convBuf)));
-    interpreter.run();
-    interpreterMutex.Unlock();
-#endif
 
     return;
 }
@@ -239,46 +223,11 @@ void onFile(HttpRequest &request, HttpResponse &response)
     }
 }
 
-void onRules(HttpRequest &request, HttpResponse &response)
-{
-#ifndef DISABLE_SPIFFS
-    if (request.getRequestMethod() == RequestMethod::POST)
-    {
-	fileSetContent(".rules",
-                       request.getPostParameter("rule"));
-        interpreterMutex.Lock();
-        interpreter.loadFile((char *)".rules");
-        interpreterMutex.Unlock();
-    }
-#endif
-
-    TemplateFileStream *tmpl = new TemplateFileStream("rules.html");
-    auto &vars = tmpl->variables();
-
-#ifndef DISABLE_SPIFFS
-    interpreterMutex.Lock();
-    if (fileExist(".rules"))
-    {
-        vars["rule"] = fileGetContent(".rules");        
-    }
-    else
-    {
-        vars["rule"] = "";
-    }
-    interpreterMutex.Unlock();
-#else
-    vars["rule"] = "";
-#endif
-
-    response.sendTemplate(tmpl); // will be automatically deleted
-}
-
 void startWebServer()
 {
     server.listen(80);
     server.addPath("/", onIpConfig);
     server.addPath("/ipconfig", onIpConfig);
-    server.addPath("/rules.html", onRules);
 
     gw.registerHttpHandlers(server);
     controller.registerHttpHandlers(server);
@@ -329,12 +278,6 @@ void startServers()
     startFTP();
     startWebServer();
     telnet.listen(23);
-
-    interpreterMutex.Lock();
-    interpreter.registerFunc1((char *)"print", print);
-    interpreter.registerFunc3((char *)"updateSensorState", updateSensorState);
-    interpreter.loadFile((char *)".rules");
-    interpreterMutex.Unlock();
 
     if (AppSettings.useOwnBaseAddress)
     {
@@ -586,6 +529,23 @@ void processShowConfigCommand(String commandLine, CommandOutput* out)
     out->println(fileGetContent(".settings.conf"));
 }
 
+#include "ScriptCore.h"
+void printHandler(CScriptVar *v, void *userdata)
+{
+    String a1 =  v->getParameter("arg1")->getString();
+    Debug.println(a1);
+}
+
+void processJS(String commandLine, CommandOutput* out)
+{
+    ScriptCore s;
+    s.root->addChild("result", new CScriptVar("0",SCRIPTVAR_INTEGER));
+    s.addNative("function print(arg1)", printHandler, NULL);
+    s.execute("result = 1; print(\"All Done \"+result);");
+    bool pass = s.root->getParameter("result")->getBool();
+    out->printf("Result: %s\n", pass ? "true" : "false");
+}
+
 void i2cChangeHandler(String object, String value)
 {
     controller.notifyChange(object, value);
@@ -637,6 +597,10 @@ void init()
                                                    "Test SD",
                                                    "System",
                                                    processSD));
+    commandHandler.registerCommand(CommandDelegate("js",
+                                                   "Test JS",
+                                                   "System",
+                                                   processJS));
     commandHandler.registerCommand(CommandDelegate("showConfig",
                                                    "Show the current configuration",
                                                    "System",
