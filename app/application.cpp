@@ -7,6 +7,7 @@
 #include <IOExpansion.h>
 #include <RTClock.h>
 #include <Wifi.h>
+#include <SDCard.h>
 #include <MyGateway.h>
 #include "Libraries/MySensors/MySigningAtsha204Soft.h"
 #include "Libraries/MyInterpreter/MyInterpreter.h"
@@ -20,6 +21,13 @@
 #else
   #error Wrong CONTROLLER_TYPE value
 #endif
+
+#include <Libraries/SD/SD.h>
+
+// set up variables using the SD utility library functions:
+Sd2Card card;
+SdVolume volume;
+SdFile root;
 
 /*
  * At this point the transport layer for MySensors is prepared.
@@ -181,6 +189,8 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
 
 void onFile(HttpRequest &request, HttpResponse &response)
 {
+    static bool alreadyInitialized = false;
+
     String file = request.getPath();
     if (file[0] == '/')
         file = file.substring(1);
@@ -190,7 +200,42 @@ void onFile(HttpRequest &request, HttpResponse &response)
     else
     {
         response.setCache(86400, true); // It's important to use cache for better performance.
-        response.sendFile(file);
+
+        // open the file. note that only one file can be open at a time,
+        // so you have to close this one before opening another.
+        Debug.printf("REQUEST for %s\n", file.c_str());
+        if (alreadyInitialized || SD.begin(0))
+        {
+            alreadyInitialized = true;
+            Debug.printf("SD card present\n");
+            File f = SD.open(file);
+            if (!f) //SD.exists(file) does not seem to work
+            {
+                Debug.printf("NOT FOUND %s\n", file.c_str());
+                response.sendFile(file);
+            }
+            else if (f.isDirectory())
+            {
+                f.close();
+                Debug.printf("%s IS A DIRECTORY\n", file.c_str());
+                response.forbidden();
+            }
+            else
+            {
+                f.close();
+                Debug.printf("OPEN STREAM FOR %s\n", file.c_str());
+                response.setAllowCrossDomainOrigin("*");
+                const char *mime = ContentType::fromFullFileName(file);
+		if (mime != NULL)
+		    response.setContentType(mime);
+                SdFileStream *stream = new SdFileStream(file);
+                response.sendDataStream(stream);
+            }
+        }
+        else
+        {
+            response.sendFile(file);
+        }
     }
 }
 
@@ -328,115 +373,6 @@ void wifiCb(bool connected)
         }
     }
 }
-
-#if 0
-#include <Libraries/SDCard/SDCard.h>
-
-void stat_file(char* fname)
-{
-    FRESULT fr;
-    FILINFO fno;
-    uint8_t size = 0;
-    fr = f_stat(fname, &fno);
-    switch (fr) {
-
-    case FR_OK:
-    	Serial.printf("%u\t", fno.fsize);
-
-    	if (fno.fattrib & AM_DIR)
-    	{	Serial.print("[ "); size+= 2;}
-
-        Serial.print(fname);
-        size += strlen(fname);
-
-        if (fno.fattrib & AM_DIR)
-        {	Serial.print(" ]"); size+= 2;}
-
-        Serial.print("\t");
-        if(size < 8)
-        	Serial.print("\t");
-
-
-        Serial.printf("%u/%02u/%02u, %02u:%02u\t",
-               (fno.fdate >> 9) + 1980, fno.fdate >> 5 & 15, fno.fdate & 31,
-               fno.ftime >> 11, fno.ftime >> 5 & 63);
-        Serial.printf("%c%c%c%c%c\n",
-               (fno.fattrib & AM_DIR) ? 'D' : '-',
-               (fno.fattrib & AM_RDO) ? 'R' : '-',
-               (fno.fattrib & AM_HID) ? 'H' : '-',
-               (fno.fattrib & AM_SYS) ? 'S' : '-',
-               (fno.fattrib & AM_ARC) ? 'A' : '-');
-        break;
-
-    case FR_NO_FILE:
-        Serial.printf("n/a\n");
-        break;
-
-    default:
-        Serial.printf("Error(%d)\n", fr);
-    }
-}
-
-FRESULT ls (
-    const char* path        /* Start node to be scanned (also used as work area) */
-)
-{
-    FRESULT res;
-    FILINFO fno;
-    DIR dir;
-    int i;
-    char *fn;   /* This function assumes non-Unicode configuration */
-
-    res = f_opendir(&dir, path);                       /* Open the directory */
-    if (res == FR_OK) {
-        i = strlen(path);
-        for (;;) {
-            res = f_readdir(&dir, &fno);                   /* Read a directory item */
-            if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
-            if (fno.fname[0] == '.') continue;             /* Ignore dot entry */
-
-            stat_file(fno.fname);
-        }
-        f_closedir(&dir);
-    }
-
-    return res;
-}
-
-void processSD(String commandLine, CommandOutput* commandOutput)
-{
-#define PIN_CARD_DO 12	/* Master In Slave Out */
-#define PIN_CARD_DI 13	/* Master Out Slave In */
-#define PIN_CARD_CK 14	/* Serial Clock */
-#define PIN_CARD_SS 0	/* Slave Select */
-
-FIL file;
-	FRESULT fRes;
-	uint32_t actual;
-
-	Serial.begin(SERIAL_BAUD_RATE); // 115200 by default
-	Serial.systemDebugOutput(true); // Allow debug output to serial
-
-	SDCardSPI = new SPISoft(PIN_CARD_DO, PIN_CARD_DI, PIN_CARD_CK, PIN_CARD_SS);
-	SDCard_begin();
-
-	Serial.print("\nSDCard example - !!! see code for HW setup !!! \n\n");
-
-	/*Use of some interesting functions*/
-
-	Serial.print("1. Listing files in the root folder:\n");
-	Serial.print("Size\tName\t\tDate\t\tAttributes\n");
-
-	ls("/");
-}
-#endif
-
-#include <Libraries/SD/SD.h>
-
-// set up variables using the SD utility library functions:
-Sd2Card card;
-SdVolume volume;
-SdFile root;
 
 // change this to match your SD shield or module;
 // Arduino Ethernet shield: pin 4
