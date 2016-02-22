@@ -7,7 +7,6 @@ env:
   global:
     - SDK_BUILD=258
   matrix:
-    - SDK_VERSION=1.4.0
     - SDK_VERSION=1.5.0  
 addons:
   apt:
