@@ -127,7 +127,7 @@ void WifiClass::handleEvent(System_Event_t *e)
     }
     else
     {
-	Debug.printf("Unknown wifi event %d !\n", event);
+	//Debug.printf("Unknown wifi event %d !\n", event);
     }
 }
 
