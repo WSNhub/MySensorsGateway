@@ -11,66 +11,50 @@
 #include "TinyJS.h"
 //#include "TinyJS_Functions.h"
 #include "TinyJS_MathFunctions.h"
+#include <Mutex.h>
 
 class ScriptCore : public CTinyJS
 {
 public:
-	typedef Delegate<void()> DelegateV;
-	typedef Delegate<void(bool)> DelegateSetB;
-	typedef Delegate<bool()> DelegateGetB;
-
 	ScriptCore()
 	{
 		//registerFunctions(this);
-		registerMathFunctions(this);
+		//registerMathFunctions(this);
+
+		addNative("function GetObjectValue(object)",
+                          &ScriptCore::staticGetValueHandler,
+                          NULL);
+		addNative("function SetObjectValue(object, value)",
+                          &ScriptCore::staticSetValueHandler,
+                          NULL);
 	}
 
-	// VOID //
+private:
+	static void staticSetValueHandler(CScriptVar *v, void *userdata)
+	{
+		String object =  v->getParameter("object")->getString();
+		String value =  v->getParameter("value")->getString();
+		
+		//Set the value
+	}
+	static void staticGetValueHandler(CScriptVar *v, void *userdata)
+	{
+		String object =  v->getParameter("object")->getString();
+		
+		//get the value
+
+		v->getReturnVar()->setString((String)"TODO");
+	}
+
 public:
-	void addHandler(String objName, String mtdName, DelegateV t)
-	{
-		vVoids.addElement(t);
-		addNative("function "+objName+"."+mtdName+"()", &ScriptCore::voidHandler, (void*)&vVoids.lastElement());
-	}
+        // Locking //
+        void lock() { mutex.Lock(); };
+        void unlock() { mutex.Unlock(); };
 
 private:
-	static void voidHandler(CScriptVar *v, void *userdata)
-	{
-		auto* t = (DelegateV*)userdata;
-		(*t)();
-	}
-
-	// BOOL //
-public:
-	void addHandler(String objName, String mtdName, const DelegateGetB& t)
-	{
-		vGBools.addElement(t);
-		addNative("function "+objName+"."+mtdName+"()", &ScriptCore::boolRetHandler, (void*)&vGBools.lastElement());
-	}
-	void addHandler(String objName, String mtdName, const DelegateSetB& t)
-	{
-		vSBools.addElement(t);
-		addNative("function "+objName+"."+mtdName+"(arg1)", &ScriptCore::bool1Handler, (void*)&vSBools.lastElement());
-	}
-private:
-	static void bool1Handler(CScriptVar *v, void *userdata)
-	{
-		bool a1 =  v->getParameter("arg1")->getBool();
-		auto* t = (DelegateSetB*)userdata;
-		(*t)(a1);
-	}
-	static void boolRetHandler(CScriptVar *v, void *userdata)
-	{
-		auto* t = (DelegateGetB*)userdata;
-		auto result = (*t)();
-		v->getReturnVar()->setInt((int)result);
-	}
-
-private:
-	Vector<DelegateV> vVoids;
-	Vector<DelegateGetB> vGBools;
-	Vector<DelegateSetB> vSBools;
+        Mutex mutex;
 };
 
+extern ScriptCore ScriptingCore;
 
 #endif /* INCLUDE_SCRIPTCORE_H_ */

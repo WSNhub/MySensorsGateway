@@ -270,9 +270,18 @@ void heapCheckUsage()
 
 uint64_t rfBaseAddress;
 
+void i2cChangeHandler(String object, String value)
+{
+    controller.notifyChange(object, value);
+}
+
 // Will be called when system initialization was completed
 void startServers()
 {
+    I2C_dev.begin(i2cChangeHandler);
+    ioExpansion.begin(i2cChangeHandler);
+    rtcDev.begin(i2cChangeHandler);
+
     heapCheckTimer.initializeMs(60000, heapCheckUsage).start(true);
 
     startFTP();
@@ -536,19 +545,24 @@ void printHandler(CScriptVar *v, void *userdata)
     Debug.println(a1);
 }
 
+bool first = true;
 void processJS(String commandLine, CommandOutput* out)
 {
-    ScriptCore s;
-    s.root->addChild("result", new CScriptVar("0",SCRIPTVAR_INTEGER));
-    s.addNative("function print(arg1)", printHandler, NULL);
-    s.execute("result = 1; print(\"All Done \"+result);");
-    bool pass = s.root->getParameter("result")->getBool();
-    out->printf("Result: %s\n", pass ? "true" : "false");
-}
+    if (first)
+    {
+        ScriptingCore.addNative("function print(arg1)", printHandler, NULL);
+        first = false;
+    }
 
-void i2cChangeHandler(String object, String value)
-{
-    controller.notifyChange(object, value);
+    ScriptingCore.execute("result = 1; print(\"All Done \"+result);");
+    bool pass = ScriptingCore.root->getParameter("result")->getBool();
+    out->printf("Result: %s\n", pass ? "true" : "false");
+    /*ScriptingCore.execute("print(\"myItem.GetValue() => \"+myItem.GetValue());");
+    ScriptingCore.execute("myItem.SetValue(\"NewValue\");");
+    ScriptingCore.execute("print(\"myItem.GetValue() => \"+myItem.GetValue());");
+    o->SetValueInternal("INTERNALUPDATE");
+    ScriptingCore.execute("print(\"myItem.GetValue() => \"+myItem.GetValue());");
+    ScriptingCore.execute("for (result=0; result<100; result++) { print(result); }");*/
 }
 
 void init()
@@ -614,10 +628,6 @@ void init()
                                                    "MySensors",
                                                    processPongCommand));
     AppSettings.load();
-
-    I2C_dev.begin(i2cChangeHandler);
-    ioExpansion.begin(i2cChangeHandler);
-    rtcDev.begin(i2cChangeHandler);
 
     Wifi.begin(wifiCb);
 
