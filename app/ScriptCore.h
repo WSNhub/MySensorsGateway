@@ -12,47 +12,53 @@
 //#include "TinyJS_Functions.h"
 #include "TinyJS_MathFunctions.h"
 #include <Mutex.h>
+#include "IOExpansion.h"
+#include <SmingCore/Debug.h>
 
 class ScriptCore : public CTinyJS
 {
 public:
-	ScriptCore()
-	{
-		//registerFunctions(this);
-		//registerMathFunctions(this);
-
-		addNative("function GetObjectValue(object)",
-                          &ScriptCore::staticGetValueHandler,
-                          NULL);
-		addNative("function SetObjectValue(object, value)",
-                          &ScriptCore::staticSetValueHandler,
-                          NULL);
-	}
+    ScriptCore()
+    {
+        addNative("function GetObjectValue(object)",
+                  &ScriptCore::staticGetValueHandler,
+                  NULL);
+        addNative("function SetObjectValue(object, value)",
+                  &ScriptCore::staticSetValueHandler,
+                  NULL);
+    }
 
 private:
-	static void staticSetValueHandler(CScriptVar *v, void *userdata)
-	{
-		String object =  v->getParameter("object")->getString();
-		String value =  v->getParameter("value")->getString();
-		
-		//Set the value
-	}
-	static void staticGetValueHandler(CScriptVar *v, void *userdata)
-	{
-		String object =  v->getParameter("object")->getString();
-		
-		//get the value
+    static void staticSetValueHandler(CScriptVar *v, void *userdata)
+    {
+        String object =  v->getParameter("object")->getString();
+        String value =  v->getParameter("value")->getString();
 
-		v->getReturnVar()->setString((String)"TODO");
-	}
+        if (object.startsWith("output"))
+        {
+            //Set the value
+            Expansion.updateResource(object, value);
+        }
+        else
+        {
+            Debug.println("ERROR: Inputs can not be updated from script");
+        }
+    }
+
+    static void staticGetValueHandler(CScriptVar *v, void *userdata)
+    {
+        String object = v->getParameter("object")->getString();
+        //get the value
+        v->getReturnVar()->setString(Expansion.getResourceValue(object));
+    }
 
 public:
-        // Locking //
-        void lock() { mutex.Lock(); };
-        void unlock() { mutex.Unlock(); };
+    // Locking //
+    void lock() { mutex.Lock(); };
+    void unlock() { mutex.Unlock(); };
 
 private:
-        Mutex mutex;
+    Mutex mutex;
 };
 
 extern ScriptCore ScriptingCore;

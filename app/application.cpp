@@ -51,7 +51,6 @@ MyGateway gw(transport, hw);
  * expanders, the RTC chip and the OLED.
  */
 MyI2C I2C_dev;
-IOExpansion ioExpansion;
 RTClock rtcDev;
 
 HttpServer server;
@@ -279,7 +278,7 @@ void i2cChangeHandler(String object, String value)
 void startServers()
 {
     I2C_dev.begin(i2cChangeHandler);
-    ioExpansion.begin(i2cChangeHandler);
+    Expansion.begin(i2cChangeHandler);
     rtcDev.begin(i2cChangeHandler);
 
     heapCheckTimer.initializeMs(60000, heapCheckUsage).start(true);
@@ -557,12 +556,8 @@ void processJS(String commandLine, CommandOutput* out)
     ScriptingCore.execute("result = 1; print(\"All Done \"+result);");
     bool pass = ScriptingCore.root->getParameter("result")->getBool();
     out->printf("Result: %s\n", pass ? "true" : "false");
-    /*ScriptingCore.execute("print(\"myItem.GetValue() => \"+myItem.GetValue());");
-    ScriptingCore.execute("myItem.SetValue(\"NewValue\");");
-    ScriptingCore.execute("print(\"myItem.GetValue() => \"+myItem.GetValue());");
-    o->SetValueInternal("INTERNALUPDATE");
-    ScriptingCore.execute("print(\"myItem.GetValue() => \"+myItem.GetValue());");
-    ScriptingCore.execute("for (result=0; result<100; result++) { print(result); }");*/
+    ScriptingCore.execute("print(\"GetObjectValue() => \"+GetObjectValue(\"inputA2\"));");
+    //ScriptingCore.execute("for (result=0; result<100; result++) { print(result); }");
 }
 
 void init()

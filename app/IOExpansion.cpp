@@ -5,6 +5,175 @@
 #include <AppSettings.h>
 #include "IOExpansion.h"
 
+bool IOExpansion::i2cSetMcpOutput(uint8_t output, bool enable)
+{
+    uint8_t port;
+    uint8_t pin;
+    uint8_t outputs;
+    
+    /*
+     * Output is any number between 1 and 56, boundaries included
+     * so the port and pin number have to be derived from it.
+     */
+
+    if (output < 1 || output > 56)
+    {
+        Debug.printf("invalid output %d!!!!\n", output);
+        return false;
+    }
+
+    port = (output - 1) / 8;
+    pin = output - 1 - (port * 8);
+    Debug.printf("Set output %d %s [port=%d pin=%d]\n",
+                  output, enable ? "on" : "off", port, pin);
+
+    /* read the actual value */
+    Wire.beginTransmission(0x20 + port);
+    Wire.write(0x12); //port A
+    Wire.endTransmission();
+    Wire.requestFrom(0x20 + port, 1);
+    outputs=Wire.read();
+
+//    if (AppSettings.getMcpOutputInvert(port) & (1 << pin))
+//        enable = !enable;
+
+    if (!enable)
+        outputs &= ~(1 << pin);
+    else
+        outputs |= (1 << pin);
+
+    Wire.beginTransmission(0x20 + port);
+    Wire.write(0x12); // address port A
+    Wire.write(outputs);  // value to send
+    Wire.endTransmission();
+
+    i2cPublishMcpOutputs(0x20 + port, false /* forcePublish */);
+    return true;
+}
+
+bool IOExpansion::i2cToggleMcpOutput(uint8_t output)
+{
+    uint8_t port;
+    uint8_t pin;
+    uint8_t outputs;
+    
+    /*
+     * Output is any number between 1 and 56, boundaries included
+     * so the port and pin number have to be derived from it.
+     */
+
+    if (output < 1 || output > 56)
+    {
+        Debug.printf("invalid output %d!!!!\n", output);
+        return false;
+    }
+
+    port = (output - 1) / 8;
+    pin = output - 1 - (port * 8);
+    Debug.printf("Toggle output %d [port=%d pin=%d]\n",
+                  output, port, pin);
+
+    /* read the actual value */
+    Wire.beginTransmission(0x20 + port);
+    Wire.write(0x12); //port A
+    Wire.endTransmission();
+    Wire.requestFrom(0x20 + port, 1);
+    outputs=Wire.read();
+
+    bool newState = outputs & (1 << pin) ? false : true;
+
+    if (!newState)
+        outputs &= ~(1 << pin);
+    else
+        outputs |= (1 << pin);
+
+    Wire.beginTransmission(0x20 + port);
+    Wire.write(0x12); // address port A
+    Wire.write(outputs);  // value to send
+    Wire.endTransmission();
+
+    i2cPublishMcpOutputs(0x20 + port, false /* forcePublish */);
+    return true;
+}
+
+bool IOExpansion::i2cSetMcpOutputInvert(uint8_t output, bool invert)
+{
+#if 0
+    uint8_t port;
+    uint8_t pin;
+    uint8_t invertMask;
+    
+    /*
+     * Output is any number between 1 and 56, boundaries included
+     * so the port and pin number have to be derived from it.
+     */
+
+    if (output < 1 || output > 56)
+    {
+        Debug.printf("invalid output %d!!!!\n", output);
+        return false;
+    }
+
+    port = (output - 1) / 8;
+    pin = output - 1 - (port * 8);
+    Debug.printf("Set invert output %d %s [port=%d pin=%d]\n",
+                  output, invert ? "yes" : "no", port, pin);
+
+    invertMask = AppSettings.getMcpOutputInvert(port);
+    if (!invert)
+        invertMask &= ~(1 << pin);
+    else
+        invertMask |= (1 << pin);
+
+    AppSettings.setMcpOutputInvert(port, invertMask);
+    AppSettings.save();
+    
+    i2cPublishMcpOutputs(0x20 + port, false /* forcePublish */);
+#endif
+    return true;
+}
+
+bool IOExpansion::i2cSetMcpInputInvert(uint8_t input, bool invert)
+{
+#if 0
+    uint8_t port;
+    uint8_t pin;
+    uint8_t invertMask;
+    
+    /*
+     * Output is any number between 1 and 56, boundaries included
+     * so the port and pin number have to be derived from it.
+     */
+
+    if (input < 1 || input > 56)
+    {
+        Debug.printf("invalid output %d!!!!\n", input);
+        return false;
+    }
+
+    port = (input - 1) / 8;
+    pin = input - 1 - (port * 8);
+    Debug.printf("Set invert input %d %s [port=%d pin=%d]\n",
+                  input, invert ? "yes" : "no", port, pin);
+
+    invertMask = AppSettings.getMcpInputInvert(port);
+    if (!invert)
+        invertMask &= ~(1 << pin);
+    else
+        invertMask |= (1 << pin);
+
+    AppSettings.setMcpInputInvert(port, invertMask);
+    AppSettings.save();
+    
+    Wire.beginTransmission(0x20 + port);
+    Wire.write(0x03); // input invert register
+    Wire.write(invertMask);
+
+    i2cPublishMcpInputs(0x20 + port, false /* forcePublish */);
+#endif
+    return true;
+}
+
 void IOExpansion::i2cPublishMcpOutputs(byte address, bool forcePublish)
 {
     uint8_t outputs;
@@ -38,7 +207,7 @@ void IOExpansion::i2cPublishMcpOutputs(byte address, bool forcePublish)
             (mcp23017Outputs[address - 0x20] & (1 << j)) != (outputs & (1 << j)))
         {
             if (changeDlg)
-                changeDlg(String("output-d") +
+                changeDlg(String("outputD") +
                           String((j + 1) + (8 * (address - 0x20))),
                           outputs & (1 << j) ? "on" : "off");
         }
@@ -64,7 +233,7 @@ void IOExpansion::i2cPublishMcpInputs(byte address, bool forcePublish)
             (mcp23017Inputs[address - 0x20] & (1 << j)) != (inputs & (1 << j)))
         {
             if (changeDlg)
-                changeDlg(String("input-d") +
+                changeDlg(String("inputD") +
                           String((j + 1) + (8 * (address - 0x20))),
                           inputs & (1 << j) ? "on" : "off");
         }
@@ -131,7 +300,7 @@ void IOExpansion::i2cPublishPcfInputs(byte address, bool forcePublish)
             pcf8591Inputs[j + (4 * (address - 0x48))] != value[j])
         {
             if (changeDlg)
-                changeDlg(String("input-a") +
+                changeDlg(String("inputA") +
                           String((j + 1) + (4 * (address - 0x48))),
                           String(value[j]));
         }
@@ -275,3 +444,87 @@ void IOExpansion::begin(IOChangeDelegate dlg)
         Debug.printf("No I/O expanders found\n");
     }
 }
+
+bool IOExpansion::updateResource(String resource, String value)
+{
+    if (resource.startsWith("outputD"))
+    {
+        resource = resource.substring(6);
+        int out = resource.toInt();
+        if (out < 1 || out > 56)
+        {
+            Debug.printf("invalid output: d%d", out);
+            return false;
+        }
+
+        Debug.printf("Set digital output: [%d] %s\n", out, value.c_str());
+        i2cSetMcpOutput(out, value.equals("on"));
+    }
+    else
+    {
+        Debug.println("ERROR: Only digital outputs can be set");
+        return false;
+    }
+
+    return true;
+}
+
+String IOExpansion::getResourceValue(String resource)
+{
+    uint8_t port;
+    uint8_t pin;
+
+    /* Digital input */
+    if (resource.startsWith("inputD"))
+    {
+        resource = resource.substring(6);
+        int input = resource.toInt();
+        if (input < 1 || input > 56)
+        {
+            Debug.printf("invalid input: d%d", input);
+            return "invalid";
+        }
+
+        port = (input - 1) / 8;
+        pin = input - 1 - (port * 8);
+        Debug.printf("Get input D%d [port=%d pin=%d]\n",
+                     input, port, pin);
+        return (mcp23017Inputs[port] & (1 << pin)) ? "on" : "off";
+    }
+    /* Digital input */
+    if (resource.startsWith("inputA"))
+    {
+        resource = resource.substring(6);
+        int input = resource.toInt();
+        if (input < 1 || input > 32)
+        {
+            Debug.printf("invalid input: d%d", input);
+            return "invalid";
+        }
+
+        Debug.printf("Get input A%d\n", input);
+        return String(pcf8591Inputs[input - 1]);
+    }
+    /* Digital output */
+    else if (resource.startsWith("outputD"))
+    {
+        resource = resource.substring(7);
+        int output = resource.toInt();
+        if (output < 1 || output > 56)
+        {
+            Debug.printf("invalid output: d%d", output);
+            return "invalid";
+        }
+
+        port = (output - 1) / 8;
+        pin = output - 1 - (port * 8);
+        Debug.printf("Get output %d [port=%d pin=%d]\n",
+                     output, port, pin);
+        return (mcp23017Outputs[port] & (1 << pin)) ? "on" : "off";
+    }
+
+    Debug.println("ERROR: GetValue for an unknown object");
+    return "invalid";
+}
+
+IOExpansion Expansion;
