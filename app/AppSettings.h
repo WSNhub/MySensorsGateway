@@ -36,7 +36,7 @@ class ApplicationSettingsStorage
     String mqttControllerPfx;
 
     bool   cpuBoost = true;
-    bool   useOwnBaseAddress = false;
+    bool   useOwnBaseAddress = true;
 
     String cloudDeviceToken;
     String cloudLogin;
