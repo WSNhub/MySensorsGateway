@@ -40,9 +40,9 @@ void RTClock::begin(RTCChangeDelegate dlg)
 
 #if PLATFORM_TYPE == PLATFORM_TYPE_GENERIC
     Wire.lock();
-
     Wire.beginTransmission(0x68);
     error = Wire.endTransmission();
+    Wire.unlock();
 
     WDT.alive(); //Make doggy happy
 
@@ -59,8 +59,6 @@ void RTClock::begin(RTCChangeDelegate dlg)
         rtc.convertTemperature();             //convert current temperature into registers
         Debug.printf(" %02f deg C\n", rtc.getTemperature()); //read registers and display the temperature
     }
-
-    Wire.unlock();
 
 #else
     Wire.lock();
