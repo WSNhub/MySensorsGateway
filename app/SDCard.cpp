@@ -29,6 +29,9 @@ SdFileStream::SdFileStream(String fileName)
 	// Get size
 	size = handle.size();
 
+        // Set position
+        pos = 0;
+
 	Debug.printf("send file: %s (%d bytes)\n", fileName.c_str(), size);
 }
 
@@ -42,8 +45,9 @@ SdFileStream::~SdFileStream()
 
 uint16_t SdFileStream::readMemoryBlock(char* data, int bufSize)
 {
-	int len = min(bufSize, size - pos);
-	Debug.printf("READ: %s len %d\n", handle.name(), len);
+	uint32_t len = min(bufSize, size - pos);
+	len = min(1024, len);
+        Debug.printf("READ: %s len %d\n", handle.name(), len);
 	int available = handle.read(data, len);
 	return available;
 }
