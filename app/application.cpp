@@ -9,7 +9,6 @@
 #include <Wifi.h>
 #include <SDCard.h>
 #include <MyGateway.h>
-#include "Libraries/MySensors/MySigningAtsha204Soft.h"
 
 #if CONTROLLER_TYPE == CONTROLLER_TYPE_OPENHAB
   #include <openHabMqttController.h>
@@ -27,24 +26,6 @@
 Sd2Card card;
 SdVolume volume;
 SdFile root;
-
-/*
- * At this point the transport layer for MySensors is prepared.
- * It is possible to change pin here but it is strongly disadvised.
- */
-#define RADIO_CE_PIN        2   // radio chip enable
-#define RADIO_SPI_SS_PIN    15  // radio SPI serial select
-MyTransportNRF24 transport(RADIO_CE_PIN, RADIO_SPI_SS_PIN, RF24_PA_LEVEL_GW);
-MyHwESP8266 hw;
-
-#if SIGNING_ENABLE
-uint8_t HMAC_KEY[32] = SIGNING_HMAC;
-MySigningAtsha204Soft signer(true /* requestSignatures */,
-                             HMAC_KEY);
-MyGateway gw(transport, hw, signer);
-#else
-MyGateway gw(transport, hw);
-#endif
 
 /*
  * The I2C implementation takes care of initializing things like I/O
@@ -68,14 +49,14 @@ void incomingMessage(const MyMessage &message)
                   mGetCommand(message), mGetAck(message),
                   message.type, message.getString(convBuf));
 
-    if (gw.getSensorTypeString(message.type) == "VAR2") 
+    if (GW.getSensorTypeString(message.type) == "VAR2") 
     {
         Debug.printf("received pong\n");
     }
 
     if (mGetCommand(message) == C_SET)
     {
-        String type = gw.getSensorTypeString(message.type);
+        String type = GW.getSensorTypeString(message.type);
         String topic = message.sender + String("/") +
                        message.sensor + String("/") +
                        "V_" + type;
@@ -228,7 +209,7 @@ void startWebServer()
     server.addPath("/", onIpConfig);
     server.addPath("/ipconfig", onIpConfig);
 
-    gw.registerHttpHandlers(server);
+    GW.registerHttpHandlers(server);
     controller.registerHttpHandlers(server);
     server.setDefaultHandler(onFile);
 }
@@ -243,17 +224,11 @@ void startFTP()
     ftp.addUser("me", "123"); // FTP account
 }
 
-int print(int a)
-{
-  Debug.println(a);
-  return a;
-}
-
 int updateSensorStateInt(int node, int sensor, int type, int value)
 {
   MyMessage myMsg;
   myMsg.set(value);
-  gw.sendRoute(gw.build(myMsg, node, sensor, C_SET, type, 0));
+  GW.sendRoute(GW.build(myMsg, node, sensor, C_SET, type, 0));
 }
 
 int updateSensorState(int node, int sensor, int value)
@@ -319,7 +294,7 @@ void wifiCb(bool connected)
         {
             first_time = FALSE;
             // start getting sensor data
-            gw.begin(incomingMessage, NULL, rfBaseAddress);
+            GW.begin(incomingMessage, NULL, rfBaseAddress);
             ntpClient.requestTime();
         }
     }
@@ -399,7 +374,7 @@ void processInfoCommand(String commandLine, CommandOutput* out)
     out->printf("Version            : %s\n", build_git_sha);
     out->printf("Sming Version      : %s\n", SMING_VERSION);
     out->printf("ESP SDK version    : %s\n", system_get_sdk_version());
-    out->printf("MySensors version  : %s\n", gw.version());
+    out->printf("MySensors version  : %s\n", GW.version());
     out->printf("\r\n");
     out->printf("Time               : ");
     out->printf(SystemClock.getSystemTimeString().c_str());
@@ -553,11 +528,13 @@ void processJS(String commandLine, CommandOutput* out)
         first = false;
     }
 
+    ScriptingCore.execute("SetObjectValue(\"sensor2\", \"1\");");
     ScriptingCore.execute("result = 1; print(\"All Done \"+result);");
     bool pass = ScriptingCore.root->getParameter("result")->getBool();
     out->printf("Result: %s\n", pass ? "true" : "false");
-    ScriptingCore.execute("print(\"GetObjectValue() => \"+GetObjectValue(\"inputA2\"));");
+    ScriptingCore.execute("print(\"GetObjectValue() => \"+GetObjectValue(\"sensor1\"));");
     //ScriptingCore.execute("for (result=0; result<100; result++) { print(result); }");
+    ScriptingCore.execute("SetObjectValue(\"sensor2\", \"0\");");
 }
 
 void init()

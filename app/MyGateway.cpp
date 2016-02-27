@@ -1,26 +1,30 @@
 #include <user_config.h>
 #include <SmingCore.h>
 #include "MyGateway.h"
+#include "Libraries/MySensors/MySigningAtsha204Soft.h"
 
 #define RADIO_CE_PIN 2
 #define RADIO_SPI_SS_PIN 15
 
-MyGateway::MyGateway(MyTransport &radio, MyHw &hw
+MyTransportNRF24 transport(RADIO_CE_PIN, RADIO_SPI_SS_PIN, RF24_PA_LEVEL_GW);
+MyHwESP8266 hw;
+#if SIGNING_ENABLE
+uint8_t HMAC_KEY[32] = SIGNING_HMAC;
+MySigningAtsha204Soft signer(true /* requestSignatures */,
+                             HMAC_KEY);
+#else
+MySigningNone signer;
+#endif
+
+
+MyGateway::MyGateway() : gw(transport,
+                            hw
 #ifdef MY_SIGNING_FEATURE
-		   , MySigning &signer
+                         ,  signer
 #endif
 #ifdef WITH_LEDS_BLINKING
-		   , uint8_t _rx,
-		     uint8_t _tx,
-		     uint8_t _er,
-		     unsigned long _blink_period
-#endif
-		    ) : gw(radio, hw
-#ifdef MY_SIGNING_FEATURE
-                         , signer
-#endif
-#ifdef WITH_LEDS_BLINKING
-                         , _rx, _tx, _er, _blink_period
+                         ,  DEFAULT_RX_LED_PIN, DEFAULT_TX_LED_PIN,
+                            DEFAULT_ERR_LED_PIN, DEFAULT_LED_BLINK_PERIOD
 #endif
 )
 {
@@ -230,7 +234,7 @@ void MyGateway::begin(msgRxDelegate rxDlg, sensorValueChangedDelegate valueChang
     hw_init();
     gw.begin(msgRxDelegate(&MyGateway::incomingMessage, this),
              0, true, 0, base_address);
-    processTimer.initializeUs(500, TimerDelegate(&MyGateway::process, this)).start();
+    processTimer.initializeUs(100, TimerDelegate(&MyGateway::process, this)).start();
 }
 
 MyMessage& MyGateway::build (MyMessage &msg, uint8_t destination, uint8_t sensor, uint8_t command, uint8_t type, bool enableAck) {
@@ -517,3 +521,28 @@ int MyGateway::getSensorTypeFromString(String type)
 
     return 255;
 }
+
+String MyGateway::getSensorValue(String object)
+{
+    String idStr = object.substring(6);
+    int id = idStr.toInt();
+    if (id > 0 && id <= MAX_MY_SENSORS)
+        return mySensors[id-1].value;
+    return "UnknownObjectError";
+}
+
+void MyGateway::setSensorValue(String object, String value)
+{
+    String idStr = object.substring(6);
+    int id = idStr.toInt();
+    if (id < 1 || id > MAX_MY_SENSORS)
+        return;
+
+    MyMessage myMsg;
+    myMsg.set(value.c_str());
+    GW.sendRoute(GW.build(myMsg, mySensors[id-1].node,
+                          mySensors[id-1].sensor, C_SET,
+                          2 /*mySensors[id-1].type*/, 0));
+}
+
+MyGateway GW;

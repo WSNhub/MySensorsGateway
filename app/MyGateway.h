@@ -53,18 +53,7 @@ typedef Delegate<void(int sensorId, String value)> sensorValueChangedDelegate;
 class MyGateway
 {
   public:
-	MyGateway(MyTransport &radio =*new MyTransportNRF24(),
-                  MyHw &hw=*new MyHwDriver()
-#ifdef MY_SIGNING_FEATURE
-		, MySigning &signer=*new MySigningNone()
-#endif
-#ifdef WITH_LEDS_BLINKING
-		, uint8_t _rx=DEFAULT_RX_LED_PIN,
-		uint8_t _tx=DEFAULT_TX_LED_PIN,
-		uint8_t _er=DEFAULT_ERR_LED_PIN,
-		unsigned long _blink_period=DEFAULT_LED_BLINK_PERIOD
-#endif
-		);
+	MyGateway();
 
 	void begin(msgRxDelegate = NULL,
                    sensorValueChangedDelegate valueChanged = NULL,
@@ -77,6 +66,8 @@ class MyGateway
         void registerHttpHandlers(HttpServer &server);
         static String getSensorTypeString(int type);
         static int getSensorTypeFromString(String type);
+        String getSensorValue(String object);
+        void setSensorValue(String object, String value);
 
   protected:
     void process();
@@ -96,5 +87,7 @@ class MyGateway
     sensor_t mySensors[MAX_MY_SENSORS];
     MyMessage msg;
 };
+
+extern MyGateway GW;
 
 #endif

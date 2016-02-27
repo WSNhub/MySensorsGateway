@@ -1,10 +1,3 @@
-/*
- * ScriptCore.h
- *
- *  Created on: 26 џэт. 2016 у.
- *      Author: Anakod
- */
-
 #ifndef INCLUDE_SCRIPTCORE_H_
 #define INCLUDE_SCRIPTCORE_H_
 
@@ -13,6 +6,7 @@
 #include "TinyJS_MathFunctions.h"
 #include <Mutex.h>
 #include "IOExpansion.h"
+#include "MyGateway.h"
 #include <SmingCore/Debug.h>
 
 class ScriptCore : public CTinyJS
@@ -39,6 +33,10 @@ private:
             //Set the value
             Expansion.updateResource(object, value);
         }
+        else if (object.startsWith("sensor"))
+        {
+            GW.setSensorValue(object, value);
+        }
         else
         {
             Debug.println("ERROR: Inputs can not be updated from script");
@@ -49,7 +47,18 @@ private:
     {
         String object = v->getParameter("object")->getString();
         //get the value
-        v->getReturnVar()->setString(Expansion.getResourceValue(object));
+        if (object.startsWith("output") || object.startsWith("input"))
+        {
+            v->getReturnVar()->setString(Expansion.getResourceValue(object));
+        }
+        else if (object.startsWith("sensor"))
+        {
+            v->getReturnVar()->setString(GW.getSensorValue(object));
+        }
+        else
+        {
+            v->getReturnVar()->setString("UnknownObjectError");
+        }
     }
 
 public:
