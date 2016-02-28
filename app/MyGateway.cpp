@@ -1,6 +1,7 @@
 #include <user_config.h>
 #include <SmingCore.h>
 #include "MyGateway.h"
+#include "Libraries/MySensors/MySigningAtsha204.h"
 #include "Libraries/MySensors/MySigningAtsha204Soft.h"
 
 #define RADIO_CE_PIN 2
@@ -9,9 +10,13 @@
 MyTransportNRF24 transport(RADIO_CE_PIN, RADIO_SPI_SS_PIN, RF24_PA_LEVEL_GW);
 MyHwESP8266 hw;
 #if SIGNING_ENABLE
+#if ATSHA204I2C 
+MySigningAtsha204 signer(true /* requestSignatures */);
+#else
 uint8_t HMAC_KEY[32] = SIGNING_HMAC;
 MySigningAtsha204Soft signer(true /* requestSignatures */,
-                             HMAC_KEY);
+                         HMAC_KEY);
+#endif
 #else
 MySigningNone signer;
 #endif
