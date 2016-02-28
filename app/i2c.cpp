@@ -8,9 +8,11 @@
 #include "i2c.h"
 #include "mqtt.h"
 
-#include <SHA204.h>
-#include <SHA204Definitions.h>
-#include "SHA204I2C.h"
+#include <Libraries/MySensors/SHA204.h>
+#include <Libraries/MySensors/SHA204I2C.h>
+//#include "SHA204.h"
+//#include "SHA204Definitions.h"
+//#include "SHA204I2C.h"
 
 Adafruit_SSD1306 display(-1); // reset Pin required but later ignored if set to False
 
