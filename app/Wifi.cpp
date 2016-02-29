@@ -35,7 +35,7 @@ void WifiClass::begin(WifiStateChangeDelegate dlg)
                               AppSettings.gateway);
         }
     }
-    else
+    /*else
     {
         String SSID = WifiStation.getSSID();
         if (!SSID.equals(""))
@@ -44,11 +44,19 @@ void WifiClass::begin(WifiStateChangeDelegate dlg)
             AppSettings.password = WifiStation.getPassword();
             AppSettings.save();
         }
-    }
+    }*/
 
     wifi_set_event_handler_cb(wifi_cb);
 
-    WifiStation.enable(true);
+    if (AppSettings.ssid.equals(""))
+    {
+        WifiStation.enable(false);
+    }
+    else
+    {
+        WifiStation.enable(true);
+    }
+
     softApEnable();
 
     otaEnable();    
