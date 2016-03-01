@@ -26,4 +26,6 @@ class RTClock
     Timer             checkTimer;
 };
 
+extern RTClock Clock;
+
 #endif //INCLUDE_RTC_H_

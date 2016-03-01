@@ -22,7 +22,6 @@ SdFile root;
  * expanders, the RTC chip and the OLED.
  */
 MyI2C I2C_dev;
-RTClock rtcDev;
 
 FTPServer ftp;
 TelnetServer telnet;
@@ -95,7 +94,7 @@ void startServers()
 
     I2C_dev.begin(i2cChangeHandler);
     Expansion.begin(i2cChangeHandler);
-    rtcDev.begin(i2cChangeHandler);
+    Clock.begin(i2cChangeHandler);
 
     heapCheckTimer.initializeMs(60000, heapCheckUsage).start(true);
 
@@ -103,16 +102,6 @@ void startServers()
     telnet.listen(23);
     controller.begin();
 }
-
-void ntpTimeResultHandler(NtpClient& client, time_t ntpTime)
-{
-    SystemClock.setTime(ntpTime, eTZ_UTC);
-    Debug.print("Time after NTP sync: ");
-    Debug.println(SystemClock.getSystemTimeString());
-    rtcDev.setTime(ntpTime);
-}
-
-NtpClient ntpClient(NTP_DEFAULT_SERVER, 0, ntpTimeResultHandler);
 
 // Will be called when WiFi station was connected to AP
 void wifiCb(bool connected)
@@ -125,7 +114,6 @@ void wifiCb(bool connected)
             first_time = FALSE;
             // start getting sensor data
             GW.begin(incomingMessage, NULL);
-            ntpClient.requestTime();
         }
     }
 }

@@ -11,7 +11,14 @@ typedef Delegate<void(bool)> WifiStateChangeDelegate;
 class WifiClass
 {
   public:
-    WifiClass() { connected = false; };
+    WifiClass() : ntpClient(NTP_DEFAULT_SERVER,
+                            0,
+                            NtpTimeResultDelegate(
+                                &WifiClass::ntpTimeResultHandler,
+                                this))
+    {
+        connected = false;
+    };
 
     void begin(WifiStateChangeDelegate dlg = NULL);
     void softApEnable();
@@ -21,6 +28,7 @@ class WifiClass
   private:
     void portalLoginHandler(HttpClient& client, bool successful);
     void connect();
+    void ntpTimeResultHandler(NtpClient& client, time_t ntpTime);
 
   private:
     WifiStateChangeDelegate changeDlg;
@@ -28,6 +36,7 @@ class WifiClass
     bool                    haveIp = false;
     HttpClient              portalLogin;
     Timer                   reconnectTimer;
+    NtpClient               ntpClient;
 };
 
 extern WifiClass Wifi;

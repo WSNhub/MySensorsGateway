@@ -14,6 +14,8 @@ RTC_DS1307 rtc1307;
     #error "Unknown platform type"
 #endif
 
+RTClock Clock;
+
 void RTClock::checkState()
 {
 #if PLATFORM_TYPE == PLATFORM_TYPE_GENERIC

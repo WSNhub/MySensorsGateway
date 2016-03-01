@@ -4,6 +4,7 @@
 #include <globals.h>
 #include <AppSettings.h>
 #include "Wifi.h"
+#include "RTClock.h"
 
 void
 wifi_cb ( System_Event_t *e )
@@ -124,7 +125,10 @@ void WifiClass::handleEvent(System_Event_t *e)
     else if (event == EVENT_STAMODE_CONNECTED)
     {
 	if (!connected)
+        {
             Debug.printf("Wifi client got connected\n");
+            ntpClient.requestTime();
+        }
         connected = true;
     }
     else if (event == EVENT_STAMODE_DISCONNECTED)
@@ -208,6 +212,14 @@ void WifiClass::connect()
 void WifiClass::reconnect(int delayMs)
 {
     reconnectTimer.initializeMs(delayMs, TimerDelegate(&WifiClass::connect, this)).startOnce();
+}
+
+void WifiClass::ntpTimeResultHandler(NtpClient& client, time_t ntpTime)
+{
+    SystemClock.setTime(ntpTime, eTZ_UTC);
+    Debug.print("Time after NTP sync: ");
+    Debug.println(SystemClock.getSystemTimeString());
+    Clock.setTime(ntpTime);
 }
 
 WifiClass Wifi;
