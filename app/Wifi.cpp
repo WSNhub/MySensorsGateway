@@ -56,7 +56,7 @@ void WifiClass::begin(WifiStateChangeDelegate dlg)
     }
     else
     {
-        reconnect(10);
+        reconnect(1);
     }
 
     softApEnable();
@@ -129,7 +129,31 @@ void WifiClass::handleEvent(System_Event_t *e)
     }
     else if (event == EVENT_STAMODE_DISCONNECTED)
     {
-	wifi_station_disconnect();
+        static int  numApNotFound = 0;
+        static int  numOther = 0;
+
+        if (e->event_info.disconnected.reason == REASON_NO_AP_FOUND)
+        {
+            numOther = 0;
+            numApNotFound++;
+            if (numApNotFound == 10)
+            {
+	        wifi_station_disconnect();
+                reconnect(60000);
+                numApNotFound = 0;
+            }
+        }
+        else
+        {
+            numApNotFound = 0;
+            numOther++;
+            if (numOther == 10)
+            {
+	        wifi_station_disconnect();
+                reconnect(5000);
+                numOther = 0;
+            }
+        }
 
         if (connected)
             Debug.printf("Wifi client got disconnected (%d)\n",
@@ -139,13 +163,6 @@ void WifiClass::handleEvent(System_Event_t *e)
 
         if (changeDlg)
             changeDlg(false);
-
-        // Try to reconnect every 5 seconds, unless the AP was not found,
-        // then retry every minute.
-        if (e->event_info.disconnected.reason == REASON_NO_AP_FOUND)
-            reconnect(60000);
-        else
-            reconnect(5000);
     }
 }
 
