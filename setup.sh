@@ -27,10 +27,6 @@ if [ ! -d "tools/Sming" ] ; then
     cd ..
 fi
 
-if [ ! -d "tools/Sming/Sming/Libraries/MySensors" ] ; then
-    git clone https://github.com/WSNhub/MySensors.git tools/Sming/Sming/Libraries/MySensors
-fi
-
 cd tools/esptool2
 make
 cd ../../
