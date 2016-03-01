@@ -15,16 +15,19 @@ class WifiClass
 
     void begin(WifiStateChangeDelegate dlg = NULL);
     void softApEnable();
+    void reconnect(int delayMs);
     void handleEvent(System_Event_t *e);
 
   private:
     void portalLoginHandler(HttpClient& client, bool successful);
+    void connect();
 
   private:
     WifiStateChangeDelegate changeDlg;
     bool                    connected = false;
     bool                    haveIp = false;
     HttpClient              portalLogin;
+    Timer                   reconnectTimer;
 };
 
 extern WifiClass Wifi;

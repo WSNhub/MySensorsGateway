@@ -2,6 +2,10 @@
 #include <SmingCore/SmingCore.h>
 #include <openHabMqttController.h>
 
+#if CONTROLLER_TYPE == CONTROLLER_TYPE_OPENHAB
+OpenHabMqttController controller;
+#endif
+
 void OpenHabMqttController::begin()
 {
     checkTimer.initializeMs(

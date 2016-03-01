@@ -5,8 +5,8 @@
 #include <SmingCore/SmingCore.h>
 #include <SmingCore/Debug.h>
 #include <AppSettings.h>
-#include "SmingCore/DataSourceStream.h"
-#include <Libraries/SD/SD.h>
+#include <SmingCore/DataSourceStream.h>
+#include <SD/SD.h>
 
 class SdFileStream : public IDataSourceStream
 {

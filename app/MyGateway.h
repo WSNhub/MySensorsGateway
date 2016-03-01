@@ -25,11 +25,11 @@
   #define USE_DELEGATES
 #endif
 
-#include "Libraries/MySensors/MyConfig.h"
-#include "Libraries/MySensors/MySensor.h"
-#include "Libraries/MySensors/MyTransport.h"
-#include "Libraries/MySensors/MyTransportNRF24.h"
-#include "Libraries/MySensors/MyHwESP8266.h"
+#include "MySensors/MyConfig.h"
+#include "MySensors/MySensor.h"
+#include "MySensors/MyTransport.h"
+#include "MySensors/MyTransportNRF24.h"
+#include "MySensors/MyHwESP8266.h"
 
 #define EEPROM_LATEST_NODE_ADDRESS ((uint8_t)EEPROM_LOCAL_CONFIG_ADDRESS)
 #define GW_FIRST_SENSORID 20      // If you want manually configured nodes below
@@ -53,21 +53,21 @@ typedef Delegate<void(int sensorId, String value)> sensorValueChangedDelegate;
 class MyGateway
 {
   public:
-	MyGateway();
+    MyGateway();
 
-	void begin(msgRxDelegate = NULL,
-                   sensorValueChangedDelegate valueChanged = NULL,
-                   uint64_t base_address = RF24_BASE_RADIO_ID);
-        const char * version();
-        boolean sendRoute(MyMessage &msg);
-        MyMessage& build (MyMessage &msg, uint8_t destination,
-                          uint8_t sensor, uint8_t command,
-                          uint8_t type, bool enableAck);
-        void registerHttpHandlers(HttpServer &server);
-        static String getSensorTypeString(int type);
-        static int getSensorTypeFromString(String type);
-        String getSensorValue(String object);
-        void setSensorValue(String object, String value);
+    void begin(msgRxDelegate = NULL,
+               sensorValueChangedDelegate valueChanged = NULL);
+    const char * version();
+    boolean sendRoute(MyMessage &msg);
+    MyMessage& build (MyMessage &msg, uint8_t destination,
+                      uint8_t sensor, uint8_t command,
+                      uint8_t type, bool enableAck);
+    void registerHttpHandlers(HttpServer &server);
+    static String getSensorTypeString(int type);
+    static int getSensorTypeFromString(String type);
+    String getSensorValue(String object);
+    void setSensorValue(String object, String value);
+    uint64_t getBaseAddress();
 
   protected:
     void process();
@@ -78,6 +78,7 @@ class MyGateway
                         HttpResponse &response);
 
   private:
+    uint64_t rfBaseAddress;
     char convBuf[MAX_PAYLOAD*2+1];
     msgRxDelegate msgRx;
     sensorValueChangedDelegate sensorValueChanged;

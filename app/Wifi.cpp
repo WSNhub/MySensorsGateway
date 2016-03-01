@@ -15,6 +15,8 @@ extern void otaEnable();
 
 void WifiClass::begin(WifiStateChangeDelegate dlg)
 {
+    WifiStation.enable(false);
+
     changeDlg = dlg;
 
     if (AppSettings.exist())
@@ -54,7 +56,7 @@ void WifiClass::begin(WifiStateChangeDelegate dlg)
     }
     else
     {
-        WifiStation.enable(true);
+        reconnect(10);
     }
 
     softApEnable();
@@ -127,15 +129,23 @@ void WifiClass::handleEvent(System_Event_t *e)
     }
     else if (event == EVENT_STAMODE_DISCONNECTED)
     {
-	if (connected)
-            Debug.printf("Wifi client got disconnected\n");
+	wifi_station_disconnect();
+
+        if (connected)
+            Debug.printf("Wifi client got disconnected (%d)\n",
+                         e->event_info.disconnected.reason);
+
         connected = false;
+
         if (changeDlg)
             changeDlg(false);
-    }
-    else
-    {
-	//Debug.printf("Unknown wifi event %d !\n", event);
+
+        // Try to reconnect every 5 seconds, unless the AP was not found,
+        // then retry every minute.
+        if (e->event_info.disconnected.reason == REASON_NO_AP_FOUND)
+            reconnect(60000);
+        else
+            reconnect(5000);
     }
 }
 
@@ -143,6 +153,44 @@ void WifiClass::portalLoginHandler(HttpClient& client, bool successful)
 {
     String response = client.getResponseString();
     Debug.println("Portal server response: '" + response + "'");
+}
+
+void WifiClass::connect()
+{
+    Debug.println("Connecting...");
+    WifiStation.enable(false);
+
+    /*if (AppSettings.ssid.equals("") &&
+        !WifiStation.getSSID().equals(""))
+    {
+        AppSettings.ssid = WifiStation.getSSID();
+        AppSettings.password = WifiStation.getPassword();
+        AppSettings.save();
+    }*/
+
+    if (!WifiStation.getSSID().equals(AppSettings.ssid) ||
+        !WifiStation.getPassword().equals(AppSettings.password))
+    {
+        WifiStation.config(AppSettings.ssid, AppSettings.password,
+                           FALSE);
+    }
+
+    if (!AppSettings.dhcp && !AppSettings.ip.isNull())
+    {
+        WifiStation.setIP(AppSettings.ip,
+                          AppSettings.netmask,
+                          AppSettings.gateway);
+    }
+
+    WifiStation.enable(true);
+    wifi_station_connect();
+    wifi_station_dhcpc_start();
+    wifi_station_set_reconnect_policy(false); //Do not auto reconnect
+}
+
+void WifiClass::reconnect(int delayMs)
+{
+    reconnectTimer.initializeMs(delayMs, TimerDelegate(&WifiClass::connect, this)).startOnce();
 }
 
 WifiClass Wifi;

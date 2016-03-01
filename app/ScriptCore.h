@@ -1,9 +1,8 @@
 #ifndef INCLUDE_SCRIPTCORE_H_
 #define INCLUDE_SCRIPTCORE_H_
 
-#include "TinyJS.h"
-//#include "TinyJS_Functions.h"
-#include "TinyJS_MathFunctions.h"
+#include "TinyJS/TinyJS.h"
+#include "TinyJS/TinyJS_MathFunctions.h"
 #include <Mutex.h>
 #include "IOExpansion.h"
 #include "MyGateway.h"
@@ -14,6 +13,8 @@ class ScriptCore : public CTinyJS
 public:
     ScriptCore()
     {
+        addNative("function print(arg1)",
+                  &ScriptCore::staticDebugHandler, NULL);
         addNative("function GetObjectValue(object)",
                   &ScriptCore::staticGetValueHandler,
                   NULL);
@@ -23,6 +24,12 @@ public:
     }
 
 private:
+    static void staticDebugHandler(CScriptVar *v, void *userdata)
+    {
+        String a1 =  v->getParameter("arg1")->getString();
+        Debug.println(a1);
+    }
+
     static void staticSetValueHandler(CScriptVar *v, void *userdata)
     {
         String object =  v->getParameter("object")->getString();

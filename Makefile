@@ -13,7 +13,8 @@ GLOBALS:
 	date | awk 'BEGIN {} {print "const char * build_time = \""$$0"\";"} END {} ' >> app/globals.c
 
 #Add your source directories here separated by space
-MODULES = app
+MODULES         = app $(filter %/, $(wildcard libraries/*/))
+EXTRA_INCDIR    = include libraries
 
 ## ESP_HOME sets the path where ESP tools and SDK are located.
 ESP_HOME ?= /opt/esp-open-sdk

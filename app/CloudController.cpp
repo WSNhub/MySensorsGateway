@@ -5,6 +5,10 @@
 #include <AppSettings.h>
 #include <globals.h>
 
+#if CONTROLLER_TYPE == CONTROLLER_TYPE_CLOUD
+CloudController controller;
+#endif
+
 void CloudController::begin()
 {
     checkTimer.initializeMs(

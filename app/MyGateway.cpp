@@ -1,8 +1,9 @@
+#include <AppSettings.h>
 #include <user_config.h>
 #include <SmingCore.h>
 #include "MyGateway.h"
-#include "Libraries/MySensors/MySigningAtsha204.h"
-#include "Libraries/MySensors/MySigningAtsha204Soft.h"
+#include "MySensors/MySigningAtsha204.h"
+#include "MySensors/MySigningAtsha204Soft.h"
 
 #define RADIO_CE_PIN 2
 #define RADIO_SPI_SS_PIN 15
@@ -17,8 +18,6 @@ uint8_t HMAC_KEY[32] = SIGNING_HMAC;
 MySigningAtsha204Soft signer(true /* requestSignatures */,
                          HMAC_KEY);
 #endif
-#else
-MySigningNone signer;
 #endif
 
 
@@ -203,7 +202,7 @@ void MyGateway::incomingMessage(const MyMessage &message)
     }
 }
 
-void MyGateway::begin(msgRxDelegate rxDlg, sensorValueChangedDelegate valueChanged, uint64_t base_address)
+void MyGateway::begin(msgRxDelegate rxDlg, sensorValueChangedDelegate valueChanged)
 {
     msgRx = rxDlg;
     sensorValueChanged = valueChanged;
@@ -236,9 +235,18 @@ void MyGateway::begin(msgRxDelegate rxDlg, sensorValueChangedDelegate valueChang
     }
 #endif
 
+    if (AppSettings.useOwnBaseAddress)
+    {
+        rfBaseAddress = ((uint64_t)system_get_chip_id()) << 8;
+    }
+    else
+    {
+        rfBaseAddress = RF24_BASE_RADIO_ID;
+    }
+
     hw_init();
     gw.begin(msgRxDelegate(&MyGateway::incomingMessage, this),
-             0, true, 0, base_address);
+             0, true, 0, rfBaseAddress);
     processTimer.initializeUs(100, TimerDelegate(&MyGateway::process, this)).start();
 }
 
@@ -548,6 +556,11 @@ void MyGateway::setSensorValue(String object, String value)
     GW.sendRoute(GW.build(myMsg, mySensors[id-1].node,
                           mySensors[id-1].sensor, C_SET,
                           2 /*mySensors[id-1].type*/, 0));
+}
+
+uint64_t MyGateway::getBaseAddress()
+{
+    return rfBaseAddress;
 }
 
 MyGateway GW;

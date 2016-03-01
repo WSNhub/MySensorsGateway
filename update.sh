@@ -1,19 +1,11 @@
 #!/bin/bash
 
-cd tools/Sming/Libraries/MySensors
+cd tools/Sming
 git pull
-
-cd ../MyInterpreter
-git pull
-
-cd ../../
 make rebuild
-
 cd spiffy
 make
-
 cd ../../../
-
 git pull
 make clean
 make
