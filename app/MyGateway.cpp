@@ -4,6 +4,7 @@
 #include "MyGateway.h"
 #include "MySensors/MySigningAtsha204.h"
 #include "MySensors/MySigningAtsha204Soft.h"
+#include "Rule.h"
 
 #define RADIO_CE_PIN 2
 #define RADIO_SPI_SS_PIN 15
@@ -125,6 +126,7 @@ void MyGateway::incomingMessage(const MyMessage &message)
                         debugf("Updating sensor %d/%d type %d value %s",
                                mySensors[idx].node, mySensors[idx].sensor,
                                mySensors[idx].type, mySensors[idx].value.c_str());
+                        Rules.processTrigger("sensor"+String(idx+1));
                     }
                     newSensor = false;
                     break;

@@ -18,6 +18,9 @@ public:
         addNative("function GetObjectValue(object)",
                   &ScriptCore::staticGetValueHandler,
                   NULL);
+        addNative("function GetObjectIntValue(object)",
+                  &ScriptCore::staticGetIntValueHandler,
+                  NULL);
         addNative("function SetObjectValue(object, value)",
                   &ScriptCore::staticSetValueHandler,
                   NULL);
@@ -67,6 +70,28 @@ private:
             v->getReturnVar()->setString("UnknownObjectError");
         }
     }
+
+    static void staticGetIntValueHandler(CScriptVar *v, void *userdata)
+    {
+        String object = v->getParameter("object")->getString();
+        //get the value
+        if (object.startsWith("output") || object.startsWith("input"))
+        {
+            if (Expansion.getResourceValue(object).equals("on"))
+                v->getReturnVar()->setInt(1);
+            else
+                v->getReturnVar()->setInt(0);
+        }
+        else if (object.startsWith("sensor"))
+        {
+            v->getReturnVar()->setInt(GW.getSensorValue(object).toInt());
+        }
+        else
+        {
+            v->getReturnVar()->setInt(0);
+        }
+    }
+
 
 public:
     // Locking //

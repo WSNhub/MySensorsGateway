@@ -11,6 +11,7 @@
 #include <MyGateway.h>
 #include <HTTP.h>
 #include <controller.h>
+#include <Rule.h>
 
 // set up variables using the SD utility library functions:
 Sd2Card card;
@@ -85,11 +86,14 @@ void heapCheckUsage()
 void i2cChangeHandler(String object, String value)
 {
     controller.notifyChange(object, value);
+    Rules.processTrigger(object);
 }
 
 // Will be called when system initialization was completed
 void startServers()
 {
+    Rules.begin();
+
     HTTP.begin(); //HTTP must be first so handlers can be registered
 
     I2C_dev.begin(i2cChangeHandler);
@@ -333,11 +337,6 @@ void processShowConfigCommand(String commandLine, CommandOutput* out)
 }
 
 #include "ScriptCore.h"
-void printHandler(CScriptVar *v, void *userdata)
-{
-    String a1 =  v->getParameter("arg1")->getString();
-    Debug.println(a1);
-}
 
 void processJS(String commandLine, CommandOutput* out)
 {
@@ -348,6 +347,23 @@ void processJS(String commandLine, CommandOutput* out)
     ScriptingCore.execute("print(\"GetObjectValue() => \"+GetObjectValue(\"sensor1\"));");
     ScriptingCore.execute("for (result=0; result<10; result++) { print(result); }");
     ScriptingCore.execute("SetObjectValue(\"sensor2\", \"0\");");
+}
+
+void processRules(String commandLine, CommandOutput* out)
+{
+    Rules.addRule("test1", "SetObjectValue(\"sensor2\", \"1\");");
+    Rules.addRule("test2", "for (result=0; result<10; result++) { print(result); }");
+    Rules.addTrigger("test1", "object1");
+    Rules.addTrigger("test1", "object1");
+    Rules.addTrigger("test1", "object2");
+    Rules.addTrigger("test2", "object3");
+    Rules.addTrigger("test3", "object4");
+    Rules.addTrigger("test4", "object1");
+    Rules.addRule("sensor1", "if (GetObjectIntValue(\"sensor1\") %2 == 0){SetObjectValue(\"sensor2\", \"1\");} else {SetObjectValue(\"sensor2\", \"0\");}");
+    Rules.addTrigger("sensor1", "sensor1");
+
+    Rules.store();
+    Rules.processTrigger("object3");
 }
 
 void init()
@@ -403,6 +419,10 @@ void init()
                                                    "Test JS",
                                                    "System",
                                                    processJS));
+    commandHandler.registerCommand(CommandDelegate("rules",
+                                                   "Test rules",
+                                                   "System",
+                                                   processRules));
     commandHandler.registerCommand(CommandDelegate("showConfig",
                                                    "Show the current configuration",
                                                    "System",
