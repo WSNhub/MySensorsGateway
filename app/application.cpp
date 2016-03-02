@@ -200,7 +200,12 @@ void processInfoCommand(String commandLine, CommandOutput* out)
     out->printf("ESP SDK version    : %s\n", system_get_sdk_version());
     out->printf("MySensors version  : %s\n", GW.version());
     out->printf("\r\n");
-    out->printf("Time               : ");
+    out->printf("Station SSID       : %s\n", AppSettings.ssid.c_str());
+    out->printf("Station DHCP       : %s\n", WifiStation.isEnabledDHCP() ?
+                                                 "TRUE" : "FALSE");
+    out->printf("Station IP         : %s\n", WifiStation.getIP().toString().c_str());
+    out->printf("\r\n");
+    out->printf("System Time        : ");
     out->printf(SystemClock.getSystemTimeString().c_str());
     out->printf("\r\n");
     out->printf("Free Heap          : %d\r\n", system_get_free_heap_size());
