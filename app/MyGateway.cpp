@@ -5,6 +5,7 @@
 #include "MySensors/MySigningAtsha204.h"
 #include "MySensors/MySigningAtsha204Soft.h"
 #include "Rule.h"
+#include "HTTP.h"
 
 #define RADIO_CE_PIN 2
 #define RADIO_SPI_SS_PIN 15
@@ -272,6 +273,9 @@ void MyGateway::onGetSensors(HttpRequest &request, HttpResponse &response)
 {
     String separator = "";
 
+    if (!HTTP.isHttpClientAllowed(request, response))
+        return;
+
     response.setAllowCrossDomainOrigin("*");
     response.setContentType(ContentType::JSON);
     response.sendString("{\"status\": true,\"available\": [");
@@ -298,6 +302,9 @@ void MyGateway::onGetSensors(HttpRequest &request, HttpResponse &response)
 void MyGateway::onRemoveSensor(HttpRequest &request, HttpResponse &response)
 {
     String error;
+
+    if (!HTTP.isHttpClientAllowed(request, response))
+        return;
 
     JsonObjectStream* stream = new JsonObjectStream();
     JsonObject& json = stream->getRoot();

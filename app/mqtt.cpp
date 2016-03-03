@@ -4,6 +4,7 @@
 #include <AppSettings.h>
 #include <mqtt.h>
 #include <MyGateway.h>
+#include <HTTP.h>
 
 // Forward declarations
 void onMessageReceived(String topic, String message);
@@ -120,6 +121,9 @@ void onMqttConfig(HttpRequest &request, HttpResponse &response)
 {
     AppSettings.load();
     MqttConfigured = FALSE;
+
+    if (!HTTP.isHttpClientAllowed(request, response))
+        return;
 
     if (request.getRequestMethod() == RequestMethod::POST)
     {

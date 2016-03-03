@@ -6,6 +6,7 @@
 #include <MyGateway.h>
 #include <AppSettings.h>
 #include <controller.h>
+#include <Services/WebHelpers/base64.h>
 
 Timer softApSetPasswordTimer;
 void apEnable()
@@ -15,6 +16,9 @@ void apEnable()
 
 void onIpConfig(HttpRequest &request, HttpResponse &response)
 {
+    if (!HTTP.isHttpClientAllowed(request, response))
+        return;
+
     if (request.getRequestMethod() == RequestMethod::POST)
     {
         String oldApPass = AppSettings.apPassword;
@@ -73,6 +77,9 @@ void onFile(HttpRequest &request, HttpResponse &response)
 {
     static bool alreadyInitialized = false;
 
+    if (!HTTP.isHttpClientAllowed(request, response))
+        return;
+
     String file = request.getPath();
     if (file[0] == '/')
         file = file.substring(1);
@@ -121,9 +128,43 @@ void onFile(HttpRequest &request, HttpResponse &response)
     }
 }
 
+bool HTTPClass::isHttpClientAllowed(HttpRequest &request, HttpResponse &response)
+{
+    if (AppSettings.apPassword.equals(""))
+        return true;
+
+    String authHeader = request.getHeader("Authorization");
+    char userpass[32+1+32+1];
+    if (!authHeader.equals("") && authHeader.startsWith("Basic"))
+    {
+        Debug.printf("Authorization header %s\n", authHeader.c_str());
+        int r = base64_decode(authHeader.length()-6,
+                              authHeader.substring(6).c_str(),
+                              sizeof(userpass),
+                              (unsigned char *)userpass);
+        if (r > 0)
+        {
+            userpass[r]=0; //zero-terminate user:pass string
+            Debug.printf("Authorization header decoded %s\n", userpass);
+            String validUserPass = "admin:"+AppSettings.apPassword;
+            if (validUserPass.equals(userpass))
+            {
+                return true;
+            }
+        }
+    }
+
+    response.authorizationRequired();
+    response.setHeader("Content-Type", "text/plain");
+    response.setHeader("WWW-Authenticate",
+                       String("Basic realm=\"MySensors Gateway ") + system_get_chip_id() + "\"");
+    return false;
+}
+
 void HTTPClass::begin()
 {
     server.listen(80);
+    server.enableHeaderProcessing("Authorization");
     server.addPath("/", onIpConfig);
     server.addPath("/ipconfig", onIpConfig);
 

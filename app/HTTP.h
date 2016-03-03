@@ -10,6 +10,8 @@ class HTTPClass
 {
   public:
     void begin();
+    bool isHttpClientAllowed(HttpRequest &request,
+                             HttpResponse &response);
 
   private:
     HttpServer server;
