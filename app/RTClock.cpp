@@ -6,9 +6,9 @@
 #include "RTClock.h"
 
 #if PLATFORM_TYPE == PLATFORM_TYPE_GENERIC
-#include "Sodaq_DS3231.h"
+#include "RTC/Sodaq_DS3231.h"
 #elif PLATFORM_TYPE == PLATFORM_TYPE_SDSHIELD
-#include "RTClib.h"
+#include "RTC/RTClib.h"
 RTC_DS1307 rtc1307;
 #else
     #error "Unknown platform type"
