@@ -205,6 +205,15 @@ void processInfoCommand(String commandLine, CommandOutput* out)
                                                  "TRUE" : "FALSE");
     out->printf("Station IP         : %s\n", WifiStation.getIP().toString().c_str());
     out->printf("\r\n");
+    String apModeStr;
+    if (AppSettings.apMode == apModeAlwaysOn)
+        apModeStr = "always";
+    else if (AppSettings.apMode == apModeAlwaysOff)
+        apModeStr = "never";
+    else
+        apModeStr= "whenDisconnected";
+    out->printf("Access Point Mode  : %s\n", apModeStr.c_str());
+    out->printf("\r\n");
     out->printf("System Time        : ");
     out->printf(SystemClock.getSystemTimeString().c_str());
     out->printf("\r\n");
@@ -371,6 +380,40 @@ void processRules(String commandLine, CommandOutput* out)
     Rules.processTrigger("object3");
 }
 
+void processAPModeCommand(String commandLine, CommandOutput* out)
+{
+    Vector<String> commandToken;
+    int numToken = splitString(commandLine, ' ' , commandToken);
+
+    if (numToken != 2 ||
+        (commandToken[1] != "always" && commandToken[1] != "never" &&
+         commandToken[1] != "whenDisconnected"))
+    {
+        out->printf("usage : \r\n\r\n");
+        out->printf("apMode always           : Always have the AP enabled\r\n");
+        out->printf("apMode never            : Never have the AP enabled\r\n");
+        out->printf("apMode whenDisconnected : Only enable the AP when discnnected\r\n");
+        out->printf("                          from the network\r\n");
+        return;
+    }
+
+    if (commandToken[1] == "always")
+    {
+        AppSettings.apMode = apModeAlwaysOn;
+    }
+    else if (commandToken[1] == "never")
+    {
+        AppSettings.apMode = apModeAlwaysOff;
+    }        
+    else
+    {
+        AppSettings.apMode = apModeWhenDisconnected;
+    }
+
+    AppSettings.save();
+    System.restart();
+}
+
 void init()
 {
     /* Make sure wifi does not start yet! */
@@ -416,6 +459,10 @@ void init()
                                                    "Adjust CPU speed",
                                                    "System",
                                                    processCpuCommand));
+    commandHandler.registerCommand(CommandDelegate("apMode",
+                                                   "Adjust the AccessPoint Mode",
+                                                   "System",
+                                                   processAPModeCommand));
     commandHandler.registerCommand(CommandDelegate("sd",
                                                    "Test SD",
                                                    "System",

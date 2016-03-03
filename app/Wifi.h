@@ -22,6 +22,7 @@ class WifiClass
 
     void begin(WifiStateChangeDelegate dlg = NULL);
     void softApEnable();
+    void softApDisable();
     void reconnect(int delayMs);
     void handleEvent(System_Event_t *e);
 

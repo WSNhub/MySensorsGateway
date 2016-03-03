@@ -12,35 +12,43 @@
 
 #define APP_SETTINGS_FILE ".settings.conf" // leading point for security reasons :)
 
+typedef enum
+{
+    apModeAlwaysOn = 1,
+    apModeAlwaysOff,
+    apModeWhenDisconnected
+} eAppMode;
+
 class ApplicationSettingsStorage
 {
   public:
-    String ssid;
-    String password;
-    String apPassword;
+    String      ssid;
+    String      password;
+    eAppMode    apMode = apModeAlwaysOn;
+    String      apPassword;
 
-    String portalUrl;
-    String portalData;
+    String      portalUrl;
+    String      portalData;
 
-    bool dhcp = true;
+    bool        dhcp = true;
 
-    IPAddress ip;
-    IPAddress netmask;
-    IPAddress gateway;
+    IPAddress   ip;
+    IPAddress   netmask;
+    IPAddress   gateway;
 
-    String mqttUser;
-    String mqttPass;
-    String mqttServer;
-    int    mqttPort;
-    String mqttSensorPfx;
-    String mqttControllerPfx;
+    String      mqttUser;
+    String      mqttPass;
+    String      mqttServer;
+    int         mqttPort = 1883;
+    String      mqttSensorPfx;
+    String      mqttControllerPfx;
 
-    bool   cpuBoost = true;
-    bool   useOwnBaseAddress = true;
+    bool        cpuBoost = true;
+    bool        useOwnBaseAddress = true;
 
-    String cloudDeviceToken;
-    String cloudLogin;
-    String cloudPassword;
+    String      cloudDeviceToken;
+    String      cloudLogin;
+    String      cloudPassword;
 
     void load();
     void save();

@@ -20,6 +20,16 @@ void WifiClass::begin(WifiStateChangeDelegate dlg)
 
     changeDlg = dlg;
 
+    if (AppSettings.apMode == apModeAlwaysOn ||
+        AppSettings.apMode == apModeWhenDisconnected)
+    {
+        softApEnable();
+    }
+    else
+    {
+        softApDisable();        
+    }
+
     if (AppSettings.exist())
     {
         if (AppSettings.ssid.equals("") &&
@@ -60,14 +70,19 @@ void WifiClass::begin(WifiStateChangeDelegate dlg)
         reconnect(1);
     }
 
-    softApEnable();
-
     otaEnable();    
 }
 
 void WifiClass::softApEnable()
 {
     char id[16];
+
+    if (AppSettings.apMode == apModeAlwaysOff ||
+        AppSettings.apMode == apModeWhenDisconnected && connected)
+    {
+        Debug.println("Not enabling AP due to config setting");
+        return;
+    }
 
     WifiAccessPoint.enable(false);
 
@@ -85,6 +100,18 @@ void WifiClass::softApEnable()
     }
 
     WifiAccessPoint.enable(true);
+}
+
+void WifiClass::softApDisable()
+{
+    if (AppSettings.apMode == apModeAlwaysOn ||
+        AppSettings.apMode == apModeWhenDisconnected && !connected)
+    {
+        Debug.println("Not disabling AP due to config setting");
+        return;
+    }
+
+    WifiAccessPoint.enable(false);
 }
 
 void WifiClass::handleEvent(System_Event_t *e)
@@ -126,8 +153,14 @@ void WifiClass::handleEvent(System_Event_t *e)
     {
 	if (!connected)
         {
+            connected = true;
+
             Debug.printf("Wifi client got connected\n");
             ntpClient.requestTime();
+
+            // Disable SoftAP.
+            // This function will check whether the AP can be disabled.
+            softApDisable();
         }
         connected = true;
     }
@@ -160,8 +193,14 @@ void WifiClass::handleEvent(System_Event_t *e)
         }
 
         if (connected)
+        {
+            connected = false;
             Debug.printf("Wifi client got disconnected (%d)\n",
                          e->event_info.disconnected.reason);
+            // Enable SoftAP.
+            // This function will check whether the AP can be enabled.
+            softApEnable();
+        }
 
         connected = false;
 

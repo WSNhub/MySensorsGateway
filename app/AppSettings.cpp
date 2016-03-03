@@ -25,6 +25,23 @@ void ApplicationSettingsStorage::load()
         portalUrl = (const char *)network["portalUrl"];
         portalData = (const char *)network["portalData"];
 
+        if (!network.containsKey("apMode"))
+        {
+            apMode = apModeAlwaysOn;
+        }
+        else
+        {
+            String newMode = (const char *)network["apMode"];
+            if (newMode.equals("always"))
+                apMode = apModeAlwaysOn;
+            else if (newMode.equals("never"))
+                apMode = apModeAlwaysOff;
+            else if (newMode.equals("whenDisconnected"))
+                apMode = apModeWhenDisconnected;
+            else
+                apMode = apModeAlwaysOff;
+        }
+
         dhcp = network["dhcp"];
 
         ip = (const char *)network["ip"];
@@ -62,6 +79,13 @@ void ApplicationSettingsStorage::save()
     network["apPassword"] = apPassword.c_str();
     network["portalUrl"] = portalUrl.c_str();
     network["portalData"] = portalData.c_str();
+
+    if (apMode == apModeAlwaysOn)
+        network["apMode"] = "always";
+    else if (apMode == apModeAlwaysOff)
+        network["apMode"] = "never";
+    else
+        network["apMode"] = "whenDisconnected";
 
     network["dhcp"] = dhcp;
 
