@@ -27,6 +27,7 @@ MyI2C I2C_dev;
 FTPServer ftp;
 TelnetServer telnet;
 static boolean first_time = TRUE;
+int isWifiConnected = FALSE;
 
 char convBuf[MAX_PAYLOAD*2+1];
 
@@ -110,6 +111,7 @@ void startServers()
 // Will be called when WiFi station was connected to AP
 void wifiCb(bool connected)
 {
+    isWifiConnected = connected;
     if (connected)
     {
         Debug.println("--> I'm CONNECTED");

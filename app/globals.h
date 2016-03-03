@@ -2,8 +2,12 @@
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
 
+
+
 extern const char * build_time;
 extern const char * build_git_sha;
+extern int isWifiConnected;
+/* why is type bool not known ?*/
 
 #define PLATFORM_TYPE_GENERIC  1
 #define PLATFORM_TYPE_SDSHIELD 2

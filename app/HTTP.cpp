@@ -65,6 +65,38 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
         vars["netmask"] = "255.255.255.255";
         vars["gateway"] = "0.0.0.0";
     }
+    response.sendTemplate(tmpl); // will be automatically deleted
+}
+
+void onStatus(HttpRequest &request, HttpResponse &response)
+{
+    TemplateFileStream *tmpl = new TemplateFileStream("status.html");
+    auto &vars = tmpl->variables();
+
+    vars["ssid"] = AppSettings.ssid;
+    vars["wifiStatus"] = isWifiConnected ? "connected" : "not connected";
+    
+    bool dhcp = WifiStation.isEnabledDHCP();
+    if (dhcp)
+    {
+      vars["ipOrigin"] = "from DHCP";
+    }
+    else
+    {
+      vars["ipOrigin"] = "static";
+    }
+
+    if (!WifiStation.getIP().isNull())
+    {
+        vars["ip"] = WifiStation.getIP().toString();
+    }
+    else
+    {
+        vars["ip"] = "0.0.0.0";
+        vars["ipOrigin"] = "not configured";
+    }
+    vars["mqttIp"] = AppSettings.mqttServer;
+    vars["mqttStatus"] = isMqttConnected() ? "connected":"not connected";
 
     response.sendTemplate(tmpl); // will be automatically deleted
 }
@@ -126,6 +158,7 @@ void HTTPClass::begin()
     server.listen(80);
     server.addPath("/", onIpConfig);
     server.addPath("/ipconfig", onIpConfig);
+    server.addPath("/status", onStatus);
 
     GW.registerHttpHandlers(server);
     controller.registerHttpHandlers(server);

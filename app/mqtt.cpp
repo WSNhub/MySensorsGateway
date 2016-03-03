@@ -12,6 +12,7 @@ void onMessageReceived(String topic, String message);
 MqttClient *mqtt = NULL;
 char clientId[33];
 bool MqttConfigured = FALSE;
+bool MqttIsConnected = FALSE;
 
 
 void ICACHE_FLASH_ATTR mqttPublishMessage(String topic, String message)
@@ -101,7 +102,7 @@ void ICACHE_FLASH_ATTR startMqttClient()
     {
         sprintf(clientId, "ESP_%08X", system_get_chip_id());
         mqtt = new MqttClient(AppSettings.mqttServer, AppSettings.mqttPort, onMessageReceived);
-        mqtt->connect(clientId, AppSettings.mqttUser, AppSettings.mqttPass);
+        MqttIsConnected = mqtt->connect(clientId, AppSettings.mqttUser, AppSettings.mqttPass);
         mqtt->subscribe("#");
         mqttPublishVersion();
         MqttConfigured = TRUE;
@@ -153,4 +154,5 @@ void ICACHE_FLASH_ATTR mqttRegisterHttpHandlers(HttpServer &server)
 }
 
 bool isMqttConfigured(void) {return(MqttConfigured);}
+bool isMqttConnected(void) {return(MqttIsConnected);}
 String MqttServer(void) {return(AppSettings.mqttServer);}
