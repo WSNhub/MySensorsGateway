@@ -33,7 +33,8 @@
 
 #include "MyConfig.h"
 #include "MySigning.h"
-#include "ATSHA204.h"
+#include <SHA204Definitions.h>
+#include "SHA204.h"
 #include "sha256.h"
 #include <stdint.h>
 

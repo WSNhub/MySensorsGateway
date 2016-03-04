@@ -24,7 +24,7 @@
  * HMAC-SHA256 authentication with a readout-protected key.
  *
  */
-#if defined(ARDUINO_ARCH_AVR)
+//#if defined(ARDUINO_ARCH_AVR)
 
 #include "MySigning.h"
 #include "MySigningAtsha204.h"
@@ -59,14 +59,24 @@ static void DEBUG_SIGNING_PRINTBUF(const __FlashStringHelper* str, uint8_t* buf,
 #endif
 
 
+#if ATSHA204I2C
+MySigningAtsha204::MySigningAtsha204(bool requestSignatures
+#ifdef MY_SECURE_NODE_WHITELISTING
+		, uint8_t nof_whitelist_entries, const whitelist_entry_t* the_whitelist
+#endif
+		)
+#else
 MySigningAtsha204::MySigningAtsha204(bool requestSignatures,
 #ifdef MY_SECURE_NODE_WHITELISTING
-	uint8_t nof_whitelist_entries, const whitelist_entry_t* the_whitelist,
+		uint8_t nof_whitelist_entries, const whitelist_entry_t* the_whitelist,
 #endif
-	uint8_t atshaPin)
+		uint8_t atshaPin)
+#endif
 	:
 	MySigning(requestSignatures),
+#if !ATSHA204I2C
 	atsha204(atshaPin),
+#endif
 #ifdef MY_SECURE_NODE_WHITELISTING
 	whitelist(the_whitelist),
 	whitlist_sz(nof_whitelist_entries),
@@ -238,7 +248,7 @@ void MySigningAtsha204::calculateSignature(MyMessage &msg) {
 									HMAC_COUNT, tx_buffer, HMAC_RSP_SIZE, rx_buffer);
 
 	// Put device back to sleep
-	atsha204.sha204c_sleep();
+	atsha204.sleep();
 
 	DEBUG_SIGNING_PRINTBUF(F("HMAC:"), &rx_buffer[SHA204_BUFFER_POS_DATA], 32);
 }
@@ -262,9 +272,9 @@ uint8_t* MySigningAtsha204::sha256(const uint8_t* data, size_t sz) {
 									SHA_COUNT_LONG, tx_buffer, SHA_RSP_SIZE_LONG, rx_buffer);
 
 	// Put device back to sleep
-	atsha204.sha204c_sleep();
+	atsha204.sleep();
 
 	DEBUG_SIGNING_PRINTBUF(F("SHA:"), &rx_buffer[SHA204_BUFFER_POS_DATA], 32);
 	return &rx_buffer[SHA204_BUFFER_POS_DATA];
 }
-#endif // #if defined(ARDUINO_ARCH_AVR)
+//#endif // #if defined(ARDUINO_ARCH_AVR)

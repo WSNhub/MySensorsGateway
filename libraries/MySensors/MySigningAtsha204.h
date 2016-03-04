@@ -30,8 +30,17 @@
 
 #include "MyConfig.h"
 #include "MySigning.h"
-#include "ATSHA204.h"
+#include <SHA204Definitions.h>
+#include <SHA204ReturnCodes.h>
+#if ATSHA204I2C
+  #include "SHA204I2C.h"
+#else
+  #include "SHA204SWI.h"
+#endif
 #include <stdint.h>
+
+#define SHA_MSG_SIZE (64) //!< SHA message data size
+#define SHA204_SERIAL_SZ 9 // The number of bytes the serial number consists of
 
 #ifdef MY_SECURE_NODE_WHITELISTING
 typedef struct {
@@ -46,18 +55,30 @@ typedef struct {
 class MySigningAtsha204 : public MySigning
 { 
 public:
+#if ATSHA204I2C
+	MySigningAtsha204(bool requestSignatures=true
+#ifdef MY_SECURE_NODE_WHITELISTING
+		, uint8_t nof_whitelist_entries=0, const whitelist_entry_t* the_whitelist=NULL
+#endif
+		);
+#else
 	MySigningAtsha204(bool requestSignatures=true,
 #ifdef MY_SECURE_NODE_WHITELISTING
 		uint8_t nof_whitelist_entries=0, const whitelist_entry_t* the_whitelist=NULL,
 #endif
 		uint8_t atshaPin=MY_ATSHA204_PIN);
+#endif
 	bool getNonce(MyMessage &msg);
 	bool checkTimer(void);
 	bool putNonce(MyMessage &msg);
 	bool signMsg(MyMessage &msg);
 	bool verifyMsg(MyMessage &msg);
 private:
-	ATSHA204Class atsha204;
+#if ATSHA204I2C
+	SHA204I2C atsha204;
+#else
+	SHA204SWI atsha204;
+#endif
 	unsigned long timestamp;
 	bool verification_ongoing;
 	uint8_t current_nonce[NONCE_NUMIN_SIZE_PASSTHROUGH+SHA204_SERIAL_SZ+1];

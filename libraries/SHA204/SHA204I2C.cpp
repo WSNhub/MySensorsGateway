@@ -14,11 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#include "Arduino.h"
+#include <Wire.h>
+
+#if ATSHA204I2C // Esure this code only gets built if you have Wire.h included in the main sketch
+
 #include "SHA204.h"
 #include "SHA204ReturnCodes.h"
 #include "SHA204Definitions.h"
 #include "SHA204I2C.h"
-#include "../SmingCore/Debug.h"
 
 uint16_t SHA204I2C::SHA204_RESPONSE_TIMEOUT() {
 	return SHA204_RESPONSE_TIMEOUT_VALUE;
@@ -37,7 +41,7 @@ void SHA204I2C::init() {
 }
 
 uint8_t SHA204I2C::receive_bytes(uint8_t count, uint8_t *data) {
-	//Debug.println("receive_bytes(uint8_t count, uint8_t *data)");
+	//Serial.println("receive_bytes(uint8_t count, uint8_t *data)");
 	uint8_t i;
 
 	int available_bytes = Wire.requestFrom(deviceAddress(), count);
@@ -54,7 +58,7 @@ uint8_t SHA204I2C::receive_bytes(uint8_t count, uint8_t *data) {
 }
 
 uint8_t SHA204I2C::receive_byte(uint8_t *data) {
-	//Debug.println("receive_byte");
+	//Serial.println("receive_byte");
 
 	int available_bytes = Wire.requestFrom(deviceAddress(), (uint8_t)1);
 	if (available_bytes != 1) {
@@ -67,7 +71,7 @@ uint8_t SHA204I2C::receive_byte(uint8_t *data) {
 }
 
 uint8_t SHA204I2C::send_byte(uint8_t value) {
-	//Debug.println("send_byte(uint8_t value)");
+	//Serial.println("send_byte(uint8_t value)");
 	return send_bytes(1, &value);
 }
 
@@ -82,14 +86,14 @@ uint8_t SHA204I2C::send_bytes(uint8_t count, uint8_t *data) {
 }
 
 int SHA204I2C::start_operation(uint8_t readWrite) {
-	//Debug.println("start_operation(uint8_t readWrite)");
+	//Serial.println("start_operation(uint8_t readWrite)");
 	int written = Wire.write(&readWrite, (uint8_t)1);
 	
 	return written > 0;
 }
 
 uint8_t SHA204I2C::chip_wakeup() {
-	//Debug.println("chip_wakeup()");
+	//Serial.println("chip_wakeup()");
 	// This was the only way short of manually adjusting the SDA pin to wake up the device
 	Wire.beginTransmission(deviceAddress());
 	int i2c_status = Wire.endTransmission();
@@ -101,7 +105,7 @@ uint8_t SHA204I2C::chip_wakeup() {
 }
 
 uint8_t SHA204I2C::receive_response(uint8_t size, uint8_t *response) {
-	//Debug.println("receive_response(uint8_t size, uint8_t *response)");
+	//Serial.println("receive_response(uint8_t size, uint8_t *response)");
 	uint8_t count;
 	uint8_t i2c_status;
 
@@ -109,26 +113,26 @@ uint8_t SHA204I2C::receive_response(uint8_t size, uint8_t *response) {
 	// uint8_t sla = deviceAddress();
 	// Wire.write(&sla, (uint8_t)1);
 	// int status = Wire.endTransmission();
-	// Debug.println(status);
-	// Debug.println("receive_response -- after wire.endtransmission");
+	// Serial.println(status);
+	// Serial.println("receive_response -- after wire.endtransmission");
 
 	// Receive count byte.
 	i2c_status = receive_byte(response);
 	if (i2c_status != I2C_FUNCTION_RETCODE_SUCCESS) {
-		//Debug.println("receive_response -- fail 1");
+		Serial.println("receive_response -- fail 1");
 		return SHA204_COMM_FAIL;
 	}
 
 	count = response[SHA204_BUFFER_POS_COUNT];
 	if ((count < SHA204_RSP_SIZE_MIN) || (count > size)) {
-		//Debug.println("receive_response -- fail 2");
+		Serial.println("receive_response -- fail 2");
 		return SHA204_INVALID_SIZE;
 	}
 
 	i2c_status = receive_bytes(count - 1, &response[SHA204_BUFFER_POS_DATA]);
 
 	if (i2c_status != I2C_FUNCTION_RETCODE_SUCCESS) {
-		//Debug.println("receive_response -- fail 3");
+		Serial.println("receive_response -- fail 3");
 		return SHA204_COMM_FAIL;
 	}
 	
@@ -136,16 +140,16 @@ uint8_t SHA204I2C::receive_response(uint8_t size, uint8_t *response) {
 }
 
 uint8_t SHA204I2C::send(uint8_t word_address, uint8_t count, uint8_t *buffer) {
-	//Debug.println("send(uint8_t word_address, uint8_t count, uint8_t *buffer)");
+	//Serial.println("send(uint8_t word_address, uint8_t count, uint8_t *buffer)");
 	uint8_t i2c_status;
 
 	Wire.beginTransmission(deviceAddress());
 
-	start_operation(I2C_WRITE);
+	start_operation(FLAG_I2C_WRITE);
 
 	i2c_status = send_bytes(1, &word_address);
 	if (i2c_status != I2C_FUNCTION_RETCODE_SUCCESS) {
-		//Debug.println("send -- fail 1");
+		Serial.println("send -- fail 1");
 		return SHA204_COMM_FAIL;
 	}
 
@@ -156,7 +160,7 @@ uint8_t SHA204I2C::send(uint8_t word_address, uint8_t count, uint8_t *buffer) {
 	i2c_status = send_bytes(count, buffer);
 
 	if (i2c_status != I2C_FUNCTION_RETCODE_SUCCESS) {
-		//Debug.println("send -- fail 2");
+		Serial.println("send -- fail 2");
 		return SHA204_COMM_FAIL;
 	}
 
@@ -167,17 +171,17 @@ uint8_t SHA204I2C::send(uint8_t word_address, uint8_t count, uint8_t *buffer) {
 
 
 uint8_t SHA204I2C::send_command(uint8_t count, uint8_t *command) {
-	//Debug.println("send_command(uint8_t count, uint8_t *command)");
+	//Serial.println("send_command(uint8_t count, uint8_t *command)");
 	return send(SHA204_I2C_PACKET_FUNCTION_NORMAL, count, command);
 }
 
 uint8_t SHA204I2C::sleep(void) {
-	//Debug.println("sleep(void)");
+	//Serial.println("sleep(void)");
 	return send(SHA204_I2C_PACKET_FUNCTION_SLEEP, 0, NULL);
 }
 
 uint8_t SHA204I2C::resync(uint8_t size, uint8_t *response) {
-	//Debug.println("resync(uint8_t size, uint8_t *response)");
+	//Serial.println("resync(uint8_t size, uint8_t *response)");
 
 	// Try to re-synchronize without sending a Wake token
 	// (step 1 of the re-synchronization process).
@@ -206,7 +210,8 @@ uint8_t SHA204I2C::resync(uint8_t size, uint8_t *response) {
 }
 
 uint8_t SHA204I2C::reset_io() {
-	//Debug.println("reset_io()");
+	//Serial.println("reset_io()");
 	return send(SHA204_I2C_PACKET_FUNCTION_RESET, 0, NULL);
 }
 
+#endif

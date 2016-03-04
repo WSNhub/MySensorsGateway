@@ -61,6 +61,10 @@ public:
 	uint8_t read(uint8_t *tx_buffer, uint8_t *rx_buffer, uint8_t zone, uint16_t address);
 	uint8_t update_extra(uint8_t *tx_buffer, uint8_t *rx_buffer, uint8_t mode, uint8_t new_value);
 	uint8_t write(uint8_t *tx_buffer, uint8_t *rx_buffer, uint8_t zone, uint16_t address, uint8_t *value, uint8_t *mac);
+
+        uint8_t sha204m_execute(uint8_t op_code, uint8_t param1, uint16_t param2,
+			        uint8_t datalen1, uint8_t *data1,
+                                uint8_t tx_size, uint8_t *tx_buffer, uint8_t rx_size, uint8_t *rx_buffer);
         void dump_configuration();
 };
 
