@@ -97,6 +97,10 @@ void startServers()
     HTTP.begin(); //HTTP must be first so handlers can be registered
 
     I2C_dev.begin(i2cChangeHandler);
+    
+    void personalizeAtSha204(void);
+    personalizeAtSha204();
+
     Expansion.begin(i2cChangeHandler);
     Clock.begin(i2cChangeHandler);
 
