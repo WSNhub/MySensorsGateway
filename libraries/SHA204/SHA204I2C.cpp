@@ -24,6 +24,9 @@ limitations under the License.
 #include "SHA204Definitions.h"
 #include "SHA204I2C.h"
 
+#define SCOPE_PIN 16 // GPIO
+ 
+
 uint16_t SHA204I2C::SHA204_RESPONSE_TIMEOUT() {
 	return SHA204_RESPONSE_TIMEOUT_VALUE;
 }
@@ -58,7 +61,8 @@ uint8_t SHA204I2C::receive_bytes(uint8_t count, uint8_t *data) {
 }
 
 uint8_t SHA204I2C::receive_byte(uint8_t *data) {
-	//Serial.println("receive_byte");
+        // without delay you will get communication errors
+        delay(1);
 
 	int available_bytes = Wire.requestFrom(deviceAddress(), (uint8_t)1);
 	if (available_bytes != 1) {
@@ -109,7 +113,7 @@ uint8_t SHA204I2C::receive_response(uint8_t size, uint8_t *response) {
 	uint8_t count;
 	uint8_t i2c_status;
 
-	// Wire.beginTransmission(deviceAddress());
+	//Wire.beginTransmission(deviceAddress());
 	// uint8_t sla = deviceAddress();
 	// Wire.write(&sla, (uint8_t)1);
 	// int status = Wire.endTransmission();
