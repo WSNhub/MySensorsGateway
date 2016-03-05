@@ -10,4 +10,7 @@ bool isMqttConfigured();
 bool isMqttConnected();
 String MqttServer();
 
+extern long mqttPktRx;
+extern long mqttPktTx;
+
 #endif //MY_SENSORS_GW_MQTT_H

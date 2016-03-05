@@ -70,20 +70,21 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
 
 void onStatus(HttpRequest &request, HttpResponse &response)
 {
+    char buf [200];
     TemplateFileStream *tmpl = new TemplateFileStream("status.html");
     auto &vars = tmpl->variables();
 
     vars["ssid"] = AppSettings.ssid;
-    vars["wifiStatus"] = isWifiConnected ? "connected" : "not connected";
+    vars["wifiStatus"] = isWifiConnected ? "Connected" : "Not connected";
     
     bool dhcp = WifiStation.isEnabledDHCP();
     if (dhcp)
     {
-      vars["ipOrigin"] = "from DHCP";
+      vars["ipOrigin"] = "From DHCP";
     }
     else
     {
-      vars["ipOrigin"] = "static";
+      vars["ipOrigin"] = "Static";
     }
 
     if (!WifiStation.getIP().isNull())
@@ -95,10 +96,38 @@ void onStatus(HttpRequest &request, HttpResponse &response)
         vars["ip"] = "0.0.0.0";
         vars["ipOrigin"] = "not configured";
     }
-    vars["mqttIp"] = AppSettings.mqttServer;
-    vars["mqttStatus"] = isMqttConnected() ? "connected":"not connected";
-
-    response.sendTemplate(tmpl); // will be automatically deleted
+    if (AppSettings.mqttServer != "")
+    {
+        vars["mqttIp"] = AppSettings.mqttServer;
+        vars["mqttStatus"] = isMqttConnected() ? "Connected":"Not connected";
+    }
+    else
+    {
+        vars["mqttIp"] = "0.0.0.0";
+        vars["mqttStatus"] = "Not configured";
+    }
+    uint64_t rfBaseAddress = GW.getBaseAddress();
+    if (AppSettings.useOwnBaseAddress)
+      m_snprintf (buf, 200, "%08x (private)", rfBaseAddress);
+    else
+      m_snprintf (buf, 200, "%08x (default)", rfBaseAddress);
+    vars["baseAddress"] = buf;
+    vars["radioStatus"] = isNRFAvailable() ? "Available" : "Not available";
+    //TODO number of detected nodes / sensors
+    
+    // --- System info -------------------------------------------------
+    vars["systemVersion"] = build_git_sha;
+    vars["systemBuild"] = build_time;
+    vars["systemFreeHeap"] = system_get_free_heap_size();
+    
+    
+    // --- Statistics --------------------------------------------------
+    vars["nrfRx"] = rfPacketsRx; //TODO check counters at MySensor.cpp
+    vars["nrfTx"] = rfPacketsTx;
+    vars["mqttRx"] = mqttPktRx;
+    vars["mqttTx"] = mqttPktTx;
+    
+   response.sendTemplate(tmpl); // will be automatically deleted
 }
 
 void onFile(HttpRequest &request, HttpResponse &response)

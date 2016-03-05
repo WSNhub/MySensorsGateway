@@ -14,6 +14,8 @@ char clientId[33];
 bool MqttConfigured = FALSE;
 bool MqttIsConnected = FALSE;
 
+long mqttPktRx = 0;
+long mqttPktTx = 0;
 
 void ICACHE_FLASH_ATTR mqttPublishMessage(String topic, String message)
 {
@@ -152,7 +154,13 @@ void ICACHE_FLASH_ATTR mqttRegisterHttpHandlers(HttpServer &server)
 {
     server.addPath("/mqttconfig", onMqttConfig);
 }
+bool isMqttConnected(void) 
+{
+  if (mqtt == NULL)
+    return (FALSE);
+  else
+    return((mqtt->getConnectionState() == eTCS_Connected));
+}
 
 bool isMqttConfigured(void) {return(MqttConfigured);}
-bool isMqttConnected(void) {return(MqttIsConnected);}
 String MqttServer(void) {return(AppSettings.mqttServer);}

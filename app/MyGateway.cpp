@@ -68,6 +68,8 @@ void MyGateway::incomingMessage(const MyMessage &message)
 
     if (!msg.isAck())
     {
+        rfPacketsRx++;
+        
         // we have to check every message if its a newly assigned id or not.
         // Ack on I_ID_RESPONSE does not work, and checking on C_PRESENTATION
         // isn't reliable.
@@ -558,6 +560,7 @@ void MyGateway::setSensorValue(String object, String value)
     GW.sendRoute(GW.build(myMsg, mySensors[id-1].node,
                           mySensors[id-1].sensor, C_SET,
                           2 /*mySensors[id-1].type*/, 0));
+    rfPacketsTx++;
 }
 
 uint64_t MyGateway::getBaseAddress()
@@ -565,4 +568,13 @@ uint64_t MyGateway::getBaseAddress()
     return rfBaseAddress;
 }
 
+bool isNRFAvailable ()
+{
+  uint8_t dummy;
+  return ((transport.available (&dummy)));
+}
+
 MyGateway GW;
+
+long rfPacketsRx = 0;
+long rfPacketsTx = 0;
