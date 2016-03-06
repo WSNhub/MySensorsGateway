@@ -68,6 +68,8 @@ class MyGateway
     String getSensorValue(String object);
     void setSensorValue(String object, String value);
     uint64_t getBaseAddress();
+    uint8_t getNumDetectedNodes();
+    uint16_t getNumDetectedSensors();
 
   protected:
     void process();
@@ -86,6 +88,8 @@ class MyGateway
     Timer processTimer;
     bool nodeIds[256];
     sensor_t mySensors[MAX_MY_SENSORS];
+    uint8_t numDetectedNodes;
+    uint16_t numDetectedSensors;
     MyMessage msg;
 };
 

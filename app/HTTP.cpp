@@ -112,15 +112,20 @@ void onStatus(HttpRequest &request, HttpResponse &response)
     else
       m_snprintf (buf, 200, "%08x (default)", rfBaseAddress);
     vars["baseAddress"] = buf;
-    vars["radioStatus"] = isNRFAvailable() ? "Available" : "Not available";
-    //TODO number of detected nodes / sensors
+    vars["radioStatus"] = isNRFAvailable() ? "Available" : "Not available"; //TODO fix
+    vars["detNodes"] = GW.getNumDetectedNodes();
+    vars["detSensors"] = GW.getNumDetectedSensors();
+    
     
     // --- System info -------------------------------------------------
+    m_snprintf (buf, 200, "%x", system_get_chip_id());
     vars["systemVersion"] = build_git_sha;
     vars["systemBuild"] = build_time;
     vars["systemFreeHeap"] = system_get_free_heap_size();
-    
-    
+    vars["systemStartup"] = "todo";
+    vars["systemChipId"] = buf;
+
+
     // --- Statistics --------------------------------------------------
     vars["nrfRx"] = rfPacketsRx; //TODO check counters at MySensor.cpp
     vars["nrfTx"] = rfPacketsTx;

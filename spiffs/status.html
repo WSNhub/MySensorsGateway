@@ -9,7 +9,7 @@
     <meta name="author" content="">
     <link rel="icon" href="../../favicon.ico">
 
-    <title>Status</title>
+    <title>MySensors Gateway</title>
 
     <!-- Bootstrap core CSS -->
     <link href="bootstrap.css" rel="stylesheet">
@@ -90,6 +90,11 @@
                  <td>{baseAddress}</td>
                  <td>{radioStatus}</td>
                </tr>
+               <tr>
+                 <td>Detected sensors</td>
+                 <td>nodes : {detNodes}</td>
+                 <td>Sensors : {detSensors}</td>
+               </tr>
              </tbody>
            </table>
        </fieldset>
@@ -123,6 +128,10 @@
            <legend>System info</legend>
            <table class="table table-bordered">
              <tbody>
+               <tr>
+                 <td>System Chip ID</td>
+                 <td>{systemChipId}</td>
+               </tr>
                <tr>
                  <td>Version (git)</td>
                  <td>{systemVersion}</td>

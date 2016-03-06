@@ -71,6 +71,7 @@ int updateSensorStateInt(int node, int sensor, int type, int value)
   MyMessage myMsg;
   myMsg.set(value);
   GW.sendRoute(GW.build(myMsg, node, sensor, C_SET, type, 0));
+  rfPacketsTx++;
 }
 
 int updateSensorState(int node, int sensor, int value)

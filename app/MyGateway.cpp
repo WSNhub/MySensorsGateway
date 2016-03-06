@@ -68,13 +68,13 @@ void MyGateway::incomingMessage(const MyMessage &message)
 
     if (!msg.isAck())
     {
-        rfPacketsRx++;
         
         // we have to check every message if its a newly assigned id or not.
         // Ack on I_ID_RESPONSE does not work, and checking on C_PRESENTATION
         // isn't reliable.
         if (msg.sender != 0 && msg.sender != 255 && !nodeIds[msg.sender])
         {
+            numDetectedNodes++;
             debugf("Discovered new node %d", msg.sender);
             nodeIds[(uint8_t)msg.sender] = true;
         }
@@ -110,6 +110,7 @@ void MyGateway::incomingMessage(const MyMessage &message)
         {
             bool newSensor = true;
 
+            rfPacketsRx++;
             for (int idx = 0; idx < MAX_MY_SENSORS; idx++)
             {
                 if (mySensors[idx].node == message.sender &&
@@ -155,6 +156,7 @@ void MyGateway::incomingMessage(const MyMessage &message)
                             }
                             mySensors[idx].value = newValue;
                         }
+                        numDetectedSensors++;
                         debugf("Adding sensor %d/%d type %d value %s",
                                mySensors[idx].node, mySensors[idx].sensor,
                                mySensors[idx].type, mySensors[idx].value.c_str());
@@ -210,6 +212,9 @@ void MyGateway::begin(msgRxDelegate rxDlg, sensorValueChangedDelegate valueChang
 {
     msgRx = rxDlg;
     sensorValueChanged = valueChanged;
+    numDetectedNodes = 0;
+    numDetectedSensors = 0;
+
 
 #ifndef DISABLE_SPIFFS
     if (fileExist("sensors.json"))
@@ -568,10 +573,20 @@ uint64_t MyGateway::getBaseAddress()
     return rfBaseAddress;
 }
 
-bool isNRFAvailable ()
+uint8_t MyGateway::getNumDetectedNodes()
 {
-  uint8_t dummy;
-  return ((transport.available (&dummy)));
+    return (numDetectedNodes);
+}
+
+uint16_t MyGateway::getNumDetectedSensors()
+{
+    return (numDetectedSensors);
+}
+
+bool isNRFAvailable () //TODO this is not ok
+{
+  uint8_t to = 0;
+  return ((transport.available (&to)));
 }
 
 MyGateway GW;
