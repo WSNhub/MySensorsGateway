@@ -583,10 +583,9 @@ uint16_t MyGateway::getNumDetectedSensors()
     return (numDetectedSensors);
 }
 
-bool isNRFAvailable () //TODO this is not ok
+int getRadioStatus ()
 {
-  uint8_t to = 0;
-  return ((transport.available (&to)));
+  return (transport.getRadioStatus());
 }
 
 MyGateway GW;

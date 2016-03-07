@@ -112,7 +112,7 @@ void onStatus(HttpRequest &request, HttpResponse &response)
     else
       m_snprintf (buf, 200, "%08x (default)", rfBaseAddress);
     vars["baseAddress"] = buf;
-    vars["radioStatus"] = isNRFAvailable() ? "Available" : "Not available"; //TODO fix
+    vars["radioStatus"] = getRadioStatus();
     vars["detNodes"] = GW.getNumDetectedNodes();
     vars["detSensors"] = GW.getNumDetectedSensors();
     

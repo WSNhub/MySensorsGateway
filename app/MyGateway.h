@@ -96,6 +96,6 @@ class MyGateway
 extern MyGateway GW;
 extern long rfPacketsRx;
 extern long rfPacketsTx;
-bool isNRFAvailable ();
+int getRadioStatus ();
 
 #endif

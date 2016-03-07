@@ -43,6 +43,8 @@ public:
 	bool available(uint8_t *to);
 	uint8_t receive(void* data);
 	void powerDown();
+        int getRadioStatus();
+  
 private:
 	RF24 rf24;
 	uint64_t _base_address;
