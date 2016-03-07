@@ -69,11 +69,13 @@ void MyGateway::incomingMessage(const MyMessage &message)
 
     if (!msg.isAck())
     {
+        
         // we have to check every message if its a newly assigned id or not.
         // Ack on I_ID_RESPONSE does not work, and checking on C_PRESENTATION
         // isn't reliable.
         if (msg.sender != 0 && msg.sender != 255 && !nodeIds[msg.sender])
         {
+            numDetectedNodes++;
             debugf("Discovered new node %d", msg.sender);
             nodeIds[(uint8_t)msg.sender] = true;
         }
@@ -109,6 +111,7 @@ void MyGateway::incomingMessage(const MyMessage &message)
         {
             bool newSensor = true;
 
+            rfPacketsRx++;
             for (int idx = 0; idx < MAX_MY_SENSORS; idx++)
             {
                 if (mySensors[idx].node == message.sender &&
@@ -154,6 +157,7 @@ void MyGateway::incomingMessage(const MyMessage &message)
                             }
                             mySensors[idx].value = newValue;
                         }
+                        numDetectedSensors++;
                         debugf("Adding sensor %d/%d type %d value %s",
                                mySensors[idx].node, mySensors[idx].sensor,
                                mySensors[idx].type, mySensors[idx].value.c_str());
@@ -209,6 +213,9 @@ void MyGateway::begin(msgRxDelegate rxDlg, sensorValueChangedDelegate valueChang
 {
     msgRx = rxDlg;
     sensorValueChanged = valueChanged;
+    numDetectedNodes = 0;
+    numDetectedSensors = 0;
+
 
 #ifndef DISABLE_SPIFFS
     if (fileExist("sensors.json"))
@@ -565,6 +572,7 @@ void MyGateway::setSensorValue(String object, String value)
     GW.sendRoute(GW.build(myMsg, mySensors[id-1].node,
                           mySensors[id-1].sensor, C_SET,
                           2 /*mySensors[id-1].type*/, 0));
+    rfPacketsTx++;
 }
 
 uint64_t MyGateway::getBaseAddress()
@@ -572,4 +580,22 @@ uint64_t MyGateway::getBaseAddress()
     return rfBaseAddress;
 }
 
+uint8_t MyGateway::getNumDetectedNodes()
+{
+    return (numDetectedNodes);
+}
+
+uint16_t MyGateway::getNumDetectedSensors()
+{
+    return (numDetectedSensors);
+}
+
+int getRadioStatus ()
+{
+  return (transport.getRadioStatus());
+}
+
 MyGateway GW;
+
+long rfPacketsRx = 0;
+long rfPacketsTx = 0;

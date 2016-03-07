@@ -13,7 +13,10 @@ void onMessageReceived(String topic, String message);
 MqttClient *mqtt = NULL;
 char clientId[33];
 bool MqttConfigured = FALSE;
+bool MqttIsConnected = FALSE;
 
+unsigned long mqttPktRx = 0;
+unsigned long mqttPktTx = 0;
 
 void ICACHE_FLASH_ATTR mqttPublishMessage(String topic, String message)
 {
@@ -21,12 +24,14 @@ void ICACHE_FLASH_ATTR mqttPublishMessage(String topic, String message)
         return;
 
     mqtt->publish(AppSettings.mqttSensorPfx + String("/") + topic, message);
+    mqttPktTx++;
 }
 
 void ICACHE_FLASH_ATTR mqttPublishVersion()
 {
     mqtt->publish(String("/") + clientId + String("/version"),
                   "MySensors gateway");
+    mqttPktTx++;
 }
 
 // Callback for messages, arrived from MQTT server
@@ -63,6 +68,8 @@ void ICACHE_FLASH_ATTR onMessageReceived(String topic, String message)
     //MyMQTT/22/1/V_LIGHT
     if (topic.startsWith(AppSettings.mqttControllerPfx + "/"))
     {
+        mqttPktRx++;
+
         String node   = getValue(topic, '/', 1);
         String sensor = getValue(topic, '/', 2);
         String type   = getValue(topic, '/', 3);
@@ -102,7 +109,7 @@ void ICACHE_FLASH_ATTR startMqttClient()
     {
         sprintf(clientId, "ESP_%08X", system_get_chip_id());
         mqtt = new MqttClient(AppSettings.mqttServer, AppSettings.mqttPort, onMessageReceived);
-        mqtt->connect(clientId, AppSettings.mqttUser, AppSettings.mqttPass);
+        MqttIsConnected = mqtt->connect(clientId, AppSettings.mqttUser, AppSettings.mqttPass);
         mqtt->subscribe("#");
         mqttPublishVersion();
         MqttConfigured = TRUE;
@@ -154,6 +161,13 @@ void onMqttConfig(HttpRequest &request, HttpResponse &response)
 void ICACHE_FLASH_ATTR mqttRegisterHttpHandlers(HttpServer &server)
 {
     server.addPath("/mqttconfig", onMqttConfig);
+}
+bool isMqttConnected(void) 
+{
+  if (mqtt == NULL)
+    return (FALSE);
+  else
+    return((mqtt->getConnectionState() == eTCS_Connected));
 }
 
 bool isMqttConfigured(void) {return(MqttConfigured);}

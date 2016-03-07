@@ -92,3 +92,9 @@ uint8_t MyTransportNRF24::receive(void* data) {
 void MyTransportNRF24::powerDown() {
 	rf24.powerDown();
 }
+
+int MyTransportNRF24::getRadioStatus()
+{
+  return (rf24.isValid());
+} 
+  
