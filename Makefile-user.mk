@@ -5,7 +5,7 @@ CONTROLLER_TYPE = OPENHAB
 
 #### Set the platform type ####
 # For now the choice is either GENERIC or SDSHIELD
-PLATFORM_TYPE = SDSHIELD
+PLATFORM_TYPE = GENERIC 
 
 #### Enable or disable signing ####
 # Either 0 to disable or 1 to enable

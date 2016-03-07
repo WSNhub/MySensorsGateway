@@ -6,7 +6,7 @@
 // Uncomment this to enable locking the configuration zone.
 // *** BE AWARE THAT THIS PREVENTS ANY FUTURE CONFIGURATION CHANGE TO THE CHIP ***
 // It is still possible to change the key, and this also enable random key generation
-#define LOCK_CONFIGURATION
+//#define LOCK_CONFIGURATION
 
 // Uncomment this to enable locking the data zone.
 // *** BE AWARE THAT THIS PREVENTS THE KEY TO BE CHANGED ***

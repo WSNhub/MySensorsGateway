@@ -45,8 +45,6 @@ void SHA204I2C::init() {
 
 uint8_t SHA204I2C::receive_bytes(uint8_t count, uint8_t *data) {
 	//Serial.println("receive_bytes(uint8_t count, uint8_t *data)");
-        // without delay you will get communication errors
-        delay(10);
 	uint8_t i;
 
 	int available_bytes = Wire.requestFrom(deviceAddress(), count);
@@ -63,8 +61,6 @@ uint8_t SHA204I2C::receive_bytes(uint8_t count, uint8_t *data) {
 }
 
 uint8_t SHA204I2C::receive_byte(uint8_t *data) {
-        // without delay you will get communication errors
-        delay(10);
 
 	int available_bytes = Wire.requestFrom(deviceAddress(), (uint8_t)1);
 	if (available_bytes != 1) {
@@ -125,7 +121,8 @@ uint8_t SHA204I2C::receive_response(uint8_t size, uint8_t *response) {
 	// Receive count byte.
 	i2c_status = receive_byte(response);
 	if (i2c_status != I2C_FUNCTION_RETCODE_SUCCESS) {
-		Serial.println("receive_response -- fail 1");
+		//Serial.println("receive_response -- fail 1");
+                delay(3);
 		return SHA204_COMM_FAIL;
 	}
 
