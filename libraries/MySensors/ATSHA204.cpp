@@ -1,4 +1,4 @@
-#if defined(ARDUINO_ARCH_AVR)
+//#if defined(ARDUINO_ARCH_AVR)
 
 #include "Arduino.h"
 #include "ATSHA204.h"
@@ -50,6 +50,7 @@ void ATSHA204Class::getSerialNumber(uint8_t * response)
 
 /* SWI bit bang functions */
 
+#if (!ATSHA204I2C)
 void ATSHA204Class::swi_set_signal_pin(uint8_t is_high)
 {
   *device_port_DDR |= device_pin;
@@ -59,9 +60,20 @@ void ATSHA204Class::swi_set_signal_pin(uint8_t is_high)
   else
     *device_port_OUT &= ~device_pin;
 }
+#endif
 
 uint8_t ATSHA204Class::swi_send_bytes(uint8_t count, uint8_t *buffer)
 {
+#if (ATSHA204I2C)
+	int sent_bytes = Wire.write(buffer, count);
+
+	if (count > 0 && sent_bytes == count) {
+		return SWI_FUNCTION_RETCODE_SUCCESS;
+	}
+
+	return SWI_FUNCTION_RETCODE_TIMEOUT;
+
+#else
   uint8_t i, bit_mask;
 
   // Disable interrupts while sending.
@@ -101,6 +113,7 @@ uint8_t ATSHA204Class::swi_send_bytes(uint8_t count, uint8_t *buffer)
   }
   interrupts();  //swi_enable_interrupts();
   return SWI_FUNCTION_RETCODE_SUCCESS;
+#endif
 }
 
 uint8_t ATSHA204Class::swi_send_byte(uint8_t value)
@@ -110,6 +123,24 @@ uint8_t ATSHA204Class::swi_send_byte(uint8_t value)
 
 uint8_t ATSHA204Class::swi_receive_bytes(uint8_t count, uint8_t *buffer)
 {
+#if (ATSHA204I2C)
+	uint8_t i;
+
+        delay(10);
+
+	int available_bytes = Wire.requestFrom(0x64, count);
+	if (available_bytes != count) {
+		return SWI_FUNCTION_RETCODE_TIMEOUT;
+	}
+
+	for (i = 0; i < count; i++) {
+		while (!Wire.available()); // Wait for byte that is going to be read next
+		*buffer++ = Wire.read(); // Store read value
+	}
+
+	return SWI_FUNCTION_RETCODE_SUCCESS;
+
+#else
   uint8_t status = SWI_FUNCTION_RETCODE_SUCCESS;
   uint8_t i;
   uint8_t bit_mask;
@@ -210,7 +241,82 @@ uint8_t ATSHA204Class::swi_receive_bytes(uint8_t count, uint8_t *buffer)
     status = SWI_FUNCTION_RETCODE_RX_FAIL;
   }
   return status;
+#endif
 }
+
+#if (ATSHA204I2C)
+enum i2c_read_write_flag {
+        FLAG_I2C_WRITE = (uint8_t) 0x00,  //!< write command flag
+        FLAG_I2C_READ  = (uint8_t) 0x01   //!< read command flag
+};
+
+enum i2c_word_address {
+        SHA204_I2C_PACKET_FUNCTION_RESET,  //!< Reset device.
+        SHA204_I2C_PACKET_FUNCTION_SLEEP,  //!< Put device into Sleep mode.
+        SHA204_I2C_PACKET_FUNCTION_IDLE,   //!< Put device into Idle mode.
+        SHA204_I2C_PACKET_FUNCTION_NORMAL  //!< Write / evaluate data that follow this word address byte.
+};
+
+#define I2C_FUNCTION_RETCODE_SUCCESS     ((uint8_t) 0x00) //!< Communication with device succeeded.
+#define I2C_FUNCTION_RETCODE_COMM_FAIL   ((uint8_t) 0xF0) //!< Communication with device failed.
+#define I2C_FUNCTION_RETCODE_TIMEOUT     ((uint8_t) 0xF1) //!< Communication timed out.
+#define I2C_FUNCTION_RETCODE_NACK        ((uint8_t) 0xF8) //!< TWI nack
+
+int ATSHA204Class::start_operation(uint8_t readWrite) {
+	//Serial.println("start_operation(uint8_t readWrite)");
+	int written = Wire.write(&readWrite, (uint8_t)1);
+	
+	return written > 0;
+}
+
+uint8_t ATSHA204Class::send(uint8_t word_address, uint8_t count, uint8_t *buffer) {
+	//Serial.println("send(uint8_t word_address, uint8_t count, uint8_t *buffer)");
+	uint8_t i2c_status;
+
+	Wire.beginTransmission(0x64);
+
+	start_operation(FLAG_I2C_WRITE);
+
+	i2c_status = swi_send_bytes(1, &word_address);
+	if (i2c_status != I2C_FUNCTION_RETCODE_SUCCESS) {
+		Serial.println("send -- fail 1");
+		return SHA204_COMM_FAIL;
+	}
+
+	if (count == 0) {
+		return SHA204_SUCCESS;
+	}
+
+	i2c_status = swi_send_bytes(count, buffer);
+
+	if (i2c_status != I2C_FUNCTION_RETCODE_SUCCESS) {
+		Serial.println("send -- fail 2");
+		return SHA204_COMM_FAIL;
+	}
+
+	Wire.endTransmission();
+
+	return SHA204_SUCCESS;
+}
+
+uint8_t ATSHA204Class::send_command(uint8_t count, uint8_t *command) {
+	//Serial.println("send_command(uint8_t count, uint8_t *command)");
+	return send(SHA204_I2C_PACKET_FUNCTION_NORMAL, count, command);
+}
+
+uint8_t ATSHA204Class::receive_byte(uint8_t *data) {
+
+	int available_bytes = Wire.requestFrom(0x64, (uint8_t)1);
+	if (available_bytes != 1) {
+		return I2C_FUNCTION_RETCODE_COMM_FAIL;
+	}
+	while (!Wire.available()); // Wait for byte that is going to be read next
+	*data++ = Wire.read(); // Store read value
+
+	return I2C_FUNCTION_RETCODE_SUCCESS;
+}
+
+#endif
 
 /* Physical functions */
 
@@ -221,6 +327,34 @@ void ATSHA204Class::sha204c_sleep()
 
 uint8_t ATSHA204Class::sha204p_receive_response(uint8_t size, uint8_t *response)
 {
+#if (ATSHA204I2C)
+	uint8_t count;
+	uint8_t i2c_status;
+
+        for (int i = 0; i < size; i++)
+            response[i] = 0;
+  
+        //(void) swi_send_byte(SHA204_SWI_FLAG_TX);
+
+	// Receive count byte.
+	i2c_status = swi_receive_bytes(size, response);
+	if (i2c_status == SWI_FUNCTION_RETCODE_SUCCESS ||
+            i2c_status == SWI_FUNCTION_RETCODE_RX_FAIL) 
+        {
+            count = response[SHA204_BUFFER_POS_COUNT];
+            if ((count < SHA204_RSP_SIZE_MIN) || (count > size))
+                return SHA204_INVALID_SIZE;
+
+            return SHA204_SUCCESS;
+        }
+        // Translate error so that the Communication layer
+        // can distinguish between a real error or the
+        // device being busy executing a command.
+        if (i2c_status == SWI_FUNCTION_RETCODE_TIMEOUT)
+            return SHA204_RX_NO_RESPONSE;
+        else
+            return SHA204_RX_FAIL;
+#else
   uint8_t count_byte;
   uint8_t i;
   uint8_t ret_code;
@@ -247,12 +381,25 @@ uint8_t ATSHA204Class::sha204p_receive_response(uint8_t size, uint8_t *response)
     return SHA204_RX_NO_RESPONSE;
   else
     return SHA204_RX_FAIL;
+#endif
 }
 
 /* Communication functions */
 
 uint8_t ATSHA204Class::sha204c_wakeup(uint8_t *response)
 {
+#if (ATSHA204I2C)
+	// This was the only way short of manually adjusting the SDA pin to wake up the device
+	Wire.beginTransmission(0x64);
+	delay(10);
+        int i2c_status = Wire.endTransmission();
+	if (i2c_status != 0) {
+	Serial.println("chip_wakeup() FAIL");
+		return SHA204_COMM_FAIL;
+	}
+
+	return SHA204_SUCCESS;
+#else
   swi_set_signal_pin(0);
   delayMicroseconds(10*SHA204_WAKEUP_PULSE_WIDTH);
   swi_set_signal_pin(1);
@@ -277,10 +424,37 @@ uint8_t ATSHA204Class::sha204c_wakeup(uint8_t *response)
     delay(SHA204_COMMAND_EXEC_MAX);
 
   return ret_code;
+#endif
 }
 
 uint8_t ATSHA204Class::sha204c_resync(uint8_t size, uint8_t *response)
 {
+#if (ATSHA204I2C)
+	// Try to re-synchronize without sending a Wake token
+	// (step 1 of the re-synchronization process).
+	uint8_t nine_clocks = 0xFF;
+	swi_send_bytes(1, &nine_clocks);
+	Wire.beginTransmission(0x64);
+	Wire.endTransmission();
+
+	// Try to send a Reset IO command if re-sync succeeded.
+	int ret_code = send(SHA204_I2C_PACKET_FUNCTION_RESET, 0, NULL); //reset_io();
+
+	if (ret_code == SHA204_SUCCESS) {
+		return ret_code;
+	}
+
+	// We lost communication. Send a Wake pulse and try
+	// to receive a response (steps 2 and 3 of the
+	// re-synchronization process).
+	send(SHA204_I2C_PACKET_FUNCTION_SLEEP, 0, NULL); //sleep();
+	ret_code = sha204c_wakeup(response); //wakeup(response);
+
+	// Translate a return value of success into one
+	// that indicates that the device had to be woken up
+	// and might have lost its TempKey.
+	return (ret_code == SHA204_SUCCESS ? SHA204_RESYNC_WITH_WAKEUP : ret_code);
+#else
   // Try to re-synchronize without sending a Wake token
   // (step 1 of the re-synchronization process).
   delay(SHA204_SYNC_TIMEOUT);
@@ -298,6 +472,7 @@ uint8_t ATSHA204Class::sha204c_resync(uint8_t size, uint8_t *response)
   // that indicates that the device had to be woken up
   // and might have lost its TempKey.
   return (ret_code == SHA204_SUCCESS ? SHA204_RESYNC_WITH_WAKEUP : ret_code);
+#endif
 }
 
 uint8_t ATSHA204Class::sha204c_send_and_receive(uint8_t *tx_buffer, uint8_t rx_size, uint8_t *rx_buffer, uint8_t execution_delay, uint8_t execution_timeout)
@@ -322,11 +497,15 @@ uint8_t ATSHA204Class::sha204c_send_and_receive(uint8_t *tx_buffer, uint8_t rx_s
   while ((n_retries_send-- > 0) && (ret_code != SHA204_SUCCESS)) 
   {
     // Send command.
+#if (ATSHA204I2C)
+    ret_code = send_command(count, tx_buffer);
+#else
     ret_code = swi_send_byte(SHA204_SWI_FLAG_CMD);
     if (ret_code != SWI_FUNCTION_RETCODE_SUCCESS)
       ret_code = SHA204_COMM_FAIL;
     else
       ret_code = swi_send_bytes(count, tx_buffer);
+#endif
 
     if (ret_code != SHA204_SUCCESS) 
     {
@@ -575,4 +754,4 @@ uint8_t ATSHA204Class::sha204c_check_crc(uint8_t *response)
     ? SHA204_SUCCESS : SHA204_BAD_CRC;
 }
 
-#endif // defined(ARDUINO_ARCH_AVR)
+//#endif // defined(ARDUINO_ARCH_AVR)

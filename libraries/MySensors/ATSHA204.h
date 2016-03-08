@@ -44,8 +44,13 @@
 #define SHA204_RSP_SIZE_MAX          ((uint8_t) 35)  //!< maximum size of response packet
 #define SHA204_BUFFER_POS_COUNT      (0)             //!< buffer index of count byte in command or response
 #define SHA204_BUFFER_POS_DATA       (1)             //!< buffer index of data in response
+#if (!ATSHA204I2C)
 #define SHA204_WAKEUP_PULSE_WIDTH    (uint8_t) (6.0 * CPU_CLOCK_DEVIATION_POSITIVE + 0.5)	//! width of Wakeup pulse in 10 us units
 #define SHA204_WAKEUP_DELAY          (uint8_t) (3.0 * CPU_CLOCK_DEVIATION_POSITIVE + 0.5)	//! delay between Wakeup pulse and communication in ms
+#else
+#define SHA204_WAKEUP_PULSE_WIDTH    (uint8_t) (6.0)	//! width of Wakeup pulse in 10 us units
+#define SHA204_WAKEUP_DELAY          (uint8_t) (3.0)	//! delay between Wakeup pulse and communication in ms
+#endif
 
 /* sha204_swi.c */
 #define SHA204_SWI_FLAG_CMD     ((uint8_t) 0x77) //!< flag preceding a command
@@ -167,6 +172,7 @@
 #define WRITE_RSP_SIZE                  SHA204_RSP_SIZE_MIN    //!< response size of Write command
 
 // command timing definitions for minimum execution times (ms)
+#if (!ATSHA204I2C)
 #define GENDIG_DELAY                    ((uint8_t) (11.0 * CPU_CLOCK_DEVIATION_NEGATIVE - 0.5))
 #define HMAC_DELAY                      ((uint8_t) (27.0 * CPU_CLOCK_DEVIATION_NEGATIVE - 0.5))
 #define NONCE_DELAY                     ((uint8_t) (22.0 * CPU_CLOCK_DEVIATION_NEGATIVE - 0.5))
@@ -174,8 +180,18 @@
 #define READ_DELAY                      ((uint8_t) ( 0.4 * CPU_CLOCK_DEVIATION_NEGATIVE - 0.5))
 #define SHA_DELAY                       ((uint8_t) (11.0 * CPU_CLOCK_DEVIATION_NEGATIVE - 0.5))
 #define WRITE_DELAY                     ((uint8_t) ( 4.0 * CPU_CLOCK_DEVIATION_NEGATIVE - 0.5))
+#else
+#define GENDIG_DELAY                    ((uint8_t) (11.0))
+#define HMAC_DELAY                      ((uint8_t) (27.0))
+#define NONCE_DELAY                     ((uint8_t) (22.0))
+#define RANDOM_DELAY                    ((uint8_t) (11.0))
+#define READ_DELAY                      ((uint8_t) ( 0.4))
+#define SHA_DELAY                       ((uint8_t) (11.0))
+#define WRITE_DELAY                     ((uint8_t) ( 4.0))
+#endif
 
 // command timing definitions for maximum execution times (ms)
+#if (!ATSHA204I2C)
 #define GENDIG_EXEC_MAX                  ((uint8_t) (43.0 * CPU_CLOCK_DEVIATION_POSITIVE + 0.5))
 #define HMAC_EXEC_MAX                    ((uint8_t) (69.0 * CPU_CLOCK_DEVIATION_POSITIVE + 0.5))
 #define NONCE_EXEC_MAX                   ((uint8_t) (60.0 * CPU_CLOCK_DEVIATION_POSITIVE + 0.5))
@@ -183,12 +199,25 @@
 #define READ_EXEC_MAX                    ((uint8_t) ( 4.0 * CPU_CLOCK_DEVIATION_POSITIVE + 0.5))
 #define SHA_EXEC_MAX                     ((uint8_t) (22.0 * CPU_CLOCK_DEVIATION_POSITIVE + 0.5))
 #define WRITE_EXEC_MAX                   ((uint8_t) (42.0 * CPU_CLOCK_DEVIATION_POSITIVE + 0.5))
+#else
+#define GENDIG_EXEC_MAX                  ((uint8_t) (43.0))
+#define HMAC_EXEC_MAX                    ((uint8_t) (69.0))
+#define NONCE_EXEC_MAX                   ((uint8_t) (60.0))
+#define RANDOM_EXEC_MAX                  ((uint8_t) (50.0))
+#define READ_EXEC_MAX                    ((uint8_t) ( 4.0))
+#define SHA_EXEC_MAX                     ((uint8_t) (22.0))
+#define WRITE_EXEC_MAX                   ((uint8_t) (42.0))
+#endif
 
 /* from sha204_config.h */
 
+#if (!ATSHA204I2C)
 #define CPU_CLOCK_DEVIATION_POSITIVE   (1.01)
 #define CPU_CLOCK_DEVIATION_NEGATIVE   (0.99)
 #define SHA204_RETRY_COUNT           (1)
+#else
+#define SHA204_RETRY_COUNT           (2)
+#endif
 #define SWI_RECEIVE_TIME_OUT      ((uint16_t) 163)  //! #START_PULSE_TIME_OUT in us instead of loop counts
 #define SWI_US_PER_BYTE           ((uint16_t) 313)  //! It takes 312.5 us to send a byte (9 single-wire bits / 230400 Baud * 8 flag bits).
 #define SHA204_SYNC_TIMEOUT       ((uint8_t) 85)//! delay before sending a transmit flag in the synchronization routine
@@ -196,7 +225,11 @@
 
 /* from sha204_comm.h */
 
+#if (!ATSHA204I2C)
 #define SHA204_COMMAND_EXEC_MAX      ((uint8_t) (69.0 * CPU_CLOCK_DEVIATION_POSITIVE + 0.5))  //! maximum command delay
+#else
+#define SHA204_COMMAND_EXEC_MAX      ((uint8_t) (69.0))  //! maximum command delay
+#endif
 #define SHA204_CMD_SIZE_MIN          ((uint8_t)  7)  //! minimum number of bytes in command (from count byte to second CRC byte)
 #define SHA204_CMD_SIZE_MAX          ((uint8_t) SHA_COUNT_LONG)  //! maximum size of command packet (SHA)
 #define SHA204_CRC_SIZE              ((uint8_t)  2)  //! number of CRC bytes
@@ -227,7 +260,9 @@ private:
 	volatile uint8_t *device_port_DDR, *device_port_OUT, *device_port_IN;
 	void sha204c_calculate_crc(uint8_t length, uint8_t *data, uint8_t *crc);
 	uint8_t sha204c_check_crc(uint8_t *response);
+#if (!ATSHA204I2C)
 	void swi_set_signal_pin(uint8_t is_high);
+#endif
 	uint8_t swi_receive_bytes(uint8_t count, uint8_t *buffer);
 	uint8_t swi_send_bytes(uint8_t count, uint8_t *buffer);
 	uint8_t swi_send_byte(uint8_t value);
@@ -242,6 +277,13 @@ public:
 	uint8_t sha204m_execute(uint8_t op_code, uint8_t param1, uint16_t param2,
 			uint8_t datalen1, uint8_t *data1, uint8_t tx_size, uint8_t *tx_buffer, uint8_t rx_size, uint8_t *rx_buffer);
 	void getSerialNumber(uint8_t *response);
+
+#if (ATSHA204I2C)
+    int start_operation(uint8_t readWrite);
+    uint8_t send(uint8_t word_address, uint8_t count, uint8_t *buffer);
+    uint8_t send_command(uint8_t count, uint8_t *command);
+    uint8_t receive_byte(uint8_t *data);
+#endif
 };
 
 #endif
