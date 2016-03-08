@@ -231,7 +231,7 @@ void HTTPClass::begin()
 {
     server.listen(80);
     server.enableHeaderProcessing("Authorization");
-    server.addPath("/", onIpConfig);
+    server.addPath("/", onStatus);
     server.addPath("/ipconfig", onIpConfig);
     server.addPath("/status", onStatus);
 
