@@ -8,8 +8,7 @@
 #include "i2c.h"
 #include "mqtt.h"
 
-#include <MySensors/SHA204.h>
-#include <MySensors/SHA204I2C.h>
+#include <MySensors/ATSHA204.h>
 
 Adafruit_SSD1306 display(-1); // reset Pin required but later ignored if set to False
 
@@ -129,13 +128,14 @@ void MyI2C::begin(I2CChangeDelegate dlg)
             }
             else if (address == 0x64)
             {
-                SHA204I2C sha204;
                 Debug.printf("Found Atsha204 %x\n", address);
-                sha204.init(); // Be sure to wake up device right as I2C goes up otherwise you'll have NACK issues 
+#if (ATSHA204I2C)
+                ATSHA204Class sha204;
+                //sha204.init(); // Be sure to wake up device right as I2C goes up otherwise you'll have NACK issues 
                 sha204.dump_configuration();
                 // TODO : MUTEX !!! 
                 // On my Wemos proto, ATSHA is the only component on the bus.
-
+#endif
             }
             else if (address == 0x3c)
             {

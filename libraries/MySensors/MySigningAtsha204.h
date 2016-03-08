@@ -56,6 +56,10 @@ public:
 	bool putNonce(MyMessage &msg);
 	bool signMsg(MyMessage &msg);
 	bool verifyMsg(MyMessage &msg);
+#if (ATSHA204I2C)
+        void personalize();
+#endif
+
 private:
 	ATSHA204Class atsha204;
 	unsigned long timestamp;

@@ -3,6 +3,7 @@
 #include "Arduino.h"
 #include "ATSHA204.h"
 
+#if (!ATSHA204I2C)
 // atsha204Class Constructor
 // Feed this function the Arduino-ized pin number you want to assign to the ATSHA204's SDA pin
 // This will find the DDRX, PORTX, and PINX registrs it'll need to point to to control that pin
@@ -19,6 +20,12 @@ ATSHA204Class::ATSHA204Class(uint8_t pin)
 	// Point to input register of pin
 	device_port_IN = portInputRegister(port);
 }
+#else
+ATSHA204Class::ATSHA204Class()
+{	
+	//
+}
+#endif
 
 void ATSHA204Class::getSerialNumber(uint8_t * response)
 {
@@ -753,5 +760,962 @@ uint8_t ATSHA204Class::sha204c_check_crc(uint8_t *response)
   return (crc[0] == response[count] && crc[1] == response[count + 1])
     ? SHA204_SUCCESS : SHA204_BAD_CRC;
 }
+
+#if (ATSHA204I2C)
+void ATSHA204Class::dump_configuration()
+{
+  uint8_t tx_buffer[SHA204_CMD_SIZE_MAX];
+  uint8_t rx_buffer[SHA204_RSP_SIZE_MAX];
+  uint8_t ret_code;
+
+  for (int i=0; i < 88; i += 4)
+  {
+    ret_code = sha204m_read(tx_buffer, rx_buffer, SHA204_ZONE_CONFIG, i);
+    if (ret_code != 0)
+    {
+      Serial.print("Failed to read config. Response: "); Serial.println(ret_code, HEX);
+      break;
+    }
+    if (i == 0x00)
+    {
+      Serial.print("           SN[0:1]           |         SN[2:3]           | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x04)
+    {
+      Serial.print("                          Revnum                         | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        Serial.print("   ");
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x08)
+    {
+      Serial.print("                          SN[4:7]                        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        Serial.print("   ");
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x0C)
+    {
+      Serial.print("    SN[8]    |  Reserved13   | I2CEnable | Reserved15    | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j < 3)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x10)
+    {
+      Serial.print("  I2CAddress |  TempOffset   |  OTPmode  | SelectorMode  | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j < 3)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x14)
+    {
+      Serial.print("         SlotConfig00        |       SlotConfig01        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x18)
+    {
+      Serial.print("         SlotConfig02        |       SlotConfig03        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x1C)
+    {
+      Serial.print("         SlotConfig04        |       SlotConfig05        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x20)
+    {
+      Serial.print("         SlotConfig06        |       SlotConfig07        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x24)
+    {
+      Serial.print("         SlotConfig08        |       SlotConfig09        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x28)
+    {
+      Serial.print("         SlotConfig0A        |       SlotConfig0B        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x2C)
+    {
+      Serial.print("         SlotConfig0C        |       SlotConfig0D        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x30)
+    {
+      Serial.print("         SlotConfig0E        |       SlotConfig0F        | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j == 1)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x34)
+    {
+      Serial.print("  UseFlag00  | UpdateCount00 | UseFlag01 | UpdateCount01 | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j < 3)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x38)
+    {
+      Serial.print("  UseFlag02  | UpdateCount02 | UseFlag03 | UpdateCount03 | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j < 3)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x3C)
+    {
+      Serial.print("  UseFlag04  | UpdateCount04 | UseFlag05 | UpdateCount05 | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j < 3)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x40)
+    {
+      Serial.print("  UseFlag06  | UpdateCount06 | UseFlag07 | UpdateCount07 | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j < 3)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x44)
+    {
+      Serial.print("                      LastKeyUse[0:3]                    | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        Serial.print("   ");
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x48)
+    {
+      Serial.print("                      LastKeyUse[4:7]                    | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        Serial.print("   ");
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x4C)
+    {
+      Serial.print("                      LastKeyUse[8:B]                    | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        Serial.print("   ");
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x50)
+    {
+      Serial.print("                      LastKeyUse[C:F]                    | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        Serial.print("   ");
+      }
+      Serial.print("\n");
+    }
+    else if (i == 0x54)
+    {
+      Serial.print("  UserExtra  |    Selector   | LockValue |  LockConfig   | ");
+      for (int j=0; j<4; j++)
+      {
+        if (rx_buffer[SHA204_BUFFER_POS_DATA+j] < 0x10)
+        {
+          Serial.print('0'); // Because Serial.print does not 0-pad HEX
+        }
+        Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+j], HEX);
+        if (j < 3)
+        {
+          Serial.print(" | ");
+        }
+        else
+        {
+          Serial.print("   ");
+        }
+      }
+      Serial.print("\n");
+    }
+  }
+}
+
+// Uncomment this to enable locking the configuration zone.
+// *** BE AWARE THAT THIS PREVENTS ANY FUTURE CONFIGURATION CHANGE TO THE CHIP ***
+// It is still possible to change the key, and this also enable random key generation
+#define LOCK_CONFIGURATION
+
+// Uncomment this to enable locking the data zone.
+// *** BE AWARE THAT THIS PREVENTS THE KEY TO BE CHANGED ***
+// It is not required to lock data, key cannot be retrieved anyway, but by locking
+// data, it can be guaranteed that nobody even with physical access to the chip,
+// will be able to change the key.
+//#define LOCK_DATA
+
+// Uncomment this to skip key storage (typically once key has been written once)
+//#define SKIP_KEY_STORAGE
+
+// Uncomment this to skip key data storage (once configuration is locked, key
+// will aways randomize)
+// Uncomment this to skip key generation and use 'user_key_data' as key instead.
+#define USER_KEY_DATA
+
+#ifdef USER_KEY_DATA
+const uint8_t user_key_data[32] = SIGNING_HMAC;
+#endif
+
+uint16_t ATSHA204Class::calculateAndUpdateCrc(uint8_t length, uint8_t *data, uint16_t current_crc)
+{
+  uint8_t counter;
+  uint16_t crc_register = current_crc;
+  uint16_t polynom = 0x8005;
+  uint8_t shift_register;
+  uint8_t data_bit, crc_bit;
+
+  for (counter = 0; counter < length; counter++)
+  {
+    for (shift_register = 0x01; shift_register > 0x00; shift_register <<= 1) 
+    {
+      data_bit = (data[counter] & shift_register) ? 1 : 0;
+      crc_bit = crc_register >> 15;
+
+      // Shift CRC to the left by 1.
+      crc_register <<= 1;
+
+      if ((data_bit ^ crc_bit) != 0)
+        crc_register ^= polynom;
+    }
+  }
+  return crc_register;
+}
+
+uint16_t ATSHA204Class::write_config_and_get_crc()
+{
+  uint16_t crc = 0;
+  uint8_t config_word[4];
+  uint8_t tx_buffer[SHA204_CMD_SIZE_MAX];
+  uint8_t rx_buffer[SHA204_RSP_SIZE_MAX];
+  uint8_t ret_code;
+  bool do_write;
+
+  // We will set default settings from datasheet on all slots. This means that we can use slot 0 for the key
+  // as that slot will not be readable (key will therefore be secure) and slot 8 for the payload digest
+  // calculationon as that slot can be written in clear text even when the datazone is locked.
+  // Other settings which are not relevant are kept as is.
+
+  for (int i=0; i < 88; i += 4)
+  {
+    do_write = true;
+    if (i == 20)
+    {
+      config_word[0] = 0x8F;
+      config_word[1] = 0x80;
+      config_word[2] = 0x80;
+      config_word[3] = 0xA1;
+    }
+    else if (i == 24)
+    {
+      config_word[0] = 0x82;
+      config_word[1] = 0xE0;
+      config_word[2] = 0xA3;
+      config_word[3] = 0x60;
+    }
+    else if (i == 28)
+    {
+      config_word[0] = 0x94;
+      config_word[1] = 0x40;
+      config_word[2] = 0xA0;
+      config_word[3] = 0x85;
+    }
+    else if (i == 32)
+    {
+      config_word[0] = 0x86;
+      config_word[1] = 0x40;
+      config_word[2] = 0x87;
+      config_word[3] = 0x07;
+    }
+    else if (i == 36)
+    {
+      config_word[0] = 0x0F;
+      config_word[1] = 0x00;
+      config_word[2] = 0x89;
+      config_word[3] = 0xF2;
+    }
+    else if (i == 40)
+    {
+      config_word[0] = 0x8A;
+      config_word[1] = 0x7A;
+      config_word[2] = 0x0B;
+      config_word[3] = 0x8B;
+    }
+    else if (i == 44)
+    {
+      config_word[0] = 0x0C;
+      config_word[1] = 0x4C;
+      config_word[2] = 0xDD;
+      config_word[3] = 0x4D;
+    }
+    else if (i == 48)
+    {
+      config_word[0] = 0xC2;
+      config_word[1] = 0x42;
+      config_word[2] = 0xAF;
+      config_word[3] = 0x8F;
+    }
+    else if (i == 52 || i == 56 || i == 60 || i == 64)
+    {
+      config_word[0] = 0xFF;
+      config_word[1] = 0x00;
+      config_word[2] = 0xFF;
+      config_word[3] = 0x00;
+    }
+    else if (i == 68 || i == 72 || i == 76 || i == 80)
+    {
+      config_word[0] = 0xFF;
+      config_word[1] = 0xFF;
+      config_word[2] = 0xFF;
+      config_word[3] = 0xFF;
+    }
+    else
+    {
+      // All other configs are untouched
+      ret_code = sha204m_read(tx_buffer, rx_buffer, SHA204_ZONE_CONFIG, i);
+      if (ret_code != SHA204_SUCCESS)
+      {
+        Serial.print("Failed to read config. Response: ");
+        Serial.println(ret_code, HEX);
+        return 0; //halt();
+      }
+      // Set config_word to the read data
+      config_word[0] = rx_buffer[SHA204_BUFFER_POS_DATA+0];
+      config_word[1] = rx_buffer[SHA204_BUFFER_POS_DATA+1];
+      config_word[2] = rx_buffer[SHA204_BUFFER_POS_DATA+2];
+      config_word[3] = rx_buffer[SHA204_BUFFER_POS_DATA+3];
+      do_write = false;
+    }
+
+    // Update crc with CRC for the current word
+    crc = calculateAndUpdateCrc(4, config_word, crc);
+
+    // Write config word
+    if (do_write)
+    {
+      ret_code = sha204m_execute(SHA204_WRITE, SHA204_ZONE_CONFIG,
+                                i >> 2, 4, config_word,                                 WRITE_COUNT_SHORT, tx_buffer, WRITE_RSP_SIZE, rx_buffer);
+      if (ret_code != SHA204_SUCCESS)
+      {
+        Serial.print("Failed to write config word at address ");
+        Serial.print(i);
+        Serial.print(". Response: ");
+        Serial.println(ret_code, HEX);
+        return 0; //halt();
+      }
+    }
+  }
+  return crc;
+}
+
+void ATSHA204Class::write_key(uint8_t* key)
+{
+  uint8_t tx_buffer[SHA204_CMD_SIZE_MAX];
+  uint8_t rx_buffer[SHA204_RSP_SIZE_MAX];
+  uint8_t ret_code;
+
+  // Write key to slot 0
+  ret_code = sha204m_execute(SHA204_WRITE, SHA204_ZONE_DATA | SHA204_ZONE_COUNT_FLAG,
+                            0, SHA204_ZONE_ACCESS_32, key,                            WRITE_COUNT_LONG, tx_buffer, WRITE_RSP_SIZE, rx_buffer);
+  if (ret_code != SHA204_SUCCESS)
+  {
+    Serial.print("Failed to write key to slot 0. Response: ");
+    Serial.println(ret_code, HEX);
+    return; //halt();
+  }
+}
+
+#define SHA204_CMD_SIZE_MIN          ((uint8_t)  7)  //! minimum number of bytes in command (from count byte to second CRC byte)
+// DevRev command definitions
+#define DEVREV_PARAM1_IDX               SHA204_PARAM1_IDX      //!< DevRev command index for 1. parameter (ignored)
+#define DEVREV_PARAM2_IDX               SHA204_PARAM2_IDX      //!< DevRev command index for 2. parameter (ignored)
+#define DEVREV_COUNT                    SHA204_CMD_SIZE_MIN    //!< DevRev command packet size
+#define SHA204_DEVREV                   ((uint8_t) 0x30)       //!< DevRev command op-code
+#define DEVREV_DELAY                    ((uint8_t) 0.4)
+#define DEVREV_EXEC_MAX                  ((uint8_t) 2.0)
+#define SHA204_RSP_SIZE_VAL             ((uint8_t)  7)         //!< size of response packet containing four bytes of data
+#define DEVREV_RSP_SIZE                 SHA204_RSP_SIZE_VAL    //!< response size of DevRev command returns 4 bytes
+#define SHA204_LOCK                     ((uint8_t) 0x17)       //!< Lock command op-code
+#define LOCK_COUNT                      SHA204_CMD_SIZE_MIN    //!< Lock command packet size
+#define LOCK_RSP_SIZE                   SHA204_RSP_SIZE_MIN    //!< response size of Lock command
+
+uint8_t ATSHA204Class::dev_rev(uint8_t *tx_buffer, uint8_t *rx_buffer) {
+    if (!tx_buffer || !rx_buffer)
+        return SHA204_BAD_PARAM;
+
+    tx_buffer[SHA204_COUNT_IDX] = DEVREV_COUNT;
+    tx_buffer[SHA204_OPCODE_IDX] = SHA204_DEVREV;
+
+    // Parameters are 0.
+    tx_buffer[DEVREV_PARAM1_IDX] =
+        tx_buffer[DEVREV_PARAM2_IDX] =
+            tx_buffer[DEVREV_PARAM2_IDX + 1] = 0;
+
+    return sha204c_send_and_receive(&tx_buffer[0], DEVREV_RSP_SIZE, &rx_buffer[0],
+                            DEVREV_DELAY, DEVREV_EXEC_MAX - DEVREV_DELAY);
+}
+
+void ATSHA204Class::personalize(void)
+{
+  uint8_t tx_buffer[SHA204_CMD_SIZE_MAX];
+  uint8_t rx_buffer[SHA204_RSP_SIZE_MAX];
+  uint8_t key[32];
+  uint8_t ret_code;
+  uint8_t lockConfig = 0;
+  uint8_t lockValue = 0;
+  uint16_t crc;
+
+  Serial.println("ATSHA204 personalization sketch for MySensors usage.");
+  Serial.println("----------------------------------------------------");
+
+  // Wake device before starting operations
+  ret_code = sha204c_wakeup(rx_buffer);
+  if (ret_code != SHA204_SUCCESS)
+  {
+    Serial.print("Failed to wake device. Response: ");
+    Serial.println(ret_code, HEX);
+    //return; //halt();
+  }
+  
+  // Output device revision on console
+  ret_code = dev_rev(tx_buffer, rx_buffer);
+  if (ret_code != SHA204_SUCCESS)
+  {
+    Serial.print("Failed to determine device revision. Response: ");
+    Serial.println(ret_code, HEX);
+    //return; //halt();
+  }
+  else
+  {
+    Serial.print("Device revision: ");
+    for (int i=0; i<4; i++)
+    {
+      if (rx_buffer[SHA204_BUFFER_POS_DATA+i] < 0x10)
+      {
+        Serial.print('0'); // Because Serial.print does not 0-pad HEX
+      }
+      Serial.print(rx_buffer[SHA204_BUFFER_POS_DATA+i], HEX);
+    }
+    Serial.println();
+  }
+
+  // Output serial number on console
+  getSerialNumber(rx_buffer);
+  {
+    Serial.print("Device serial:   ");
+    Serial.print('{');
+    for (int i=0; i<9; i++)
+    {
+      Serial.print("0x");
+      if (rx_buffer[i] < 0x10)
+      {
+        Serial.print('0'); // Because Serial.print does not 0-pad HEX
+      }
+      Serial.print(rx_buffer[i], HEX);
+      if (i < 8) Serial.print(',');
+    }
+    Serial.print('}');
+    Serial.println();
+    for (int i=0; i<9; i++)
+    {
+      if (rx_buffer[i] < 0x10)
+      {
+        Serial.print('0'); // Because Serial.print does not 0-pad HEX
+      }
+      Serial.print(rx_buffer[i], HEX);
+    }
+    Serial.println();
+  }
+
+  // Read out lock config bits to determine if locking is possible
+  ret_code = sha204m_read(tx_buffer, rx_buffer, SHA204_ZONE_CONFIG, 0x15<<2);
+  if (ret_code != SHA204_SUCCESS)
+  {
+    Serial.print("Failed to determine device lock status. Response: "); Serial.println(ret_code, HEX);
+    //return; //halt();
+  }
+  else
+  {
+    lockConfig = rx_buffer[SHA204_BUFFER_POS_DATA+3];
+    lockValue = rx_buffer[SHA204_BUFFER_POS_DATA+2];
+  }
+
+    //TODO List current configuration before attempting to lock
+    Serial.println("Old chip configuration:");
+    dump_configuration();
+
+  if (lockConfig != 0x00)
+  {
+    // Write config and get CRC for the updated config
+    crc = write_config_and_get_crc();
+
+    // List current configuration before attempting to lock
+    Serial.println("Chip configuration:");
+    dump_configuration();
+
+#ifdef LOCK_CONFIGURATION
+    {
+      Serial.println("Locking configuration...");
+
+      // Correct sequence, resync chip
+      ret_code = sha204c_resync(SHA204_RSP_SIZE_MAX, rx_buffer);
+      if (ret_code != SHA204_SUCCESS && ret_code != SHA204_RESYNC_WITH_WAKEUP)
+      {
+        Serial.print("Resync failed. Response: "); Serial.println(ret_code, HEX);
+        return; //halt();
+      }
+
+      // Lock configuration zone
+      ret_code = sha204m_execute(SHA204_LOCK, SHA204_ZONE_CONFIG,
+                                crc, 0, NULL, 
+                                LOCK_COUNT, tx_buffer, LOCK_RSP_SIZE, rx_buffer);
+      if (ret_code != SHA204_SUCCESS)
+      {
+        Serial.print("Configuration lock failed. Response: "); Serial.println(ret_code, HEX);
+        return; //halt();
+      }
+      else
+      {
+        Serial.println("Configuration locked.");
+
+        // Update lock flags after locking
+        ret_code = sha204m_read(tx_buffer, rx_buffer, SHA204_ZONE_CONFIG, 0x15<<2);
+        if (ret_code != SHA204_SUCCESS)
+        {
+          Serial.print("Failed to determine device lock status. Response: "); Serial.println(ret_code, HEX);
+          return; //halt();
+        }
+        else
+        {
+          lockConfig = rx_buffer[SHA204_BUFFER_POS_DATA+3];
+          lockValue = rx_buffer[SHA204_BUFFER_POS_DATA+2];
+        }
+      }
+    }
+#else //LOCK_CONFIGURATION
+    Serial.println("Configuration not locked. Define LOCK_CONFIGURATION to lock for real.");
+#endif
+  }
+  else
+  {
+    Serial.println("Skipping configuration write and lock (configuration already locked).");
+    Serial.println("Chip configuration:");
+    dump_configuration();
+  }
+
+#ifdef SKIP_KEY_STORAGE
+  Serial.println("Disable SKIP_KEY_STORAGE to store key.");
+#else
+#ifdef USER_KEY_DATA
+  memcpy(key, user_key_data, 32);
+  Serial.println("Using this user supplied key:");
+#else
+  // Retrieve random value to use as key
+  ret_code = sha204m_random(tx_buffer, rx_buffer, RANDOM_SEED_UPDATE);
+  if (ret_code != SHA204_SUCCESS)
+  {
+    Serial.print("Random key generation failed. Response: "); Serial.println(ret_code, HEX);
+    //return; //halt();
+  }
+  else
+  {
+    memcpy(key, rx_buffer+SHA204_BUFFER_POS_DATA, 32);
+  }
+  if (lockConfig == 0x00)
+  {
+    Serial.println("Take note of this key, it will never be the shown again:");
+  }
+  else
+  {
+    Serial.println("Key is not randomized (configuration not locked):");
+  }
+#endif
+  Serial.print("#define MY_HMAC_KEY ");
+  for (int i=0; i<32; i++)
+  {
+    Serial.print("0x");
+    if (key[i] < 0x10)
+    {
+      Serial.print('0'); // Because Serial.print does not 0-pad HEX
+    }
+    Serial.print(key[i], HEX);
+    if (i < 31) Serial.print(',');
+    if (i+1 == 16) Serial.print("\\\n                    ");
+  }
+  Serial.println();
+
+  // It will not be possible to write the key if the configuration zone is unlocked
+  if (lockConfig == 0x00)
+  {
+    // Write the key to the appropriate slot in the data zone
+    Serial.println("Writing key to slot 0...");
+    write_key(key);
+  }
+  else
+  {
+    Serial.println("Skipping key storage (configuration not locked).");
+    Serial.println("The configuration must be locked to be able to write a key.");
+  }  
+#endif
+
+  if (lockValue != 0x00)
+  {
+#ifdef LOCK_DATA
+    {
+      // Correct sequence, resync chip
+      ret_code = sha204c_resync(SHA204_RSP_SIZE_MAX, rx_buffer);
+      if (ret_code != SHA204_SUCCESS && ret_code != SHA204_RESYNC_WITH_WAKEUP)
+      {
+        Serial.print("Resync failed. Response: "); Serial.println(ret_code, HEX);
+        return; //halt();
+      }
+
+      // If configuration is unlocked, key is not updated. Locking data in this case will cause
+      // slot 0 to contain an unknown (or factory default) key, and this is in practically any
+      // usecase not the desired behaviour, so ask for additional confirmation in this case.
+      if (lockConfig != 0x00)
+      {
+        while (Serial.available())
+        {
+          Serial.read();
+        }
+        Serial.println("*** ATTENTION ***");
+        Serial.println("Configuration is not locked. Are you ABSULOUTELY SURE you want to lock data?");
+        Serial.println("Locking data at this stage will cause slot 0 to contain a factory default key");
+        Serial.println("which cannot be change after locking is done. This is in practically any usecase");
+        Serial.println("NOT the desired behavour. Send SPACE character now to lock data anyway...");
+        while (Serial.available() == 0);
+        if (Serial.read() != ' ')
+        {
+          Serial.println("Unexpected answer. Skipping lock.");
+          return; //halt();
+        }
+      }
+
+      // Lock data zone
+      ret_code = sha204m_execute(SHA204_LOCK, SHA204_ZONE_DATA | LOCK_ZONE_NO_CRC,
+                                        0x0000, 0, NULL, 0, NULL, 0, NULL,
+                                        LOCK_COUNT, tx_buffer, LOCK_RSP_SIZE, rx_buffer);
+      if (ret_code != SHA204_SUCCESS)
+      {
+        Serial.print("Data lock failed. Response: "); Serial.println(ret_code, HEX);
+        return; //halt();
+      }
+      else
+      {
+        Serial.println("Data locked.");
+
+        // Update lock flags after locking
+        ret_code = sha204m_read(tx_buffer, rx_buffer, SHA204_ZONE_CONFIG, 0x15<<2);
+        if (ret_code != SHA204_SUCCESS)
+        {
+          Serial.print("Failed to determine device lock status. Response: "); Serial.println(ret_code, HEX);
+          return; //halt();
+        }
+        else
+        {
+          lockConfig = rx_buffer[SHA204_BUFFER_POS_DATA+3];
+          lockValue = rx_buffer[SHA204_BUFFER_POS_DATA+2];
+        }
+      }
+    }
+#else //LOCK_DATA
+    Serial.println("Data not locked. Define LOCK_DATA to lock for real.");
+#endif
+  }
+  else
+  {
+    Serial.println("Skipping OTP/data zone lock (zone already locked).");
+  }
+
+  Serial.println("--------------------------------");
+  Serial.println("Personalization is now complete.");
+  Serial.print("Configuration is ");
+  if (lockConfig == 0x00)
+  {
+    Serial.println("LOCKED");
+  }
+  else
+  {
+    Serial.println("UNLOCKED");
+  }
+  Serial.print("Data is ");
+  if (lockValue == 0x00)
+  {
+    Serial.println("LOCKED");
+  }
+  else
+  {
+    Serial.println("UNLOCKED");
+  }
+}
+
+#endif
 
 //#endif // defined(ARDUINO_ARCH_AVR)

@@ -245,6 +245,12 @@ void MyGateway::begin(msgRxDelegate rxDlg, sensorValueChangedDelegate valueChang
     }
 #endif
 
+#if SIGNING_ENABLE
+#if ATSHA204I2C 
+    signer.personalize();
+#endif
+#endif
+
     if (AppSettings.useOwnBaseAddress)
     {
         rfBaseAddress = ((uint64_t)system_get_chip_id()) << 8;

@@ -66,7 +66,11 @@ MySigningAtsha204::MySigningAtsha204(bool requestSignatures,
 	uint8_t atshaPin)
 	:
 	MySigning(requestSignatures),
+#if (!ATSHA204I2C)
 	atsha204(atshaPin),
+#else
+	atsha204(),
+#endif
 #ifdef MY_SECURE_NODE_WHITELISTING
 	whitelist(the_whitelist),
 	whitlist_sz(nof_whitelist_entries),
@@ -77,6 +81,12 @@ MySigningAtsha204::MySigningAtsha204(bool requestSignatures,
 
 #include "sha256.h"
 Sha256Class Sha256;
+
+#if (ATSHA204I2C)
+void MySigningAtsha204::personalize() {
+    atsha204.personalize();
+}
+#endif
 
 bool MySigningAtsha204::getNonce(MyMessage &msg) {
 	// Generate random number for use as nonce

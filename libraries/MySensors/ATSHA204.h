@@ -256,8 +256,10 @@
 class ATSHA204Class
 {
 private:
+#if (!ATSHA204I2C)
 	uint8_t device_pin;
 	volatile uint8_t *device_port_DDR, *device_port_OUT, *device_port_IN;
+#endif
 	void sha204c_calculate_crc(uint8_t length, uint8_t *data, uint8_t *crc);
 	uint8_t sha204c_check_crc(uint8_t *response);
 #if (!ATSHA204I2C)
@@ -271,8 +273,19 @@ private:
 	uint8_t sha204c_wakeup(uint8_t *response);
 	uint8_t sha204c_resync(uint8_t size, uint8_t *response);	
 	uint8_t sha204c_send_and_receive(uint8_t *tx_buffer, uint8_t rx_size, uint8_t *rx_buffer, uint8_t execution_delay, uint8_t execution_timeout);
+#if (ATSHA204I2C)
+uint16_t calculateAndUpdateCrc(uint8_t length, uint8_t *data, uint16_t current_crc);
+uint16_t write_config_and_get_crc();
+void write_key(uint8_t* key);
+uint8_t dev_rev(uint8_t *tx_buffer, uint8_t *rx_buffer);
+#endif
+
 public:
+#if (!ATSHA204I2C)
 	ATSHA204Class(uint8_t pin);	// Constructor
+#else
+	ATSHA204Class();	// Constructor
+#endif
 	void sha204c_sleep();
 	uint8_t sha204m_execute(uint8_t op_code, uint8_t param1, uint16_t param2,
 			uint8_t datalen1, uint8_t *data1, uint8_t tx_size, uint8_t *tx_buffer, uint8_t rx_size, uint8_t *rx_buffer);
@@ -283,6 +296,8 @@ public:
     uint8_t send(uint8_t word_address, uint8_t count, uint8_t *buffer);
     uint8_t send_command(uint8_t count, uint8_t *command);
     uint8_t receive_byte(uint8_t *data);
+    void dump_configuration();
+    void personalize(void);
 #endif
 };
 
