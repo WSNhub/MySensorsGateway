@@ -5,12 +5,17 @@
 # Should be used to set project-specific parameters
 include ./Makefile-user.mk
 
-all: GLOBALS spiff_clean
+all: SMING GLOBALS spiff_clean
 
 GLOBALS:
-	echo "Generating globals"
+	@echo "Generating globals"
 	git describe --abbrev=7 --dirty --always --tags | awk ' BEGIN {print "#include \"globals.h\""} {print "const char * build_git_sha = \"" $$0"\";"} END {}' > app/globals.c
 	date | awk 'BEGIN {} {print "const char * build_time = \""$$0"\";"} END {} ' >> app/globals.c
+
+SMING:
+	@echo "Building Sming..."
+	@make -C tools/Sming/Sming
+	@make -C tools/Sming/Sming/spiffy
 
 #Add your source directories here separated by space
 MODULES         = app $(filter %/, $(wildcard libraries/*/))
@@ -20,7 +25,6 @@ EXTRA_INCDIR    = include libraries
 ESP_HOME ?= /opt/esp-open-sdk
 
 ## SMING_HOME sets the path where Sming framework is located.
-SMING_HOME = ${PWD}/tools/Sming
 SMING_HOME = ${PWD}/tools/Sming/Sming
 
 #### rBoot options ####
