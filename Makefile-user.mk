@@ -16,6 +16,13 @@ MYSENSORS_SIGNING_HMAC = { 0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08, \
                            0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, \
                            0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }
 
+#### Enable automatic upgrades of the SMING library ####
+# A reason to disable this would be if your computer does
+# not have an internet connection all the time.
+# Does that still exist?
+SMING_AUTO_UPGRADE = 1
+
 GPIO16_MEASURE_ENABLE = 0
+
 #### Set CFLAGS if needed ####
 USER_CFLAGS = 

@@ -12,10 +12,14 @@ GLOBALS:
 	git describe --abbrev=7 --dirty --always --tags | awk ' BEGIN {print "#include \"globals.h\""} {print "const char * build_git_sha = \"" $$0"\";"} END {}' > app/globals.c
 	date | awk 'BEGIN {} {print "const char * build_time = \""$$0"\";"} END {} ' >> app/globals.c
 
+SMING_AUTO_UPGRADE ?= 0
+
 SMING:
+ifeq ($(SMING_AUTO_UPGRADE), 1)
 	@echo "Updating Sming..."
 	@cd tools/Sming
 	@git pull || (echo "Sming needs rebuild"; cd Sming; make clean)
+endif
 
 	@echo "Building Sming..."
 	@make -C tools/Sming/Sming
