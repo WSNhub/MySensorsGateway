@@ -13,6 +13,10 @@ GLOBALS:
 	date | awk 'BEGIN {} {print "const char * build_time = \""$$0"\";"} END {} ' >> app/globals.c
 
 SMING:
+	@echo "Updating Sming..."
+	@cd tools/Sming
+	@git pull || (echo "Sming needs rebuild"; cd Sming; make clean)
+
 	@echo "Building Sming..."
 	@make -C tools/Sming/Sming
 	@make -C tools/Sming/Sming/spiffy
