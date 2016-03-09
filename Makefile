@@ -17,8 +17,7 @@ SMING_AUTO_UPGRADE ?= 0
 SMING:
 ifeq ($(SMING_AUTO_UPGRADE), 1)
 	@echo "Updating Sming..."
-	@cd tools/Sming
-	@git pull || (echo "Sming needs rebuild"; cd Sming; make clean)
+	@cd tools/Sming; git checkout develop; git pull || (echo "Sming needs rebuild"; cd Sming; make clean)
 endif
 
 	@echo "Building Sming..."

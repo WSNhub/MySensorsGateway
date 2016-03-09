@@ -16,7 +16,7 @@ if [ ! -d "tools/Sming" ] ; then
     cd tools
     git clone https://github.com/WSNhub/Sming
     cd Sming
-    git checkout master
+    git checkout develop
     git remote add upstream https://github.com/SmingHub/Sming
     cd ..
     #wget https://github.com/SmingHub/Sming/archive/2.1.1.tar.gz
