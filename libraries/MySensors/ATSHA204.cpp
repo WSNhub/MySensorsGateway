@@ -133,7 +133,7 @@ uint8_t ATSHA204Class::swi_receive_bytes(uint8_t count, uint8_t *buffer)
 #if (ATSHA204I2C)
 	uint8_t i;
 
-        delay(10);
+        delay(3);
 
 	int available_bytes = Wire.requestFrom(0x64, count);
 	if (available_bytes != count) {
@@ -398,10 +398,10 @@ uint8_t ATSHA204Class::sha204c_wakeup(uint8_t *response)
 #if (ATSHA204I2C)
 	// This was the only way short of manually adjusting the SDA pin to wake up the device
 	Wire.beginTransmission(0x64);
-	delay(10);
+	delay(3);
         int i2c_status = Wire.endTransmission();
 	if (i2c_status != 0) {
-	Serial.println("chip_wakeup() FAIL");
+		//Serial.println("chip_wakeup() FAIL");
 		return SHA204_COMM_FAIL;
 	}
 
@@ -651,8 +651,14 @@ uint8_t ATSHA204Class::sha204m_execute(uint8_t op_code, uint8_t param1, uint16_t
 	uint8_t poll_delay, poll_timeout, response_size;
 	uint8_t *p_buffer;
 	uint8_t len;
-  (void)tx_size;
+  //(void)tx_size;
   
+	/*
+	 * Just send the wakeup command to be sure.
+	 * If it fails the chip is either broken or already awake.
+	 */
+	int ret_code = sha204c_wakeup(rx_buffer);
+
 	// Supply delays and response size.
 	switch (op_code) 
 	{

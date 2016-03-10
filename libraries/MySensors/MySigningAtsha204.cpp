@@ -92,6 +92,9 @@ bool MySigningAtsha204::getNonce(MyMessage &msg) {
 	// Generate random number for use as nonce
 	// We used a basic whitening technique that takes the first byte of a new random value and builds up a 32-byte random value
 	// This 32-byte random value is then hashed (SHA256) to produce the resulting nonce
+	DEBUG_SIGNING_PRINTLN("STGN"); // STGN = start to generate nonce
+
+#if 0
 	for (int i = 0; i < 32; i++) {
 		if (atsha204.sha204m_execute(SHA204_RANDOM, RANDOM_NO_SEED_UPDATE, 0, 0, NULL,
 											RANDOM_COUNT, tx_buffer, RANDOM_RSP_SIZE, rx_buffer) != SHA204_SUCCESS) {
@@ -100,14 +103,24 @@ bool MySigningAtsha204::getNonce(MyMessage &msg) {
 		}
 		current_nonce[i] = rx_buffer[SHA204_BUFFER_POS_DATA];
 	}
-#if 0
 	memcpy(current_nonce, sha256(current_nonce, 32), MAX_PAYLOAD);
 #endif
+
+	if (atsha204.sha204m_execute(SHA204_RANDOM, RANDOM_NO_SEED_UPDATE, 0, 0, NULL,
+				     RANDOM_COUNT, tx_buffer, RANDOM_RSP_SIZE, rx_buffer) != SHA204_SUCCESS) {
+		DEBUG_SIGNING_PRINTLN("FTGN"); // FTGN = Failed to generate nonce
+                return false;
+	}
+	memcpy(current_nonce, &rx_buffer[SHA204_BUFFER_POS_DATA], 32);
+        DEBUG_SIGNING_PRINTBUF("RANDOM", rx_buffer, RANDOM_RSP_SIZE);
+
         Sha256.init();
 	for (int i = 0; i < 32; i++) {
 		Sha256.write(current_nonce[i]);
 	}
 	memcpy(current_nonce, Sha256.result(), MAX_PAYLOAD);
+
+	DEBUG_SIGNING_PRINTLN("DGSHA"); // DGSHA = done generating SHA
 
 	// We set the part of the 32-byte nonce that does not fit into a message to 0xAA
 	memset(&current_nonce[MAX_PAYLOAD], 0xAA, sizeof(current_nonce)-MAX_PAYLOAD);
