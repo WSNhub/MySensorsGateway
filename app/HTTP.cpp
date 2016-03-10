@@ -111,10 +111,12 @@ void onStatus(HttpRequest &request, HttpResponse &response)
         vars["mqttStatus"] = "Not configured";
     }
     uint64_t rfBaseAddress = GW.getBaseAddress();
+    uint32_t rfBaseLow = (rfBaseAddress & 0xffffffff);
+    uint8_t  rfBaseHigh = ((rfBaseAddress >> 32) & 0xff);
     if (AppSettings.useOwnBaseAddress)
-      m_snprintf (buf, 200, "%08x (private)", rfBaseAddress);
+      sprintf (buf, "%02x%08x (private)", rfBaseHigh, rfBaseLow);
     else
-      m_snprintf (buf, 200, "%08x (default)", rfBaseAddress);
+      sprintf (buf, "%02x%08x (default)", rfBaseHigh, rfBaseLow);
     vars["baseAddress"] = buf;
     vars["radioStatus"] = getRadioStatus();
     vars["detNodes"] = GW.getNumDetectedNodes();
@@ -122,12 +124,15 @@ void onStatus(HttpRequest &request, HttpResponse &response)
     
     
     // --- System info -------------------------------------------------
-    m_snprintf (buf, 200, "%x", system_get_chip_id());
+    sprintf (buf, "%x", system_get_chip_id());
     vars["systemVersion"] = build_git_sha;
     vars["systemBuild"] = build_time;
     vars["systemFreeHeap"] = system_get_free_heap_size();
     vars["systemStartup"] = "todo";
     vars["systemChipId"] = buf;
+    uint32_t curMillis = millis();
+    sprintf(buf, "%d s, %03d ms : ", curMillis/1000, curMillis % 1000);
+    vars["systemUptime"] = buf;
 
 
     // --- Statistics --------------------------------------------------
