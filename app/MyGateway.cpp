@@ -62,10 +62,10 @@ void MyGateway::incomingMessage(const MyMessage &message)
     #endif
 
     // Pass along the message from sensors to serial line
-    debugf("RX %d;%d;%d;%d;%d;%s",
-           message.sender, message.sensor,
-           mGetCommand(message), mGetAck(message),
-           message.type, message.getString(convBuf));
+    Debug.printf("RX %d;%d;%d;%d;%d;%s\n",
+                 message.sender, message.sensor,
+                 mGetCommand(message), mGetAck(message),
+                 message.type, message.getString(convBuf));
 
     if (!msg.isAck())
     {
@@ -76,7 +76,7 @@ void MyGateway::incomingMessage(const MyMessage &message)
         if (msg.sender != 0 && msg.sender != 255 && !nodeIds[msg.sender])
         {
             numDetectedNodes++;
-            debugf("Discovered new node %d", msg.sender);
+            Debug.printf("Discovered new node %d\n", msg.sender);
             nodeIds[(uint8_t)msg.sender] = true;
         }
 
@@ -94,7 +94,7 @@ void MyGateway::incomingMessage(const MyMessage &message)
                 {
                     if (nodeIds[id] == false)
                     {
-                        debugf("Found id %d for new node", id);
+                        Debug.printf("Found id %d for new node\n", id);
                         gw.sendRoute(build(msg, msg.sender, 255,
                                            C_INTERNAL, I_ID_RESPONSE,
                                            0).set((uint8_t)id));
@@ -127,9 +127,9 @@ void MyGateway::incomingMessage(const MyMessage &message)
                             sensorValueChanged(idx, newValue);
                         }
                         mySensors[idx].value = newValue;
-                        debugf("Updating sensor %d/%d type %d value %s",
-                               mySensors[idx].node, mySensors[idx].sensor,
-                               mySensors[idx].type, mySensors[idx].value.c_str());
+                        Debug.printf("Updating sensor %d (%d/%d) type %d value %s\n",
+                                     idx, mySensors[idx].node, mySensors[idx].sensor,
+                                     mySensors[idx].type, mySensors[idx].value.c_str());
                         Rules.processTrigger("sensor"+String(idx+1));
                     }
                     newSensor = false;
@@ -158,12 +158,11 @@ void MyGateway::incomingMessage(const MyMessage &message)
                             mySensors[idx].value = newValue;
                         }
                         numDetectedSensors++;
-                        debugf("Adding sensor %d/%d type %d value %s",
-                               mySensors[idx].node, mySensors[idx].sensor,
-                               mySensors[idx].type, mySensors[idx].value.c_str());
+                        Debug.printf("Adding sensor %d (%d/%d) type %d value %s\n",
+                                     idx, mySensors[idx].node, mySensors[idx].sensor,
+                                     mySensors[idx].type, mySensors[idx].value.c_str());
                         newSensor = false;
 
-#ifndef DISABLE_SPIFFS
                         DynamicJsonBuffer jsonBuffer;
                         JsonObject& root = jsonBuffer.createObject();
                         JsonArray& sensors = jsonBuffer.createArray();
@@ -178,7 +177,6 @@ void MyGateway::incomingMessage(const MyMessage &message)
                         String out;
                         root.printTo(out);
                         fileSetContent("sensors.json", out);
-#endif
 
                         break;
                     }
@@ -187,9 +185,9 @@ void MyGateway::incomingMessage(const MyMessage &message)
 
             if (newSensor)
             {
-                debugf("No entry left for new sensor %d/%d type %d value %s",
-                       message.sender, message.sensor,
-                       message.type, message.getString(convBuf));
+                Debug.printf("No entry left for new sensor %d/%d type %d value %s\n",
+                             message.sender, message.sensor,
+                             message.type, message.getString(convBuf));
                 return;
             }
         }
@@ -216,8 +214,6 @@ void MyGateway::begin(msgRxDelegate rxDlg, sensorValueChangedDelegate valueChang
     numDetectedNodes = 0;
     numDetectedSensors = 0;
 
-
-#ifndef DISABLE_SPIFFS
     if (fileExist("sensors.json"))
     {
         DynamicJsonBuffer jsonBuffer;
@@ -243,7 +239,6 @@ void MyGateway::begin(msgRxDelegate rxDlg, sensorValueChangedDelegate valueChang
 
         delete[] jsonString;
     }
-#endif
 
 #if SIGNING_ENABLE
 #if ATSHA204I2C 
@@ -334,7 +329,7 @@ void MyGateway::onRemoveSensor(HttpRequest &request, HttpResponse &response)
 
             if (strcmp(romToRemove.c_str(), rom) == 0)
             {
-                debugf("Removing sensor %d with rom %s.\n", i, rom);
+                Debug.printf("Removing sensor %d with rom %s.\n", i, rom);
                 memset(&mySensors[i], 0, sizeof(sensor_t));
                 break;
             }
