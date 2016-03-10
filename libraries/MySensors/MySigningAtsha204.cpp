@@ -32,7 +32,7 @@
 #define SIGNING_IDENTIFIER (1)
 
 // Uncomment this to get some useful serial debug info (Serial.print and Serial.println expected)
-//#define DEBUG_SIGNING
+#define DEBUG_SIGNING
 
 #ifdef DEBUG_SIGNING
 #define DEBUG_SIGNING_PRINTLN(args) Serial.println(args)
@@ -111,6 +111,10 @@ bool MySigningAtsha204::getNonce(MyMessage &msg) {
 		DEBUG_SIGNING_PRINTLN("FTGN"); // FTGN = Failed to generate nonce
                 return false;
 	}
+
+	// Put device back to sleep
+	atsha204.sha204c_sleep();
+
 	memcpy(current_nonce, &rx_buffer[SHA204_BUFFER_POS_DATA], 32);
         DEBUG_SIGNING_PRINTBUF("RANDOM", rx_buffer, RANDOM_RSP_SIZE);
 

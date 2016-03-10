@@ -730,10 +730,8 @@ uint8_t ATSHA204Class::sha204m_execute(uint8_t op_code, uint8_t param1, uint16_t
 	sha204c_calculate_crc(len - SHA204_CRC_SIZE, tx_buffer, p_buffer);
 
 	// Send command and receive response.
-	uint8_t result = sha204c_send_and_receive(&tx_buffer[0], response_size,
-				&rx_buffer[0],	poll_delay, poll_timeout);
-	sha204c_sleep();
-	return result;
+	return sha204c_send_and_receive(&tx_buffer[0], response_size,
+	 				&rx_buffer[0], poll_delay, poll_timeout);
 }
 
 /* CRC Calculator and Checker */
