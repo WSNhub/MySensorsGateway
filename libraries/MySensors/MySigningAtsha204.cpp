@@ -32,7 +32,7 @@
 #define SIGNING_IDENTIFIER (1)
 
 // Uncomment this to get some useful serial debug info (Serial.print and Serial.println expected)
-#define DEBUG_SIGNING
+//#define DEBUG_SIGNING
 
 #ifdef DEBUG_SIGNING
 #define DEBUG_SIGNING_PRINTLN(args) Serial.println(args)
