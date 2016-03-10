@@ -133,7 +133,7 @@ uint8_t ATSHA204Class::swi_receive_bytes(uint8_t count, uint8_t *buffer)
 #if (ATSHA204I2C)
 	uint8_t i;
 
-        delay(3);
+        delay(10);
 
 	int available_bytes = Wire.requestFrom(0x64, count);
 	if (available_bytes != count) {
@@ -398,7 +398,7 @@ uint8_t ATSHA204Class::sha204c_wakeup(uint8_t *response)
 #if (ATSHA204I2C)
 	// This was the only way short of manually adjusting the SDA pin to wake up the device
 	Wire.beginTransmission(0x64);
-	delay(3);
+	delay(10);
         int i2c_status = Wire.endTransmission();
 	if (i2c_status != 0) {
 		//Serial.println("chip_wakeup() FAIL");
@@ -658,6 +658,13 @@ uint8_t ATSHA204Class::sha204m_execute(uint8_t op_code, uint8_t param1, uint16_t
 	 * If it fails the chip is either broken or already awake.
 	 */
 	int ret_code = sha204c_wakeup(rx_buffer);
+	if (ret_code != SHA204_SUCCESS)
+  	{
+    		//Serial.print("Failed to wake device. Response: ");
+    		//Serial.println(ret_code, HEX);
+    		//return; //halt();
+                delay(3);
+  	}
 
 	// Supply delays and response size.
 	switch (op_code) 
@@ -723,8 +730,10 @@ uint8_t ATSHA204Class::sha204m_execute(uint8_t op_code, uint8_t param1, uint16_t
 	sha204c_calculate_crc(len - SHA204_CRC_SIZE, tx_buffer, p_buffer);
 
 	// Send command and receive response.
-	return sha204c_send_and_receive(&tx_buffer[0], response_size,
+	uint8_t result = sha204c_send_and_receive(&tx_buffer[0], response_size,
 				&rx_buffer[0],	poll_delay, poll_timeout);
+	sha204c_sleep();
+	return result;
 }
 
 /* CRC Calculator and Checker */
