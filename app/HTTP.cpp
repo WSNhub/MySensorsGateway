@@ -7,6 +7,7 @@
 #include <AppSettings.h>
 #include <controller.h>
 #include <Services/WebHelpers/base64.h>
+#include <Wiring/SplitString.h>
 
 Timer softApSetPasswordTimer;
 void apEnable()
@@ -232,6 +233,53 @@ bool HTTPClass::isHttpClientAllowed(HttpRequest &request, HttpResponse &response
     return false;
 }
 
+void HTTPClass::wsConnected(WebSocket& socket)
+{
+    //
+}
+
+void HTTPClass::wsMessageReceived(WebSocket& socket, const String& message)
+{
+    Vector<String> commandToken;
+    int numToken = splitString((String &)message,' ' , commandToken);
+
+    if (numToken > 0 && wsCommandHandlers.contains(commandToken[0]))
+    {
+        Serial.printf("WebSocket command received: %s\r\n", commandToken[0].c_str());
+        wsCommandHandlers[commandToken[0]](socket, message);
+        return;
+    }
+    else
+    {
+        Serial.printf("WebSocket received unknown string: %s\r\n", message.c_str());
+        String response = "Unknown command: " + message;
+        socket.sendString(response);
+    }
+}
+
+void HTTPClass::wsBinaryReceived(WebSocket& socket, uint8_t* data, size_t size)
+{
+	Serial.printf("Websocket binary data recieved, size: %d\r\n", size);
+}
+
+void HTTPClass::wsDisconnected(WebSocket& socket)
+{
+    //
+}
+
+void HTTPClass::addWsCommand(String command, WebSocketMessageDelegate callback)
+{
+    debugf("'%s' registered", command.c_str());
+    wsCommandHandlers[command] = callback;
+}
+
+void HTTPClass::notifyWsClients(String message)
+{
+    WebSocketsList &clients = server.getActiveWebSockets();
+    for (int i = 0; i < clients.count(); i++)
+        clients[i].sendString(message);
+}
+
 void HTTPClass::begin()
 {
     server.listen(80);
@@ -243,6 +291,17 @@ void HTTPClass::begin()
     GW.registerHttpHandlers(server);
     controller.registerHttpHandlers(server);
     server.setDefaultHandler(onFile);
+
+    // Web Sockets configuration
+    server.enableWebSockets(true);
+    server.setWebSocketConnectionHandler(
+        WebSocketDelegate(&HTTPClass::wsConnected, this));
+    server.setWebSocketMessageHandler(
+        WebSocketMessageDelegate(&HTTPClass::wsMessageReceived, this));
+    server.setWebSocketBinaryHandler(
+        WebSocketBinaryDelegate(&HTTPClass::wsBinaryReceived, this));
+    server.setWebSocketDisconnectionHandler(
+        WebSocketDelegate(&HTTPClass::wsDisconnected, this));
 }
 
 HTTPClass HTTP;

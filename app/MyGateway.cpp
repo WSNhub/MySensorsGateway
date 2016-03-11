@@ -53,6 +53,24 @@ const char * MyGateway::version()
    return(LIBRARY_VERSION);
 }
 
+String MyGateway::getSensorJson(int index)
+{
+    String sensorStr = String("{\"type\": \"sensor\", \"data\" : ") +
+                       String("{\"id\": ") + String(index+1) +
+                       String(",\"node\": ") +
+                       String(mySensors[index].node) +
+                       String(",\"sensor\": ") +
+                       String(mySensors[index].sensor) +
+                       String(",\"type\": ") +
+                       String(mySensors[index].type) +
+                       String(",\"value\": \"");
+    if (!mySensors[index].value.equals(""))
+        sensorStr += String(mySensors[index].value);
+    sensorStr += String("\"}}");
+
+    return sensorStr;
+}
+
 void MyGateway::incomingMessage(const MyMessage &message)
 {
     msg = message;
@@ -130,6 +148,7 @@ void MyGateway::incomingMessage(const MyMessage &message)
                         Debug.printf("Updating sensor %d (%d/%d) type %d value %s\n",
                                      idx, mySensors[idx].node, mySensors[idx].sensor,
                                      mySensors[idx].type, mySensors[idx].value.c_str());
+                        HTTP.notifyWsClients(getSensorJson(idx));
                         Rules.processTrigger("sensor"+String(idx+1));
                     }
                     newSensor = false;
@@ -156,7 +175,13 @@ void MyGateway::incomingMessage(const MyMessage &message)
                                 sensorValueChanged(idx, newValue);
                             }
                             mySensors[idx].value = newValue;
+                            HTTP.notifyWsClients(getSensorJson(idx));
+                            Rules.processTrigger("sensor"+String(idx+1));
                         }
+                        else
+                        {
+                            HTTP.notifyWsClients(getSensorJson(idx));
+                        }                            
                         numDetectedSensors++;
                         Debug.printf("Adding sensor %d (%d/%d) type %d value %s\n",
                                      idx, mySensors[idx].node, mySensors[idx].sensor,
@@ -307,6 +332,14 @@ void MyGateway::onGetSensors(HttpRequest &request, HttpResponse &response)
     response.sendString("]}");
 }
 
+void MyGateway::onWsGetSensors(WebSocket& socket, const String& message)
+{
+    for (int i = 0; i < MAX_MY_SENSORS; i++)
+    {
+        socket.sendString(getSensorJson(i));
+    }
+}
+
 void MyGateway::onRemoveSensor(HttpRequest &request, HttpResponse &response)
 {
     String error;
@@ -358,6 +391,8 @@ void MyGateway::registerHttpHandlers(HttpServer &server)
 {
     server.addPath("/ajax/getSensors", HttpPathDelegate(&MyGateway::onGetSensors, this));
     server.addPath("/ajax/removeSensor", HttpPathDelegate(&MyGateway::onRemoveSensor, this));
+
+    HTTP.addWsCommand("getSensors", WebSocketMessageDelegate(&MyGateway::onWsGetSensors, this));
 }
 
 String MyGateway::getSensorTypeString(int type)

@@ -1,0 +1,276 @@
+<!--http://192.168.4.1/ajax/get-networks-->
+<!--http://192.168.4.1/ajax/connect     -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="favicon.ico">
+
+    <title>Sensors configuration</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="bootstrap.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+        <script type="text/javascript">
+      </script>
+	
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+    <script>
+        function StartWebSocket()
+        {
+            if ("WebSocket" in window)
+            {
+                // Let us open a web socket
+                ws = new WebSocket("ws://" + window.location.host);
+				
+                ws.onopen = function()
+                {
+                    // Web Socket is connected, send data using send()
+                    ws.send("getSensors");
+                };
+				
+                ws.onmessage = function(evt) 
+                { 
+                    var received_msg = JSON.parse(evt.data);
+
+                    if (received_msg.type == "sensor")
+                    {
+                        var sensorData = received_msg.data;
+
+                        var sensorHtml = document.getElementById(sensorData.id);
+                        if (!sensorHtml)
+                        {
+                            var remove =
+                                '<div class="connect-btn-wrapper">'+
+                                '<button class="btn btn-success remove-sensor-btn">Remove</button></div>';
+              
+                            document.getElementById("sensorsContainer").innerHTML +=
+                                '<div class="list-group-item sensor" href="#" id="' + sensorData.id + '">' +
+                                '<p class="list-group-item-text">' +
+                                '<h4 class="list-group-item-heading">' + sensorData.node + '/' + sensorData.sensor + '</h4><br>State: ' + sensorData.value +
+                                '<br>Type: ' + sensorData.type +
+                                '</p>' +
+                                '<div class="form-group removeSensor"  style="display: none" data-name="'+sensorData.id+'">'+ remove +
+                                '</div>'+
+                                '</div>';
+                        }
+                        else
+                        {
+                            sensorHtml.innerHTML =
+                                '<p class="list-group-item-text">' +
+                                '<h4 class="list-group-item-heading">' + sensorData.node + '/' + sensorData.sensor + '</h4><br>State: ' + sensorData.value +
+                                '<br>Type: ' + sensorData.type +
+                                '</p>' +
+                                '<div class="form-group removeSensor"  style="display: none" data-name="'+sensorData.id+'">'+ remove +
+                                '</div>';
+                        }
+
+//node sensor type value
+                        //$.each(ids, function (key, val) {
+                        //    App.Utilities.RemoveInput($('.sensor[data-id=' + val + ']'));
+                        //});
+                    }
+                    else
+                    {
+                        alert("Message is received: "+evt.data);
+                    }
+                };
+				
+                ws.onclose = function()
+                { 
+                    // websocket is closed.
+                    alert("Connection is closed..."); 
+                };
+            }
+            else
+            {
+               // The browser doesn't support WebSocket
+               alert("WebSocket NOT supported by your Browser!");
+            }
+        }
+
+      var App = {
+          //GetSensorsURL: '/ajax/getSensors',
+          //RemoveSensorURL: '/ajax/removeSensor',
+          Save: null,
+          GetSensors: function () {
+              (function worker() {
+                  $('#floatingCirclesG').show();
+                  var ajax = $.ajax({
+                      url: App.GetSensorsURL,
+                      type: 'POST',
+                      success: function (data) {
+                          App.SetOWs(data);
+                          App.ShowSensorRemove();
+                          App.BindRemoveSensor();
+                      }
+                  })
+                  .done(function () {
+                        $('#floatingCirclesG').hide();
+                  })
+                  .fail(function () {
+                        setTimeout(worker, 5000);
+                  });
+                  App.Utilities.AbortSave(ajax);
+              })();
+          },
+          BindRemoveSensor: function () {
+              $(".remove-sensor-btn").unbind('click');
+              $('.remove-sensor-btn').on('click', function () {
+                  var that = this;
+                  var item = $(that).parent().parent().parent();
+                  var sensor = item.find('h4').text();
+                  App.Utilities.ShowLoader(that);
+                  if (App.Save) {
+                      clearInterval(App.Save);
+                      App.Utilities.HideLoader();
+                  }
+                  App.Utilities.ShowLoader(that);
+                  (function worker() {
+                      $('.error').empty();
+                      var ajax = $.ajax({
+                          url: App.RemoveSensorURL,
+                          type: 'POST',
+                          data: {
+                              'rom': rom
+                          },
+                          success: function (data) {
+                              if (data.status == true) {
+                                  App.Utilities.HideLoader();
+                                  location.reload();
+                              }
+                              if (data.error) {
+                                  $('.error').append('<div class="alert alert-danger" role="alert">' +
+                                          '<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>' +
+                                          '<span>Error:</span> ' + data.error +
+                                          '</div>');
+                                  App.Utilities.HideLoader();
+                              }
+                          },
+                          error: function(){
+                              setTimeout(worker, 5000);
+                          }
+                      })
+                      App.Utilities.AbortSave(ajax);
+                  })()
+              })
+          },
+          SetOWs: function (data) {
+              var ids = App.Utilities.GetOWId();
+              $.each(data.available, function (key, val) {
+                  if (ids.indexOf(val.id) != -1) {
+                      ids.splice(ids.indexOf(val.id), 1);
+                  } else {
+                      App.AddOW(val);
+                  }
+              });
+              $.each(ids, function (key, val) {
+                  App.Utilities.RemoveInput($('.sensor[data-id=' + val + ']'));
+              });
+          },
+          ShowSensorRemove: function () {
+              $(".sensor").unbind('click');
+              $('.sensor').on('click', function (e) {
+                  $('.removeSensor').each(function () {
+                      $(this).hide();
+                  })
+                  $(this).find('.removeSensor').show();
+              })
+          },
+          AddOW: function (val) {
+              var remove =
+                  '<div class="connect-btn-wrapper"><button class="btn btn-success remove-sensor-btn">Remove</button></div>';
+              
+              $('.sensors').append(
+                      '<div class="list-group-item sensor" href="#" data-id="' + val.id + '">' +
+                              '<p class="list-group-item-text">' +
+                              '<h4 class="list-group-item-heading">' + val.node + '/' + val.sensor + '</h4><br>State: ' + val.value +
+                              '<br>Type: ' + val.type +
+                              '</p>' +
+                              '<div class="form-group removeSensor"  style="display: none" data-name="'+val.id+'">'+ remove +
+                              '</div>'+
+                              '</div>'
+              );
+
+              return true;
+          },
+          Events: {
+              ReloadNetworks: function(){
+                  $('.reload').on('click', function(){App.GetIOs()})
+              }
+          },
+          Utilities: {
+              AbortSave: function(ajax){
+                  if(ajax.readyState != 4){
+                      setTimeout(function(){ajax.abort()}, 6000);
+                  }
+              },
+              RemoveInput: function (input) {
+                  $(input).remove();
+              },
+              GetOWId: function () {
+                  var ids = [];
+                  $('.sensor').each(function () {
+                      ids.push($(this).attr('data-id'));
+                  })
+                  return ids;
+              },
+              ShowLoader: function (obj) {
+                  var loader = $('#circularG');
+                  loader.show();
+                  loader.css('margin-left', '100px');
+                  $(obj).parent().append(loader);
+              },
+              HideLoader: function(){
+                  $('#circularG').hide();
+              }
+          }
+      }
+	</script>
+  <body onload="StartWebSocket()">
+
+  <div class="container">
+      <div class="header">
+          <nav>
+              <ul class="nav nav-pills pull-right">
+                  <li role="presentation"><a href="/status">Status</a></li>
+                  <li role="presentation"><a href="/ipconfig">Network Settings</a></li>
+                  <li role="presentation"><a href="/mqttconfig">MQTT Settings</a></li>
+                  <li role="presentation" class="active"><a href="/sensors.html">Sensors</a></li>
+              </ul>
+          </nav>
+          <h3 class="text-muted">MySensors gateway</h3>
+      </div>
+
+      <div class="jumbotron">
+          <h1>Sensor configuration</h1>
+      </div>
+
+      <div class="row">
+          <!--div class="col-lg-6 col-md-offset-7">
+              <button class="btn btn-success reload">Reload</button>
+          </div-->
+          <div class="col-lg-6 col-md-offset-3">
+              <div class="error"></div>
+              <div>
+                  <legend>Discovered sensors</legend>
+                  <div class="sensors list-group" id="sensorsContainer">
+              </div>
+          </div>
+      </div>
+      <footer class="footer">
+          <!--<p>&copy; Company 2014</p>-->
+      </footer>
+
+    </div> <!-- /container -->
+  </body>
+</html>

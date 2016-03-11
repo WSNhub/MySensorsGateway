@@ -13,8 +13,19 @@ class HTTPClass
     bool isHttpClientAllowed(HttpRequest &request,
                              HttpResponse &response);
 
+    void addWsCommand(String command, WebSocketMessageDelegate callback);
+    void notifyWsClients(String message);
+
+  private:
+    /* Websocket handlers */
+    void wsConnected(WebSocket& socket);
+    void wsMessageReceived(WebSocket& socket, const String& message);
+    void wsBinaryReceived(WebSocket& socket, uint8_t* data, size_t size);
+    void wsDisconnected(WebSocket& socket);
+
   private:
     HttpServer server;
+    HashMap<String, WebSocketMessageDelegate> wsCommandHandlers;
 };
 
 extern HTTPClass HTTP;

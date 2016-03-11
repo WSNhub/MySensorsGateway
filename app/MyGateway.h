@@ -71,6 +71,8 @@ class MyGateway
     uint8_t getNumDetectedNodes();
     uint16_t getNumDetectedSensors();
 
+    void onWsGetSensors(WebSocket& socket, const String& message);
+
   protected:
     void process();
     void incomingMessage(const MyMessage &message);
@@ -78,6 +80,7 @@ class MyGateway
                       HttpResponse &response);
     void onRemoveSensor(HttpRequest &request,
                         HttpResponse &response);
+    String getSensorJson(int index);
 
   private:
     uint64_t rfBaseAddress;
