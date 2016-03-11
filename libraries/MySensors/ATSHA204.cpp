@@ -546,10 +546,16 @@ uint8_t ATSHA204Class::sha204c_send_and_receive(uint8_t *tx_buffer, uint8_t rx_s
       {
         // We did not receive a response. Re-synchronize and send command again.
         if (sha204c_resync(rx_size, rx_buffer) == SHA204_RX_NO_RESPONSE)
+        {
           // The device seems to be dead in the water.
           return ret_code;
+        }
         else
-          break;
+        {
+          delay(10);
+          n_retries_send += 1;
+          goto next_send_recv_cycle; //break;
+        }
       }
 
       // Check whether we received a valid response.
@@ -621,6 +627,8 @@ uint8_t ATSHA204Class::sha204c_send_and_receive(uint8_t *tx_buffer, uint8_t rx_s
 
     } // block end of receive retry loop
 
+next_send_recv_cycle:
+	ret_code = ret_code; //dummy to make goto work
   } // block end of send and receive retry loop
 
   return ret_code;
