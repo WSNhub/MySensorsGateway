@@ -72,6 +72,8 @@ class MyGateway
     uint16_t getNumDetectedSensors();
 
     void onWsGetSensors(WebSocket& socket, const String& message);
+    void onWsSetActuator(WebSocket& socket, const String& message);
+    void onWsRemoveSensor(WebSocket& socket, const String& message);
 
   protected:
     void process();

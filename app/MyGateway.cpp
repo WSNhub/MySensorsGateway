@@ -148,10 +148,10 @@ void MyGateway::incomingMessage(const MyMessage &message)
                         Debug.printf("Updating sensor %d (%d/%d) type %d value %s\n",
                                      idx, mySensors[idx].node, mySensors[idx].sensor,
                                      mySensors[idx].type, mySensors[idx].value.c_str());
-                        HTTP.notifyWsClients(getSensorJson(idx));
                         Rules.processTrigger("sensor"+String(idx+1));
                     }
                     newSensor = false;
+                    HTTP.notifyWsClients(getSensorJson(idx));
                     break;
                 }
             }
@@ -259,6 +259,12 @@ void MyGateway::begin(msgRxDelegate rxDlg, sensorValueChangedDelegate valueChang
                 int sensor = sensorStr.substring(index + 1).toInt();
                 mySensors[i].node = node;
                 mySensors[i].sensor = sensor;
+
+                if (!nodeIds[node])
+                {
+                    numDetectedNodes++;
+                    nodeIds[node] = true;
+                }
             }
         }
 
@@ -340,6 +346,68 @@ void MyGateway::onWsGetSensors(WebSocket& socket, const String& message)
     }
 }
 
+//USAGE: setActuator <node> <sensor> <value>
+void MyGateway::onWsSetActuator(WebSocket& socket, const String& message)
+{
+    Vector<String> commandToken;
+    int numToken = splitString((String &)message, ' ' , commandToken);
+
+    if (numToken != 4)
+    {
+        socket.sendString("{\"status\" : \"error\", \"msg\" : \"invalid number of args\"}");
+        return;
+    }
+
+    int node = commandToken[1].toInt();
+    int sensor = commandToken[2].toInt();
+    int value = commandToken[3].toInt();
+
+    for (int idx = 0; idx < MAX_MY_SENSORS; idx++)
+    {
+        if (mySensors[idx].node == node &&
+            mySensors[idx].sensor == sensor)
+        {
+            MyMessage myMsg;
+            myMsg.set(value);
+            GW.sendRoute(GW.build(myMsg, node, sensor,
+                                  C_SET, 2/* mySensors[idx].type */, 0));
+            rfPacketsTx++;
+            return;
+        }
+    }
+
+    socket.sendString("{\"status\" : \"error\", \"msg\" : \"sensor not found\"}");
+}
+
+//USAGE: removeSensor <node> <sensor>
+void MyGateway::onWsRemoveSensor(WebSocket& socket, const String& message)
+{
+    Vector<String> commandToken;
+    int numToken = splitString((String &)message, ' ' , commandToken);
+
+    if (numToken != 3)
+    {
+        socket.sendString("{\"status\" : \"error\", \"msg\" : \"invalid number of args\"}");
+        return;
+    }
+
+    int node = commandToken[1].toInt();
+    int sensor = commandToken[2].toInt();
+
+    for (int idx = 0; idx < MAX_MY_SENSORS; idx++)
+    {
+        if (mySensors[idx].node == node &&
+            mySensors[idx].sensor == sensor)
+        {
+            Debug.printf("Removing sensor %d %d.\n", node, sensor);
+            memset(&mySensors[idx], 0, sizeof(sensor_t));
+            return;
+        }
+    }
+
+    socket.sendString("{\"status\" : \"error\", \"msg\" : \"sensor not found\"}");
+}
+
 void MyGateway::onRemoveSensor(HttpRequest &request, HttpResponse &response)
 {
     String error;
@@ -393,6 +461,8 @@ void MyGateway::registerHttpHandlers(HttpServer &server)
     server.addPath("/ajax/removeSensor", HttpPathDelegate(&MyGateway::onRemoveSensor, this));
 
     HTTP.addWsCommand("getSensors", WebSocketMessageDelegate(&MyGateway::onWsGetSensors, this));
+    HTTP.addWsCommand("setActuator", WebSocketMessageDelegate(&MyGateway::onWsSetActuator, this));
+    HTTP.addWsCommand("removeSensor", WebSocketMessageDelegate(&MyGateway::onWsRemoveSensor, this));
 }
 
 String MyGateway::getSensorTypeString(int type)

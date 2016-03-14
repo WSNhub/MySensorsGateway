@@ -25,6 +25,16 @@
     <![endif]-->
   </head>
     <script>
+        function SetActuator(node, sensor, enabled)
+        {
+            var cmd = "setActuator " + node + " " + sensor;
+            if (enabled)
+                cmd += " 1";
+            else
+                cmd += " 0";
+            ws.send(cmd);
+        }
+
         function StartWebSocket()
         {
             if ("WebSocket" in window)
@@ -59,6 +69,10 @@
                                 '<h4 class="list-group-item-heading">' + sensorData.node + '/' + sensorData.sensor + '</h4><br>State: ' + sensorData.value +
                                 '<br>Type: ' + sensorData.type +
                                 '</p>' +
+                                '<button class="form-group enableSensorGrp" id="'+sensorData.id+'_enable" ' +
+                                'onclick="SetActuator(\''+sensorData.node+'\', \''+sensorData.sensor+'\', true);"> enable </button>'+
+                                '<button class="form-group enableSensorGrp" id="'+sensorData.id+'_disable" ' +
+                                'onclick="SetActuator(\''+sensorData.node+'\', \''+sensorData.sensor+'\', false);"> disable </button>'+
                                 '<div class="form-group removeSensor"  style="display: none" data-name="'+sensorData.id+'">'+ remove +
                                 '</div>'+
                                 '</div>';
@@ -70,6 +84,10 @@
                                 '<h4 class="list-group-item-heading">' + sensorData.node + '/' + sensorData.sensor + '</h4><br>State: ' + sensorData.value +
                                 '<br>Type: ' + sensorData.type +
                                 '</p>' +
+                                '<button class="form-group enableSensorGrp" id="'+sensorData.id+'_enable" ' +
+                                'onclick="SetActuator(\''+sensorData.node+'\', \''+sensorData.sensor+'\', true);"> enable </button>'+
+                                '<button class="form-group enableSensorGrp" id="'+sensorData.id+'_disable" ' +
+                                'onclick="SetActuator(\''+sensorData.node+'\', \''+sensorData.sensor+'\', false);"> disable </button>'+
                                 '<div class="form-group removeSensor"  style="display: none" data-name="'+sensorData.id+'">'+ remove +
                                 '</div>';
                         }
