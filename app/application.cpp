@@ -28,6 +28,7 @@ FTPServer ftp;
 TelnetServer telnet;
 static boolean first_time = TRUE;
 int isWifiConnected = FALSE;
+int pongNodeId = 22;
 
 char convBuf[MAX_PAYLOAD*2+1];
 
@@ -313,12 +314,11 @@ void processBaseAddressCommand(String commandLine, CommandOutput* out)
 
 void ping(void)
 {
-    int node = 22;
     int sensor = 1; 
     String type = "VAR1";
     int message = 1;
     /* send ping */
-    updateSensorStateInt(node, sensor,
+    updateSensorStateInt(pongNodeId, sensor,
                          MyGateway::getSensorTypeFromString(type),
                          message);
 }
@@ -329,17 +329,19 @@ void processPongCommand(String commandLine, CommandOutput* out)
     Vector<String> commandToken;
     int numToken = splitString(commandLine, ' ' , commandToken);
 
-    if (numToken != 2 ||
-        (commandToken[1] != "start" && commandToken[1] != "stop"))
+    if (((numToken != 2) || (commandToken[1] != "stop")) &&
+        ((numToken != 3) || (commandToken[1] != "start")))
     {
         out->printf("usage : \r\n\r\n");
         out->printf("pong stop : stop ping-pong node test\r\n");
-        out->printf("pong start : start ping-pong node test\r\n");
+        out->printf("pong start <nodeId>: start ping-pong node test\r\n");
         return;
     }
 
     if (commandToken[1] == "start")
     {
+        pongNodeId = atoi (commandToken[2].c_str());
+        out->printf("Starting ping to node %d : \r\n\r\n", pongNodeId);
         pingpongTimer.initializeMs(500, ping).start();
     }
     else
