@@ -183,13 +183,6 @@ void WifiClass::handleEvent(System_Event_t *e)
         else
         {
             numApNotFound = 0;
-            numOther++;
-            if (numOther == 10)
-            {
-	        wifi_station_disconnect();
-                reconnect(5000);
-                numOther = 0;
-            }
         }
 
         if (connected)
@@ -218,15 +211,6 @@ void WifiClass::portalLoginHandler(HttpClient& client, bool successful)
 void WifiClass::connect()
 {
     Debug.println("Connecting...");
-    WifiStation.enable(false);
-
-    /*if (AppSettings.ssid.equals("") &&
-        !WifiStation.getSSID().equals(""))
-    {
-        AppSettings.ssid = WifiStation.getSSID();
-        AppSettings.password = WifiStation.getPassword();
-        AppSettings.save();
-    }*/
 
     if (!WifiStation.getSSID().equals(AppSettings.ssid) ||
         !WifiStation.getPassword().equals(AppSettings.password))
@@ -243,9 +227,9 @@ void WifiClass::connect()
     }
 
     WifiStation.enable(true);
-    wifi_station_connect();
-    wifi_station_dhcpc_start();
-    wifi_station_set_reconnect_policy(false); //Do not auto reconnect
+    //wifi_station_connect();
+    //wifi_station_dhcpc_start();
+    wifi_station_set_reconnect_policy(true);
 }
 
 void WifiClass::reconnect(int delayMs)
