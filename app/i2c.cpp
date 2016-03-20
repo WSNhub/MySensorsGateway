@@ -70,17 +70,7 @@ void MyI2C::begin(I2CChangeDelegate dlg)
 
     changeDlg = dlg;
 
-#if PLATFORM_TYPE == PLATFORM_TYPE_GENERIC
-    // Belows works on Wemos with swapped ATSHA204 pinning as in datasheet !
-    Wire.pins(4, 5); // needed to swap : SCL, SDA  : will fix PCB !!!!
-    // Belows works on Wemos with ATSHA204 pinning as in datasheet
-    //Wire.pins(5, 4); // needed to swap : SCL, SDA  : will fix PCB !!!!
-#elif PLATFORM_TYPE == PLATFORM_TYPE_SDSHIELD
-    Wire.pins(5, 4); // SCL, SDA
-#else
-    #error "Unknown platform type"
-#endif
-
+    Wire.pins(I2C_SCL_PIN, I2C_SDA_PIN); // SCL, SDA
     Wire.begin();
 
     for (address=0; address < 127; address++)
@@ -114,12 +104,12 @@ void MyI2C::begin(I2CChangeDelegate dlg)
             }
             else if (address == 0x68)
             {
-#if PLATFORM_TYPE == PLATFORM_TYPE_GENERIC
+#if RTC_TYPE == RTC_TYPE_3213
                 Debug.printf("Found RTC DS3213 at address %x\n", address);
-#elif PLATFORM_TYPE == PLATFORM_TYPE_SDSHIELD
+#elif RTC_TYPE == RTC_TYPE_1307
                 Debug.printf("Found RTC DS1307 at address %x\n", address);
 #else
-    #error "Unknown platform type"
+    #error "Unknown RTC type"
 #endif
             } 
             else if (address == 0x57)

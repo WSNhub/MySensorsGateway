@@ -7,8 +7,8 @@
 #include "Rule.h"
 #include "HTTP.h"
 
-#define RADIO_CE_PIN 2
-#define RADIO_SPI_SS_PIN 15
+//#define RADIO_CE_PIN 2
+//#define RADIO_SPI_SS_PIN 15
 
 MyTransportNRF24 transport(RADIO_CE_PIN, RADIO_SPI_SS_PIN, RF24_PA_LEVEL_GW);
 MyHwESP8266 hw;

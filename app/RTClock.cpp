@@ -5,9 +5,9 @@
 #include <AppSettings.h>
 #include "RTClock.h"
 
-#if PLATFORM_TYPE == PLATFORM_TYPE_GENERIC
+#if RTC_TYPE == RTC_TYPE_3213
 #include "RTC/Sodaq_DS3231.h"
-#elif PLATFORM_TYPE == PLATFORM_TYPE_SDSHIELD
+#elif RTC_TYPE == RTC_TYPE_1307
 #include "RTC/RTClib.h"
 RTC_DS1307 rtc1307;
 #else
@@ -18,7 +18,7 @@ RTClock Clock;
 
 void RTClock::checkState()
 {
-#if PLATFORM_TYPE == PLATFORM_TYPE_GENERIC
+#if RTC_TYPE == RTC_TYPE_3213
     SystemClock.setTime(rtc.now().getEpoch(), eTZ_UTC);
 
     //convert current temperature into registers
@@ -28,8 +28,7 @@ void RTClock::checkState()
                  rtc.getTemperature()); 
     if (changeDlg)
         changeDlg("RTC-temperature", String(rtc.getTemperature()));
-
-#elif PLATFORM_TYPE == PLATFORM_TYPE_SDSHIELD
+#else
     SystemClock.setTime(rtc1307.now().unixtime(), eTZ_UTC);
 #endif
 }
@@ -40,7 +39,7 @@ void RTClock::begin(RTCChangeDelegate dlg)
 
     changeDlg = dlg;
 
-#if PLATFORM_TYPE == PLATFORM_TYPE_GENERIC
+#if RTC_TYPE == RTC_TYPE_3213
     Wire.lock();
     Wire.beginTransmission(0x68);
     error = Wire.endTransmission();
@@ -96,7 +95,7 @@ void RTClock::begin(RTCChangeDelegate dlg)
 
 void RTClock::setTime(uint32_t ts)
 {
-#if PLATFORM_TYPE == PLATFORM_TYPE_GENERIC
+#if RTC_TYPE == RTC_TYPE_3213
     if (RTCFound)
         rtc.setEpoch(ts);
 #else
@@ -107,7 +106,7 @@ void RTClock::setTime(uint32_t ts)
 
 uint32_t RTClock::getTime()
 {
-#if PLATFORM_TYPE == PLATFORM_TYPE_GENERIC
+#if RTC_TYPE == RTC_TYPE_3213
     if (RTCFound)
         return rtc.now().getEpoch();
     return 0;
