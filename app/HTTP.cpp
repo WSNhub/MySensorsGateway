@@ -147,7 +147,9 @@ void onStatus(HttpRequest &request, HttpResponse &response)
 
 void onFile(HttpRequest &request, HttpResponse &response)
 {
+#ifdef SD_SPI_SS_PIN
     static bool alreadyInitialized = false;
+#endif
 
     if (!HTTP.isHttpClientAllowed(request, response))
         return;
@@ -165,6 +167,7 @@ void onFile(HttpRequest &request, HttpResponse &response)
         // open the file. note that only one file can be open at a time,
         // so you have to close this one before opening another.
         Debug.printf("REQUEST for %s\n", file.c_str());
+#ifdef SD_SPI_SS_PIN
         if (alreadyInitialized || SD.begin(0))
         {
             alreadyInitialized = true;
@@ -194,6 +197,7 @@ void onFile(HttpRequest &request, HttpResponse &response)
             }
         }
         else
+#endif
         {
             response.sendFile(file);
         }

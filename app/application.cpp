@@ -13,10 +13,12 @@
 #include <controller.h>
 #include <Rule.h>
 
+#ifdef SD_SPI_SS_PIN
 // set up variables using the SD utility library functions:
 Sd2Card card;
 SdVolume volume;
 SdFile root;
+#endif
 
 /*
  * The I2C implementation takes care of initializing things like I/O
@@ -126,6 +128,7 @@ void wifiCb(bool connected)
     }
 }
 
+#ifdef SD_SPI_SS_PIN
 // change this to match your SD shield or module;
 // Arduino Ethernet shield: pin 4
 // Adafruit SD shields and modules: pin 10
@@ -137,7 +140,7 @@ void processSD(String commandLine, CommandOutput* out)
 
   // we'll use the initialization code from the utility libraries
   // since we're just testing if the card is working!
-  if (!card.init(SPI_HALF_SPEED, chipSelect)) {
+  if (!card.init(SPI_HALF_SPEED, SD_SPI_SS_PIN)) {
     out->printf("initialization failed. Things to check:\n");
     out->printf("* is a card inserted?\n");
     out->printf("* is your wiring correct?\n");
@@ -192,6 +195,15 @@ void processSD(String commandLine, CommandOutput* out)
   // list all files in the card with date and size
   root.ls(LS_R | LS_DATE | LS_SIZE);
 }
+#endif
+
+#if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
+void processW5100Command(String commandLine, CommandOutput* out)
+{
+void w5100_netif_init();
+w5100_netif_init();
+}
+#endif
 
 void processInfoCommand(String commandLine, CommandOutput* out)
 {
@@ -468,10 +480,18 @@ void init()
                                                    "Adjust the AccessPoint Mode",
                                                    "System",
                                                    processAPModeCommand));
+#ifdef SD_SPI_SS_PIN
     commandHandler.registerCommand(CommandDelegate("sd",
                                                    "Test SD",
                                                    "System",
                                                    processSD));
+#endif
+#if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
+    commandHandler.registerCommand(CommandDelegate("W5100",
+                                                   "Test W5100",
+                                                   "System",
+                                                   processW5100Command));
+#endif
     commandHandler.registerCommand(CommandDelegate("js",
                                                    "Test JS",
                                                    "System",

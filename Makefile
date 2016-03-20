@@ -34,6 +34,15 @@ MYSENSORS_SIGNING_HMAC ?= { 0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08, \
                             0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, \
                             0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }
 
+# WIRED_ETHERNET
+# Instead of the wifi station to connect to your network, it is possible
+# to connect to the network over wired ethernet.
+# Possibilities are:
+#   WIRED_ETHERNET_NONE
+#   WIRED_ETHERNET_W5100
+#   WIRED_ETHERNET_W5500
+WIRED_ETHERNET_MODE ?= WIRED_ETHERNET_NONE
+
 # SMING_AUTO_UPGRADE
 # If enabled, each time "make" is done, the system will check whether
 # upgrading Sming is necessary. A reason to disable this would be if
@@ -58,6 +67,7 @@ ifeq ('${PLATFORM_TYPE}', 'GENERIC')
   USER_CFLAGS += "-DI2C_SDA_PIN=5"
   USER_CFLAGS += "-DI2C_SCL_PIN=4"
   USER_CFLAGS += "-DRTC_TYPE=RTC_TYPE_3213"
+  USER_CFLAGS += "-DETHERNET_SPI_SS_PIN=16"
 endif
 
 ## SD shield platform
@@ -68,6 +78,7 @@ ifeq ('${PLATFORM_TYPE}', 'SDSHIELD')
   USER_CFLAGS += "-DI2C_SDA_PIN=4"
   USER_CFLAGS += "-DI2C_SCL_PIN=5"
   USER_CFLAGS += "-DRTC_TYPE=RTC_TYPE_1307"
+  USER_CFLAGS += "-DETHERNET_SPI_SS_PIN=16"
 endif
 
 ## WeMos D1 board wit W5100 ethernet shield and data logger shield
@@ -82,6 +93,7 @@ ifeq ('${PLATFORM_TYPE}', 'WEMOS_WITH_SHIELDS')
   USER_CFLAGS += "-DI2C_SDA_PIN=4"
   USER_CFLAGS += "-DI2C_SCL_PIN=5"
   USER_CFLAGS += "-DRTC_TYPE=RTC_TYPE_1307"
+  USER_CFLAGS += "-DETHERNET_SPI_SS_PIN=15"
 endif
 
 
@@ -131,6 +143,7 @@ USER_CFLAGS += "-DPLATFORM_TYPE=PLATFORM_TYPE_$(PLATFORM_TYPE)"
 USER_CFLAGS += "-DSIGNING_ENABLE=$(MYSENSORS_SIGNING)"
 USER_CFLAGS += "-DSIGNING_HMAC=$(MYSENSORS_SIGNING_HMAC)"
 USER_CFLAGS += "-DATSHA204I2C=$(MYSENSORS_WITH_ATSHA204)"
+USER_CFLAGS += "-DWIRED_ETHERNET_MODE=$(WIRED_ETHERNET_MODE)"
 USER_CFLAGS += "-DMEASURE_ENABLE=$(GPIO16_MEASURE_ENABLE)"
 
 # Include main Sming Makefile

@@ -19,4 +19,8 @@ extern int isWifiConnected;
 #define RTC_TYPE_3213 1
 #define RTC_TYPE_1307 2
 
+#define WIRED_ETHERNET_NONE  0
+#define WIRED_ETHERNET_W5100 1
+#define WIRED_ETHERNET_W5500 2
+
 #endif /* GLOBALS_H_ */
