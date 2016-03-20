@@ -436,6 +436,20 @@ void init()
     /* Make sure wifi does not start yet! */
     wifi_station_set_auto_connect(0);
 
+    /* Make sure all chip enable pins are HIGH */
+#ifdef RADIO_SPI_SS_PIN
+    pinMode(RADIO_SPI_SS_PIN, OUTPUT);
+    digitalWrite(RADIO_SPI_SS_PIN, HIGH);
+#endif
+#ifdef SD_SPI_SS_PIN
+    pinMode(SD_SPI_SS_PIN, OUTPUT);
+    digitalWrite(SD_SPI_SS_PIN, HIGH);
+#endif
+#ifdef ETHERNET_SPI_SS_PIN
+    pinMode(ETHERNET_SPI_SS_PIN, OUTPUT);
+    digitalWrite(ETHERNET_SPI_SS_PIN, HIGH);
+#endif
+
     /* Mount the internal storage */
     int slot = rboot_get_current_rom();
     if (slot == 0)
