@@ -104,7 +104,7 @@ ifeq ($(SMING_AUTO_UPGRADE), 1)
 endif
 
 	@echo "Building Sming..."
-	@make -C tools/Sming/Sming
+	@make rebuild -C tools/Sming/Sming
 	@make -C tools/Sming/Sming/spiffy
 
 #Add your source directories here separated by space
