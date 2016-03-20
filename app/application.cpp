@@ -231,6 +231,11 @@ void processInfoCommand(String commandLine, CommandOutput* out)
         apModeStr= "whenDisconnected";
     out->printf("Access Point Mode  : %s\n", apModeStr.c_str());
     out->printf("\r\n");
+#if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
+    extern IPAddress w5100_netif_get_ip();
+    out->printf("Wired IP           : %s\n", w5100_netif_get_ip().toString().c_str());
+    out->printf("\r\n");
+#endif
     out->printf("System Time        : ");
     out->printf(SystemClock.getSystemTimeString().c_str());
     out->printf("\r\n");

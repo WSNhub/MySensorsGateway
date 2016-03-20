@@ -51,3 +51,10 @@ void w5100_netif_init()
   ethTimer.initializeMs(1, ethTimerHandler).start(true);
 }
 
+IPAddress w5100_netif_get_ip()
+{
+    IPAddress addr(w5100_netif.ip_addr.addr);
+
+    return addr;
+}
+
