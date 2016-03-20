@@ -110,6 +110,9 @@ void startServers()
     startFTP();
     telnet.listen(23);
     controller.begin();
+
+    // start getting sensor data
+    GW.begin(incomingMessage, NULL);
 }
 
 // Will be called when WiFi station was connected to AP
@@ -122,8 +125,6 @@ void wifiCb(bool connected)
         if (first_time) 
         {
             first_time = FALSE;
-            // start getting sensor data
-            GW.begin(incomingMessage, NULL);
         }
     }
 }
