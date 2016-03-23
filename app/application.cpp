@@ -198,14 +198,6 @@ void processSD(String commandLine, CommandOutput* out)
 }
 #endif
 
-#if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
-void processW5100Command(String commandLine, CommandOutput* out)
-{
-void w5100_netif_init();
-w5100_netif_init();
-}
-#endif
-
 void processInfoCommand(String commandLine, CommandOutput* out)
 {
     uint64_t rfBaseAddress = GW.getBaseAddress();
@@ -506,12 +498,6 @@ void init()
                                                    "System",
                                                    processSD));
 #endif
-#if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
-    commandHandler.registerCommand(CommandDelegate("W5100",
-                                                   "Test W5100",
-                                                   "System",
-                                                   processW5100Command));
-#endif
     commandHandler.registerCommand(CommandDelegate("js",
                                                    "Test JS",
                                                    "System",
@@ -535,6 +521,11 @@ void init()
     AppSettings.load();
 
     Wifi.begin(wifiCb);
+
+    #if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
+    void w5100_netif_init();
+    w5100_netif_init();
+    #endif
 
     // CPU boost
     if (AppSettings.cpuBoost)
