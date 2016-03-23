@@ -227,8 +227,9 @@ void WifiClass::connect()
     }
 
     WifiStation.enable(true);
-    //wifi_station_connect();
-    //wifi_station_dhcpc_start();
+    wifi_station_connect();
+    if (AppSettings.dhcp)
+        wifi_station_dhcpc_start();
     wifi_station_set_reconnect_policy(true);
 }
 
