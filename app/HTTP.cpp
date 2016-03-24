@@ -9,6 +9,9 @@
 #include <Services/WebHelpers/base64.h>
 #include <Wiring/SplitString.h>
 
+// Forward declarations
+void StartOtaUpdateWeb(String);
+
 Timer softApSetPasswordTimer;
 void apEnable()
 {
@@ -143,6 +146,32 @@ void onStatus(HttpRequest &request, HttpResponse &response)
     vars["mqttTx"] = mqttPktTx;
     
    response.sendTemplate(tmpl); // will be automatically deleted
+}
+
+void onMaintenance(HttpRequest &request, HttpResponse &response)
+{
+    AppSettings.load();
+
+    if (!HTTP.isHttpClientAllowed(request, response))
+        return;
+
+    if (request.getRequestMethod() == RequestMethod::POST)
+    {
+        AppSettings.webOtaBaseUrl = request.getPostParameter("webOtaBaseUrl");
+
+        AppSettings.save();
+
+        Debug.println("Going to call: StartOtaUpdateWeb()");
+        StartOtaUpdateWeb(AppSettings.webOtaBaseUrl);
+        Debug.println("Called: StartOtaUpdateWeb()");
+    }
+
+    TemplateFileStream *tmpl = new TemplateFileStream("maintenance.html");
+    auto &vars = tmpl->variables();
+
+    vars["webOtaBaseUrl"] = AppSettings.webOtaBaseUrl;
+
+    response.sendTemplate(tmpl); // will be automatically deleted
 }
 
 void onFile(HttpRequest &request, HttpResponse &response)
@@ -291,6 +320,7 @@ void HTTPClass::begin()
     server.addPath("/", onStatus);
     server.addPath("/ipconfig", onIpConfig);
     server.addPath("/status", onStatus);
+    server.addPath("/maintenance", onMaintenance);
 
     GW.registerHttpHandlers(server);
     controller.registerHttpHandlers(server);

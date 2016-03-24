@@ -31,6 +31,14 @@ void StartOtaUpdate()
     otaStartTimer.initializeMs(50, TimerDelegate(otaUpdateHandler)).start(false);
 }
 
+void StartOtaUpdateWeb(String webOtaBaseUrl) 
+{
+    Debug.println("====== In StartOtaUpdateWeb(). ======");
+    Debug.println(webOtaBaseUrl);
+    otaBaseUrl = webOtaBaseUrl;
+    StartOtaUpdate();
+}
+
 void otaUpdate_CallBack(bool result) {
 	
     Debug.println("In OTA callback...");
