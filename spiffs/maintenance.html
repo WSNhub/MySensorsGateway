@@ -44,11 +44,12 @@
     <div class="jumbotron">
         <h1>Maintenance</h1>
     </div>
+
     <div class="row">
         <div class="col-lg-6 col-md-offset-3">
             <form method="post" action="">
                 <fieldset>
-                    <legend>Upgrade</legend>
+                    <legend>Upgrade - Upgrade the system with another software version.</legend>
                     <div class="col-md-offset-2">
                         <div class="form-group">
                             <label>OTA Base URL (IP_ADDRESS/DIRECTORY e.g. 192.168.1.157/firmware)</label>
@@ -58,13 +59,29 @@
                     </div>
                 </fieldset>
                 <div class="col-md-offset-3">
-                    <input type="submit" class="btn btn-success">
+                    <input type="submit" name="Command" value="Upgrade" class="btn btn-success">
                 </div>
             </form>
         </div>
     </div>
+
+    <p>&nbsp;</p>
+    <div class="row">
+        <div class="col-lg-6 col-md-offset-3">
+            <form method="post" action="">
+                <fieldset>
+                    <legend>Restart - Restart the system.</legend>
+                </fieldset>
+                <div class="col-md-offset-3">
+                    <input type="submit" name="Command" value="Restart" class="btn btn-success">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <p>&nbsp;</p>
     <footer class="footer">
-        <!--<p>&copy; Company 2014</p>-->
+        <p>&copy; MCC 2016</p>
     </footer>
 
 </div> <!-- /container -->

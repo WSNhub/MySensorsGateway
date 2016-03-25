@@ -11,6 +11,8 @@
 
 // Forward declarations
 void StartOtaUpdateWeb(String);
+void processRestartCommandWeb(void);
+
 
 Timer softApSetPasswordTimer;
 void apEnable()
@@ -157,13 +159,26 @@ void onMaintenance(HttpRequest &request, HttpResponse &response)
 
     if (request.getRequestMethod() == RequestMethod::POST)
     {
-        AppSettings.webOtaBaseUrl = request.getPostParameter("webOtaBaseUrl");
+        String command = request.getPostParameter("Command");
+        
+        if (command.equals("Upgrade")) {
+            AppSettings.webOtaBaseUrl = request.getPostParameter("webOtaBaseUrl");
 
-        AppSettings.save();
+            AppSettings.save();
 
-        Debug.println("Going to call: StartOtaUpdateWeb()");
-        StartOtaUpdateWeb(AppSettings.webOtaBaseUrl);
-        Debug.println("Called: StartOtaUpdateWeb()");
+            Debug.println("Going to call: StartOtaUpdateWeb()");
+            StartOtaUpdateWeb(AppSettings.webOtaBaseUrl);
+            Debug.println("Called: StartOtaUpdateWeb()");
+        }
+        else if (command.equals("Restart")) {
+            Debug.println("Going to call: processRestartCommandWeb()");
+            processRestartCommandWeb();
+            Debug.println("Called: processRestartCommandWeb()");
+        }
+        else {
+            Debug.printf("Unknown command: [%s]\r\n", command.c_str());
+        }
+
     }
 
     TemplateFileStream *tmpl = new TemplateFileStream("maintenance.html");

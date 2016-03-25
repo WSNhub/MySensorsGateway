@@ -34,8 +34,8 @@ void StartOtaUpdate()
 void StartOtaUpdateWeb(String webOtaBaseUrl) 
 {
     Debug.println("====== In StartOtaUpdateWeb(). ======");
-    Debug.println(webOtaBaseUrl);
     otaBaseUrl = webOtaBaseUrl;
+    Debug.printf("Starting upgrade with images from %s\r\n", otaBaseUrl.c_str());
     StartOtaUpdate();
 }
 
