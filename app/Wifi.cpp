@@ -148,6 +148,8 @@ void WifiClass::handleEvent(System_Event_t *e)
             portalLogin.downloadString(
                 url, HttpClientCompletedDelegate(&WifiClass::portalLoginHandler, this));
         }
+
+        ntpClient.requestTime();
     }
     else if (event == EVENT_STAMODE_CONNECTED)
     {
@@ -156,7 +158,6 @@ void WifiClass::handleEvent(System_Event_t *e)
             connected = true;
 
             Debug.printf("Wifi client got connected\n");
-            ntpClient.requestTime();
 
             // Disable SoftAP.
             // This function will check whether the AP can be disabled.
