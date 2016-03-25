@@ -45,7 +45,7 @@ void w5100_netif_init()
   }
 
   //netif_set_default(&w5100_netif);
-  netif_set_up(&w5100_netif);
+  //netif_set_up(&w5100_netif);
   dhcp_start(&w5100_netif);
 
   ethTimer.initializeMs(1, ethTimerHandler).start(true);
