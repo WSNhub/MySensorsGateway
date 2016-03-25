@@ -62,7 +62,9 @@ void ApplicationSettingsStorage::load()
         cloudDeviceToken = (const char *)root["cloudDeviceToken"];
         cloudLogin = (const char *)root["cloudLogin"];
         cloudPassword = (const char *)root["cloudPassword"];
-    
+
+        webOtaBaseUrl = (const char *)root["webOtaBaseUrl"];
+
         delete[] jsonString;
     }
 }
@@ -109,6 +111,8 @@ void ApplicationSettingsStorage::save()
     root.set("cloudDeviceToken", cloudDeviceToken);
     root.set("cloudLogin", cloudLogin);
     root.set("cloudPassword", cloudPassword);
+
+    root.set("webOtaBaseUrl", webOtaBaseUrl.c_str());
 
     //TODO: add direct file stream writing
     String out;

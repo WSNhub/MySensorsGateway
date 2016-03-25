@@ -50,6 +50,8 @@ class ApplicationSettingsStorage
     String      cloudLogin;
     String      cloudPassword;
 
+    String      webOtaBaseUrl;
+
     void load();
     void save();
 

@@ -31,6 +31,14 @@ void StartOtaUpdate()
     otaStartTimer.initializeMs(50, TimerDelegate(otaUpdateHandler)).start(false);
 }
 
+void StartOtaUpdateWeb(String webOtaBaseUrl) 
+{
+    Debug.println("====== In StartOtaUpdateWeb(). ======");
+    otaBaseUrl = webOtaBaseUrl;
+    Debug.printf("Starting upgrade with images from %s\r\n", otaBaseUrl.c_str());
+    StartOtaUpdate();
+}
+
 void otaUpdate_CallBack(bool result) {
 	
     Debug.println("In OTA callback...");

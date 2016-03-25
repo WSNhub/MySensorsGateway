@@ -247,6 +247,11 @@ void processRestartCommand(String commandLine, CommandOutput* out)
     System.restart();
 }
 
+void processRestartCommandWeb(void)
+{
+    System.restart();
+}
+
 void processDebugCommand(String commandLine, CommandOutput* out)
 {
     Vector<String> commandToken;
