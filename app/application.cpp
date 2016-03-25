@@ -525,11 +525,11 @@ void init()
                                                    processPongCommand));
     AppSettings.load();
 
-    Wifi.begin(wifiCb);
-
     #if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
     void w5100_netif_init();
     w5100_netif_init();
+    #else
+    Wifi.begin(wifiCb);
     #endif
 
     // CPU boost
