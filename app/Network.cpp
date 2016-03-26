@@ -16,7 +16,8 @@ extern void otaEnable();
 
 void NetworkClass::begin(NetworkStateChangeDelegate dlg)
 {
-    WifiStation.enable(false);
+    if (!AppSettings.wired)
+        WifiStation.enable(false);
 
     changeDlg = dlg;
 
