@@ -58,3 +58,17 @@ IPAddress w5100_netif_get_ip()
     return addr;
 }
 
+IPAddress w5100_netif_get_netmask()
+{
+    IPAddress addr(w5100_netif.netmask.addr);
+
+    return addr;
+}
+
+IPAddress w5100_netif_get_gateway()
+{
+    IPAddress addr(w5100_netif.gw.addr);
+
+    return addr;
+}
+

@@ -3,18 +3,18 @@
 #include <SmingCore/Debug.h>
 #include <globals.h>
 #include <AppSettings.h>
-#include "Wifi.h"
+#include "Network.h"
 #include "RTClock.h"
 
 void
-wifi_cb ( System_Event_t *e )
+network_cb ( System_Event_t *e )
 {
-    Wifi.handleEvent(e);
+    Network.handleEvent(e);
 }
 
 extern void otaEnable();
 
-void WifiClass::begin(WifiStateChangeDelegate dlg)
+void NetworkClass::begin(NetworkStateChangeDelegate dlg)
 {
     WifiStation.enable(false);
 
@@ -27,19 +27,11 @@ void WifiClass::begin(WifiStateChangeDelegate dlg)
     }
     else
     {
-        softApDisable();        
+        softApDisable();
     }
 
-    if (AppSettings.exist())
+    if (!AppSettings.wired)
     {
-        if (AppSettings.ssid.equals("") &&
-            !WifiStation.getSSID().equals(""))
-        {
-            AppSettings.ssid = WifiStation.getSSID();
-            AppSettings.password = WifiStation.getPassword();
-            AppSettings.save();
-        }
-
         WifiStation.config(AppSettings.ssid, AppSettings.password);
         if (!AppSettings.dhcp && !AppSettings.ip.isNull())
         {
@@ -48,32 +40,31 @@ void WifiClass::begin(WifiStateChangeDelegate dlg)
                               AppSettings.gateway);
         }
     }
-    /*else
-    {
-        String SSID = WifiStation.getSSID();
-        if (!SSID.equals(""))
-        {
-            AppSettings.ssid = SSID;
-            AppSettings.password = WifiStation.getPassword();
-            AppSettings.save();
-        }
-    }*/
-
-    wifi_set_event_handler_cb(wifi_cb);
-
-    if (AppSettings.ssid.equals(""))
-    {
-        WifiStation.enable(false);
-    }
     else
     {
-        reconnect(1);
+    	void w5100_netif_init();
+    	w5100_netif_init();
+    }
+
+    // This will work both for wired and wireless
+    wifi_set_event_handler_cb(network_cb);
+
+    if (!AppSettings.wired)
+    {
+        if (AppSettings.ssid.equals(""))
+        {
+            WifiStation.enable(false);
+        }
+        else
+        {
+            reconnect(1);
+        }
     }
 
     otaEnable();    
 }
 
-void WifiClass::softApEnable()
+void NetworkClass::softApEnable()
 {
     char id[16];
 
@@ -102,7 +93,7 @@ void WifiClass::softApEnable()
     WifiAccessPoint.enable(true);
 }
 
-void WifiClass::softApDisable()
+void NetworkClass::softApDisable()
 {
     if (AppSettings.apMode == apModeAlwaysOn ||
         AppSettings.apMode == apModeWhenDisconnected && !connected)
@@ -114,17 +105,24 @@ void WifiClass::softApDisable()
     WifiAccessPoint.enable(false);
 }
 
-void WifiClass::handleEvent(System_Event_t *e)
+void NetworkClass::handleEvent(System_Event_t *e)
 {
     int event = e->event;
 
     if (event == EVENT_STAMODE_GOT_IP)
     {
-	Debug.printf("Wifi client got IP\n");
+	Debug.printf("Got IP\n");
         if (!haveIp && changeDlg)
+        {
             changeDlg(true);
+
+            // Disable SoftAP.
+            // This function will check whether the AP can be disabled.
+            softApDisable();
+        }
         haveIp = true;
 
+        // TODO make this work for wired!
         if (!AppSettings.portalUrl.equals(""))
         {
             String mac;
@@ -146,7 +144,7 @@ void WifiClass::handleEvent(System_Event_t *e)
             url.replace("{mac}", mac);
 
             portalLogin.downloadString(
-                url, HttpClientCompletedDelegate(&WifiClass::portalLoginHandler, this));
+                url, HttpClientCompletedDelegate(&NetworkClass::portalLoginHandler, this));
         }
 
         ntpClient.requestTime();
@@ -156,12 +154,7 @@ void WifiClass::handleEvent(System_Event_t *e)
 	if (!connected)
         {
             connected = true;
-
             Debug.printf("Wifi client got connected\n");
-
-            // Disable SoftAP.
-            // This function will check whether the AP can be disabled.
-            softApDisable();
         }
         connected = true;
     }
@@ -203,14 +196,17 @@ void WifiClass::handleEvent(System_Event_t *e)
     }
 }
 
-void WifiClass::portalLoginHandler(HttpClient& client, bool successful)
+void NetworkClass::portalLoginHandler(HttpClient& client, bool successful)
 {
     String response = client.getResponseString();
     Debug.println("Portal server response: '" + response + "'");
 }
 
-void WifiClass::connect()
+void NetworkClass::connect()
 {
+    if (AppSettings.wired)
+        return;
+
     Debug.println("Connecting...");
 
     if (!WifiStation.getSSID().equals(AppSettings.ssid) ||
@@ -234,12 +230,15 @@ void WifiClass::connect()
     wifi_station_set_reconnect_policy(true);
 }
 
-void WifiClass::reconnect(int delayMs)
+void NetworkClass::reconnect(int delayMs)
 {
-    reconnectTimer.initializeMs(delayMs, TimerDelegate(&WifiClass::connect, this)).startOnce();
+    if (AppSettings.wired)
+        return;
+
+    reconnectTimer.initializeMs(delayMs, TimerDelegate(&NetworkClass::connect, this)).startOnce();
 }
 
-void WifiClass::ntpTimeResultHandler(NtpClient& client, time_t ntpTime)
+void NetworkClass::ntpTimeResultHandler(NtpClient& client, time_t ntpTime)
 {
     SystemClock.setTime(ntpTime, eTZ_UTC);
     Debug.print("Time after NTP sync: ");
@@ -247,4 +246,37 @@ void WifiClass::ntpTimeResultHandler(NtpClient& client, time_t ntpTime)
     Clock.setTime(ntpTime);
 }
 
-WifiClass Wifi;
+IPAddress NetworkClass::getClientIP()
+{
+    if (AppSettings.wired)
+    {
+        extern IPAddress w5100_netif_get_ip();
+        return w5100_netif_get_ip();
+    }
+
+    return WifiStation.getIP();
+}
+
+IPAddress NetworkClass::getClientMask()
+{
+    if (AppSettings.wired)
+    {
+        extern IPAddress w5100_netif_get_netmask();
+        return w5100_netif_get_netmask();
+    }
+
+    return WifiStation.getNetworkMask();
+}
+
+IPAddress NetworkClass::getClientGW()
+{
+    if (AppSettings.wired)
+    {
+        extern IPAddress w5100_netif_get_gateway();
+        return w5100_netif_get_gateway();
+    }
+
+    return WifiStation.getNetworkGateway();
+}
+
+NetworkClass Network;

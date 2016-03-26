@@ -19,6 +19,16 @@ void ApplicationSettingsStorage::load()
         JsonObject& root = jsonBuffer.parseObject(jsonString);
 
         JsonObject& network = root["network"];
+
+#if WIRED_ETHERNET_MODE == WIRED_ETHERNET_NONE
+        wired = false;
+#else
+        if (!network.containsKey("wired"))
+            wired = true;
+        else
+            wired = network["wired"];
+#endif
+
         ssid = (const char *)network["ssid"];
         password = (const char *)network["password"];
         apPassword = (const char *)network["apPassword"];
@@ -76,6 +86,7 @@ void ApplicationSettingsStorage::save()
 
     JsonObject& network = jsonBuffer.createObject();
     root["network"] = network;
+    network["wired"] = wired;
     network["ssid"] = ssid.c_str();
     network["password"] = password.c_str();
     network["apPassword"] = apPassword.c_str();

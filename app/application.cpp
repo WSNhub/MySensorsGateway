@@ -6,7 +6,7 @@
 #include <i2c.h>
 #include <IOExpansion.h>
 #include <RTClock.h>
-#include <Wifi.h>
+#include <Network.h>
 #include <SDCard.h>
 #include <MyGateway.h>
 #include <HTTP.h>
@@ -29,7 +29,7 @@ MyI2C I2C_dev;
 FTPServer ftp;
 TelnetServer telnet;
 static boolean first_time = TRUE;
-int isWifiConnected = FALSE;
+int isNetworkConnected = FALSE;
 int pongNodeId = 22;
 
 char convBuf[MAX_PAYLOAD*2+1];
@@ -118,7 +118,7 @@ void startServers()
 // Will be called when WiFi station was connected to AP
 void wifiCb(bool connected)
 {
-    isWifiConnected = connected;
+    isNetworkConnected = connected;
     if (connected)
     {
         Debug.println("--> I'm CONNECTED");
@@ -209,10 +209,23 @@ void processInfoCommand(String commandLine, CommandOutput* out)
     out->printf("ESP SDK version    : %s\n", system_get_sdk_version());
     out->printf("MySensors version  : %s\n", GW.version());
     out->printf("\r\n");
-    out->printf("Station SSID       : %s\n", AppSettings.ssid.c_str());
-    out->printf("Station DHCP       : %s\n", WifiStation.isEnabledDHCP() ?
+#if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
+    if (!AppSettings.wired)
+    {
+#endif
+        out->printf("Station SSID       : %s\n", AppSettings.ssid.c_str());
+        out->printf("Station DHCP       : %s\n", AppSettings.dhcp ?
                                                  "TRUE" : "FALSE");
-    out->printf("Station IP         : %s\n", WifiStation.getIP().toString().c_str());
+        out->printf("Station IP         : %s\n", Network.getClientIP().toString().c_str());
+#if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
+    }
+    else
+    {
+        out->printf("DHCP               : %s\n", AppSettings.dhcp ? "TRUE" : "FALSE");
+        extern IPAddress w5100_netif_get_ip();
+        out->printf("Wired IP           : %s\n", Network.getClientIP().toString().c_str());
+    }
+#endif
     out->printf("\r\n");
     String apModeStr;
     if (AppSettings.apMode == apModeAlwaysOn)
@@ -223,11 +236,6 @@ void processInfoCommand(String commandLine, CommandOutput* out)
         apModeStr= "whenDisconnected";
     out->printf("Access Point Mode  : %s\n", apModeStr.c_str());
     out->printf("\r\n");
-#if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
-    extern IPAddress w5100_netif_get_ip();
-    out->printf("Wired IP           : %s\n", w5100_netif_get_ip().toString().c_str());
-    out->printf("\r\n");
-#endif
     out->printf("System Time        : ");
     out->printf(SystemClock.getSystemTimeString().c_str());
     out->printf("\r\n");
@@ -525,12 +533,8 @@ void init()
                                                    processPongCommand));
     AppSettings.load();
 
-    #if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
-    void w5100_netif_init();
-    w5100_netif_init();
-    #else
-    Wifi.begin(wifiCb);
-    #endif
+    // Start either wired or wireless networking
+    Network.begin(wifiCb);
 
     // CPU boost
     if (AppSettings.cpuBoost)

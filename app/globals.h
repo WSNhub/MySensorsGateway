@@ -6,7 +6,7 @@
 
 extern const char * build_time;
 extern const char * build_git_sha;
-extern int isWifiConnected;
+extern int isNetworkConnected;
 /* why is type bool not known ?*/
 
 #define PLATFORM_TYPE_GENERIC  1

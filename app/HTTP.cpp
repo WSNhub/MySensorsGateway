@@ -1,7 +1,7 @@
 #include <user_config.h>
 #include <SmingCore.h>
 #include <HTTP.h>
-#include <Wifi.h>
+#include <Network.h>
 #include <SDCard.h>
 #include <MyGateway.h>
 #include <AppSettings.h>
@@ -17,7 +17,7 @@ void processRestartCommandWeb(void);
 Timer softApSetPasswordTimer;
 void apEnable()
 {
-     Wifi.softApEnable();
+     Network.softApEnable();
 }
 
 void onIpConfig(HttpRequest &request, HttpResponse &response)
@@ -27,6 +27,11 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
 
     if (request.getRequestMethod() == RequestMethod::POST)
     {
+        bool connectionTypeChanges =
+        	AppSettings.wired != (request.getPostParameter("wired") == "1");
+
+        AppSettings.wired = request.getPostParameter("wired") == "1";
+
         String oldApPass = AppSettings.apPassword;
         AppSettings.apPassword = request.getPostParameter("apPassword");
         if (!AppSettings.apPassword.equals(oldApPass))
@@ -46,11 +51,21 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
         Debug.printf("Updating IP settings: %d", AppSettings.ip.isNull());
         AppSettings.save();
     
-        Wifi.reconnect(500);
+        Network.reconnect(500);
+
+        if (connectionTypeChanges)
+            processRestartCommandWeb();
     }
 
+#if WIRED_ETHERNET_MODE == WIRED_ETHERNET_NONE
     TemplateFileStream *tmpl = new TemplateFileStream("settings.html");
+#else
+    TemplateFileStream *tmpl = new TemplateFileStream("settings_wired.html");
+#endif
     auto &vars = tmpl->variables();
+
+    vars["wiredon"] = AppSettings.wired ? "checked='checked'" : "";
+    vars["wiredoff"] = AppSettings.wired ? "" : "checked='checked'";
 
     vars["ssid"] = AppSettings.ssid;
     vars["password"] = AppSettings.password;
@@ -59,22 +74,14 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
     vars["portalUrl"] = AppSettings.portalUrl;
     vars["portalData"] = AppSettings.portalData;
 
-    bool dhcp = WifiStation.isEnabledDHCP();
+    bool dhcp = AppSettings.dhcp;
     vars["dhcpon"] = dhcp ? "checked='checked'" : "";
     vars["dhcpoff"] = !dhcp ? "checked='checked'" : "";
 
-    if (!WifiStation.getIP().isNull())
-    {
-        vars["ip"] = WifiStation.getIP().toString();
-        vars["netmask"] = WifiStation.getNetworkMask().toString();
-        vars["gateway"] = WifiStation.getNetworkGateway().toString();
-    }
-    else
-    {
-        vars["ip"] = "0.0.0.0";
-        vars["netmask"] = "255.255.255.255";
-        vars["gateway"] = "0.0.0.0";
-    }
+    vars["ip"] = Network.getClientIP().toString();
+    vars["netmask"] = Network.getClientMask().toString();
+    vars["gateway"] = Network.getClientGW().toString();
+
     response.sendTemplate(tmpl); // will be automatically deleted
 }
 
@@ -85,9 +92,9 @@ void onStatus(HttpRequest &request, HttpResponse &response)
     auto &vars = tmpl->variables();
 
     vars["ssid"] = AppSettings.ssid;
-    vars["wifiStatus"] = isWifiConnected ? "Connected" : "Not connected";
+    vars["wifiStatus"] = isNetworkConnected ? "Connected" : "Not connected";
     
-    bool dhcp = WifiStation.isEnabledDHCP();
+    bool dhcp = AppSettings.dhcp;
     if (dhcp)
     {
       vars["ipOrigin"] = "From DHCP";
@@ -97,9 +104,9 @@ void onStatus(HttpRequest &request, HttpResponse &response)
       vars["ipOrigin"] = "Static";
     }
 
-    if (!WifiStation.getIP().isNull())
+    if (!Network.getClientIP().isNull())
     {
-        vars["ip"] = WifiStation.getIP().toString();
+        vars["ip"] = Network.getClientIP().toString();
     }
     else
     {

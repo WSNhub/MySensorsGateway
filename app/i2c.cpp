@@ -7,6 +7,8 @@
 #include <AppSettings.h>
 #include "i2c.h"
 #include "mqtt.h"
+#include "Network.h"
+#include "AppSettings.h"
 
 #include <MySensors/ATSHA204.h>
 
@@ -24,16 +26,33 @@ void MyI2C::showOLED()
         display.println("MySensors gateway");
 	display.setTextSize(1);
 	display.setCursor(0,9);
-        if (WifiStation.isConnected())
+        if (AppSettings.wired)
         {
-          display.print("AP  :");
-          display.println(WifiStation.getIP().toString());
-        } 
+            if (!Network.getClientIP().isNull())
+            {
+                display.print("IP  :");
+                display.println(Network.getClientIP().toString());
+            } 
+            else
+            {
+                display.setTextColor(BLACK, WHITE); // 'inverted' text
+                display.println("connecting ...");
+                display.setTextColor(WHITE);
+            }
+        }
         else
         {
-	  display.setTextColor(BLACK, WHITE); // 'inverted' text
-          display.println("connecting ...");
-	  display.setTextColor(WHITE);
+            if (WifiStation.isConnected())
+            {
+                display.print("AP  :");
+                display.println(Network.getClientIP().toString());
+            } 
+            else
+            {
+                display.setTextColor(BLACK, WHITE); // 'inverted' text
+                display.println("connecting ...");
+                display.setTextColor(WHITE);
+            }
         }
 	display.setCursor(0,18);
         if (isMqttConfigured())

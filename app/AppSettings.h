@@ -5,10 +5,11 @@
  *      Author: Anakod
  */
 
-#include <SmingCore/SmingCore.h>
-
 #ifndef INCLUDE_APPSETTINGS_H_
 #define INCLUDE_APPSETTINGS_H_
+
+#include <SmingCore/SmingCore.h>
+#include "globals.h"
 
 #define APP_SETTINGS_FILE ".settings.conf" // leading point for security reasons :)
 
@@ -22,6 +23,11 @@ typedef enum
 class ApplicationSettingsStorage
 {
   public:
+#if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
+    bool        wired = true;
+#else
+    bool        wired = false;
+#endif
     String      ssid;
     String      password;
     eAppMode    apMode = apModeAlwaysOn;

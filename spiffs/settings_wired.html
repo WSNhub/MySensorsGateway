@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../../favicon.ico">
+
+    <title>Network configuration</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="bootstrap.css" rel="stylesheet">
+    <script src="jquery.js"></script>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+<script>
+    $(document).ready(function () {
+        ToggleReadonly();
+        $('input[name=dhcp]').on('click', function(){
+            ToggleReadonly();
+        })
+        $('input[name=wired]').on('click', function(){
+            ToggleReadonly();
+        })
+    });
+
+    function ToggleReadonly(){
+        if ($('input[name=dhcp]:checked').val() == '1'){
+            $('input[name=ip]').attr('readonly', 'readonly');
+            $('input[name=netmask]').attr('readonly', 'readonly');
+            $('input[name=gateway]').attr('readonly', 'readonly');
+        }
+        else
+        {
+            $('input[name=ip]').removeAttr('readonly');
+            $('input[name=netmask]').removeAttr('readonly');
+            $('input[name=gateway]').removeAttr('readonly');
+        }
+
+        if ($('input[name=wired]:checked').val() == '1'){
+            $('input[name=ssid]').attr('readonly', 'readonly');
+            $('input[name=password]').attr('readonly', 'readonly');
+        }
+        else
+        {
+            $('input[name=ssid]').removeAttr('readonly');
+            $('input[name=password]').removeAttr('readonly');
+        }
+    }
+</script>
+
+<body>
+
+<div class="container">
+    <div class="header">
+        <nav>
+            <ul class="nav nav-pills pull-right">
+                <li role="presentation"><a href="/status">Status</a></li>
+                <li role="presentation" class="active"><a href="/ipconfig">Network Settings</a></li>
+                <li role="presentation"><a href="/mqttconfig">MQTT Settings</a></li>
+                 <li role="presentation"><a href="/sensors.html">Sensors</a></li>
+                <li role="presentation"><a href="/maintenance">Maintenance</a></li>
+            </ul>
+        </nav>
+        <h3 class="text-muted">MySensors gateway</h3>
+    </div>
+
+    <div class="jumbotron">
+        <h1>Network Settings</h1>
+    </div>
+    <div class="row">
+        <div class="col-lg-6 col-md-offset-3">
+            <form method="post" action="">
+                <fieldset>
+                    <legend>Network Connection</legend>
+                    <div class="col-md-offset-2">
+                        <div class="form-group">
+                            <label>Connection type</label>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="radio" value="1" name="wired" {wiredon}> Wired
+                                </label>
+                                <label>
+                                    <input type="radio" value="0" name="wired" {wiredoff}> Wifi
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>SSID</label>
+                            <input class="form-control" style="width: 250px" type="text" name="ssid" value="{ssid}">
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input class="form-control" style="width: 250px" type="password" name="password" value="{password}">
+                        </div>
+                        <div class="form-group">
+                            <label>Use DHCP</label>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="radio" value="1" name="dhcp" {dhcpon}> Yes
+                                </label>
+                                <label>
+                                    <input type="radio" value="0" name="dhcp" {dhcpoff}> No
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>IP Address</label>
+                            <input class="form-control" style="width: 250px" type="text" name="ip" value="{ip}">
+                        </div>
+                        <div class="form-group">
+                            <label>Network Mask</label>
+                            <input class="form-control" style="width: 250px" type="text" name="netmask" value="{netmask}">
+                        </div>
+                        <div class="form-group">
+                            <label>Gateway</label>
+                            <input class="form-control" style="width: 250px" type="text" name="gateway" value="{gateway}">
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend>Wifi Access Point</legend>
+                    <div class="col-md-offset-2">
+                        <div class="form-group">
+                            <label>Password (min 8 characters; also used for HTTP auth)</label>
+                            <input class="form-control" style="width: 250px" type="password" name="apPassword" value="{apPassword}">
+                        </div>
+                    </div>
+                </fieldset>
+               <fieldset>
+                    <legend>Portal login</legend>
+                    <div class="col-md-offset-2">
+                        <div class="form-group">
+                            <label>URL</label>
+                            <input class="form-control" style="width: 500px" type="text" name="portalUrl" value="{portalUrl}">
+                        </div>
+                        <div class="form-group">
+                            <label>Data</label>
+                            <input class="form-control" style="width: 500px" type="text" name="portalData" value="{portalData}">
+                        </div>
+                    </div>
+                </fieldset>
+                <div class="col-md-offset-3">
+                    <input type="submit" class="btn btn-success">
+                </div>
+            </form>
+        </div>
+    </div>
+    <footer class="footer">
+        <!--<p>&copy; Company 2014</p>-->
+    </footer>
+
+</div> <!-- /container -->
+</body>
+</html>

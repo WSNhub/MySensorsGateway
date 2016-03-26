@@ -1,6 +1,7 @@
 #include <user_config.h>
 #include <SmingCore/SmingCore.h>
 #include <openHabMqttController.h>
+#include <AppSettings.h>
 
 #if CONTROLLER_TYPE == CONTROLLER_TYPE_OPENHAB
 OpenHabMqttController controller;
@@ -31,7 +32,7 @@ void OpenHabMqttController::registerCommandHandlers()
 
 void OpenHabMqttController::checkConnection()
 {
-    if (WifiStation.isConnected())
+    if (AppSettings.wired || WifiStation.isConnected())
         checkMqttClient();
 }
 
