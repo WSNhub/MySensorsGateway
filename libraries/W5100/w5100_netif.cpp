@@ -35,8 +35,7 @@ void ethTimerHandler()
 
 void w5100_netif_init()
 {
-  uint8_t mac_address[6] = {0, 0xBA, 0xD0, 0xCA, 0xFE, 1};
-  memcpy(w5100_netif_if.address, mac_address, 6);
+  wifi_get_macaddr(STATION_IF, w5100_netif_if.address);
 
   // Add our netif to LWIP (netif_add calls our driver initialization function)
   if (netif_add(&w5100_netif, &myip_addr, &netmask, &gw_addr, &w5100_netif_if,
