@@ -31,9 +31,9 @@ void W5100Class::init(void)
   //delay(300);
 
 #if defined(ARDUINO_ARCH_AVR)
-  Serial.println("SPIBEGIN");
+  //Serial.println("SPIBEGIN");
   SPI.begin();
-  Serial.println("INITSS");
+  //Serial.println("INITSS");
   initSS();
 #else
   SPI.begin(SPI_CS);
@@ -41,17 +41,17 @@ void W5100Class::init(void)
   SPI.setClockDivider(SPI_CS, 21);
   SPI.setDataMode(SPI_CS, SPI_MODE0);
 #endif
-  Serial.println("SETTINGS");
+  //Serial.println("SETTINGS");
   SPI.beginTransaction(SPI_ETHERNET_SETTINGS);
-  Serial.println("SETTINGS 1");
+  //Serial.println("SETTINGS 1");
   writeMR(1<<RST);
-  Serial.println("SETTINGS 2");
+  //Serial.println("SETTINGS 2");
   writeTMSR(0x55);
-  Serial.println("SETTINGS 3");
+  //Serial.println("SETTINGS 3");
   writeRMSR(0x55);
-  Serial.println("SETTINGS 4");
+  //Serial.println("SETTINGS 4");
   SPI.endTransaction();
-  Serial.println("SETTINGS 5");
+  //Serial.println("SETTINGS 5");
 
   for (int i=0; i<MAX_SOCK_NUM; i++) {
     SBASE[i] = TXBUF_BASE + SSIZE * i;
