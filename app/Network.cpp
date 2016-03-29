@@ -41,11 +41,6 @@ void NetworkClass::begin(NetworkStateChangeDelegate dlg)
                               AppSettings.gateway);
         }
     }
-    else
-    {
-    	void w5100_netif_init();
-    	w5100_netif_init();
-    }
 
     // This will work both for wired and wireless
     wifi_set_event_handler_cb(network_cb);
@@ -60,6 +55,12 @@ void NetworkClass::begin(NetworkStateChangeDelegate dlg)
         {
             reconnect(1);
         }
+    }
+    else
+    {
+    	void w5100_netif_init();
+    	w5100_netif_init();
+        ntpClient.requestTime();
     }
 
     otaEnable();    
@@ -278,6 +279,15 @@ IPAddress NetworkClass::getClientGW()
     }
 
     return WifiStation.getNetworkGateway();
+}
+
+bool NetworkClass::isConnected()
+{
+    if (!AppSettings.wired)
+        return WifiStation.isConnected();
+    if (getClientIP().isNull())
+        return false;
+    return true;
 }
 
 NetworkClass Network;

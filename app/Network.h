@@ -29,7 +29,8 @@ class NetworkClass
     IPAddress getClientIP();
     IPAddress getClientMask();
     IPAddress getClientGW();
-    
+    bool isConnected();
+
   private:
     void portalLoginHandler(HttpClient& client, bool successful);
     void connect();
