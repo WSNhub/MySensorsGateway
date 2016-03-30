@@ -82,7 +82,7 @@ ifeq ('${PLATFORM_TYPE}', 'SDSHIELD')
   USER_CFLAGS += "-DETHERNET_SPI_SS_PIN=16"
 endif
 
-## WeMos D1 board wit W5100 ethernet shield and data logger shield
+## WeMos D1 board with W5100 ethernet shield and data logger shield
 ## The W5100 ethernet shield has a micro SD slot BUT it trashed the SPI
 ## bus so it can not be used. By adding the data logger shield an SD slot
 ## is available and it provides an RTC also. Not the best RTC ever but it
@@ -95,6 +95,18 @@ ifeq ('${PLATFORM_TYPE}', 'WEMOS_WITH_SHIELDS')
   USER_CFLAGS += "-DI2C_SCL_PIN=5"
   USER_CFLAGS += "-DRTC_TYPE=RTC_TYPE_1307"
   USER_CFLAGS += "-DETHERNET_SPI_SS_PIN=15"
+endif
+
+## WeMos D1 board with custom W5500 ethernet shield (+SD +NRF).
+ifeq ('${PLATFORM_TYPE}', 'WEMOS_WITH_W5500_SHIELD')
+  USER_CFLAGS += "-DRADIO_CE_PIN=2"
+  USER_CFLAGS += "-DRADIO_SPI_SS_PIN=15"
+  USER_CFLAGS += "-DSD_SPI_SS_PIN=0"
+  USER_CFLAGS += "-DI2C_SDA_PIN=4"
+  USER_CFLAGS += "-DI2C_SCL_PIN=5"
+  USER_CFLAGS += "-DRTC_TYPE=RTC_TYPE_1307"
+  USER_CFLAGS += "-DETHERNET_SPI_SS_PIN=16"
+  WIRED_ETHERNET_MODE = WIRED_ETHERNET_W5500
 endif
 
 
