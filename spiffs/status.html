@@ -75,28 +75,28 @@
              <tbody>
                <tr>
                  <td>Wifi Network</td>
-                 <td>{ssid}</td>
-                 <td>{wifiStatus}</td>
+                 <td id="ssid">{ssid}</td>
+                 <td id="wifiStatus">{wifiStatus}</td>
                </tr>
                <tr>
                  <td>Gateway</td>
-                 <td>{ip}</td>
-                 <td>{ipOrigin}</td>
+                 <td id="gwIp">{ip}</td>
+                 <td id="gwIpOrigin">{ipOrigin}</td>
                </tr>
                <tr>
                  <td>MQTT Server</td>
-                 <td>{mqttIp}</td>
-                 <td>{mqttStatus}</td>
+                 <td id="mqttIp">{mqttIp}</td>
+                 <td id="mqttStatus">{mqttStatus}</td>
                </tr>
                <tr>
                  <td>NRF radio</td>
-                 <td>{baseAddress}</td>
-                 <td>{radioStatus}</td>
+                 <td id="baseAddress">{baseAddress}</td>
+                 <td id="radioStatus">{radioStatus}</td>
                </tr>
                <tr>
                  <td>Detected sensors</td>
-                 <td>nodes : {detNodes}</td>
-                 <td>Sensors : {detSensors}</td>
+                 <td id="detNodes">nodes : {detNodes}</td>
+                 <td id="detSensors">Sensors : {detSensors}</td>
                </tr>
              </tbody>
            </table>
@@ -115,13 +115,13 @@
              <tbody>
                <tr>
                  <td>MQTT packets</td>
-                 <td>{mqttRx}</td>
-                 <td>{mqttTx}</td>
+                 <td id="mqttRx"">{mqttRx}</td>
+                 <td id="mqttTx">{mqttTx}</td>
                </tr>
                <tr>
-                 <td>NRF packets</td>
-                 <td>{nrfRx}</td>
-                 <td>{nrfTx}</td>
+                 <td>RF packets</td>
+                 <td id="rfRx">{nrfRx}</td>
+                 <td id="rfTx">{nrfTx}</td>
                </tr>
              </tbody>
            </table>
@@ -133,23 +133,23 @@
              <tbody>
                <tr>
                  <td>System Chip ID</td>
-                 <td>{systemChipId}</td>
+                 <td id="systemChipId">{systemChipId}</td>
                </tr>
                <tr>
                  <td>Version (git)</td>
-                 <td>{systemVersion}</td>
+                 <td id="systemVersion">{systemVersion}</td>
                </tr>
                <tr>
                  <td>Build time</td>
-                 <td>{systemBuild}</td>
+                 <td id="systemBuild">{systemBuild}</td>
                </tr>
                <tr>
                  <td>Free heap</td>
-                 <td>{systemFreeHeap}</td>
+                 <td id="systemFreeHeap">{systemFreeHeap}</td>
                </tr>
                <tr>
                  <td>Uptime</td>
-                 <td>{systemUptime}</td>
+                 <td id="systemStartTime">{systemUptime}</td>
                </tr>
              </tbody>
            </table>
