@@ -5,6 +5,7 @@
 #include <AppSettings.h>
 #include "Network.h"
 #include "RTClock.h"
+#include "MyStatus.h"
 
 void
 network_cb ( System_Event_t *e )
@@ -246,6 +247,7 @@ void NetworkClass::ntpTimeResultHandler(NtpClient& client, time_t ntpTime)
     Debug.print("Time after NTP sync: ");
     Debug.println(SystemClock.getSystemTimeString());
     Clock.setTime(ntpTime);
+    getStatusObj().setStartupTime(SystemClock.getSystemTimeString()); //TODO need localTime
 }
 
 IPAddress NetworkClass::getClientIP()

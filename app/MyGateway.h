@@ -30,7 +30,6 @@
 #include "MySensors/MyTransport.h"
 #include "MySensors/MyTransportNRF24.h"
 #include "MySensors/MyHwESP8266.h"
-#include "MyStatus.h"
 
 #define EEPROM_LATEST_NODE_ADDRESS ((uint8_t)EEPROM_LOCAL_CONFIG_ADDRESS)
 #define GW_FIRST_SENSORID 20      // If you want manually configured nodes below
@@ -75,8 +74,6 @@ class MyGateway
     void onWsGetSensors(WebSocket& socket, const String& message);
     void onWsSetActuator(WebSocket& socket, const String& message);
     void onWsRemoveSensor(WebSocket& socket, const String& message);
-
-    MyStatus& getStatusObj();
     
   protected:
     void process();
@@ -100,7 +97,6 @@ class MyGateway
     uint8_t numDetectedNodes;
     uint16_t numDetectedSensors;
     MyMessage msg;
-    MyStatus  status;
 };
 
 extern MyGateway GW;

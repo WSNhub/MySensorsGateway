@@ -6,6 +6,7 @@
 #include "MySensors/MySigningAtsha204Soft.h"
 #include "Rule.h"
 #include "HTTP.h"
+#include "MyStatus.h"
 
 //#define RADIO_CE_PIN 2
 //#define RADIO_SPI_SS_PIN 15
@@ -94,7 +95,7 @@ void MyGateway::incomingMessage(const MyMessage &message)
         if (msg.sender != 0 && msg.sender != 255 && !nodeIds[msg.sender])
         {
             numDetectedNodes++;
-            status.updateDetectedSensors(1,0);
+            getStatusObj().updateDetectedSensors(1,0);
             Debug.printf("Discovered new node %d\n", msg.sender);
             nodeIds[(uint8_t)msg.sender] = true;
         }
@@ -184,7 +185,7 @@ void MyGateway::incomingMessage(const MyMessage &message)
                             HTTP.notifyWsClients(getSensorJson(idx));
                         }                            
                         numDetectedSensors++;
-                        status.updateDetectedSensors(0,1);
+                        getStatusObj().updateDetectedSensors(0,1);
 
                         Debug.printf("Adding sensor %d (%d/%d) type %d value %s\n",
                                      idx, mySensors[idx].node, mySensors[idx].sensor,
@@ -460,7 +461,7 @@ error:
 
 void MyGateway::onWsGetStatus (WebSocket& socket, const String& message)
 {
-      status.onWsGetStatus (socket, message);
+      getStatusObj().onWsGetStatus (socket, message);
 }
 
 void MyGateway::registerHttpHandlers(HttpServer &server)
@@ -704,11 +705,6 @@ uint16_t MyGateway::getNumDetectedSensors()
 {
     return (numDetectedSensors);
 }
-MyStatus& MyGateway::getStatusObj()
-{
-    return (status);
-}
-
 
 int getRadioStatus ()
 {

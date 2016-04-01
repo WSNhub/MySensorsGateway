@@ -4,11 +4,19 @@
 #include "MyStatus.h"
 #include "HTTP.h"
 
+extern MyStatus myStatus;
 
 MyStatus::MyStatus()
 {
+    started = 0;
+    freeHeapSize = 0;
     numDetectedNodes = 0;
     numDetectedSensors = 0;
+}
+
+void MyStatus::begin()
+{
+  started = 1;
 }
 
 String MyStatus::makeJsonKV(const String& key, const String& value)
@@ -29,6 +37,17 @@ String MyStatus::makeJsonEnd()
     return str;
 }
 
+void MyStatus::notifyUpdate(const String& statusStr)
+{
+  if (started)
+  {
+    String str = makeJsonStart();
+    str += statusStr;
+    str += makeJsonEnd();
+    HTTP.notifyWsClients(str);
+  }
+}
+
 void MyStatus::onWsGetStatus (WebSocket& socket, const String& message)
 {
     String statusStr = makeJsonStart();
@@ -37,6 +56,8 @@ void MyStatus::onWsGetStatus (WebSocket& socket, const String& message)
     statusStr += String(",");
     statusStr += makeJsonKV ("detSensors", String(numDetectedSensors));
 
+    statusStr += String(",");
+    statusStr += makeJsonKV ("systemFreeHeap", String(system_get_free_heap_size()));
     statusStr += String(",");
     statusStr += makeJsonKV ("systemStartTime", systemStartTime);
     statusStr += makeJsonEnd();
@@ -64,11 +85,23 @@ void MyStatus::updateDetectedSensors (int nodeUpdate, int sensorUpdate)
     numDetectedNodes += nodeUpdate;
     numDetectedSensors += sensorUpdate;
     
-    String statusStr = makeJsonStart();
-    statusStr += makeJsonKV ("detNodes", String(numDetectedNodes));
+    String statusStr = makeJsonKV ("detNodes", String(numDetectedNodes));
     statusStr += String(",");
     statusStr += makeJsonKV ("detSensors", String(numDetectedSensors));
-    statusStr += makeJsonEnd();
-    HTTP.notifyWsClients(statusStr);
+    notifyUpdate (statusStr);
 }
 
+void MyStatus::updateFreeHeapSize (uint32 freeHeap)
+{
+    if (freeHeapSize != freeHeap)
+    {
+      freeHeapSize = freeHeap;
+      //String statusStr = makeJsonKV ("systemFreeHeap", String(freeHeapSize));
+      //notifyUpdate (statusStr);
+    }
+}
+
+MyStatus& getStatusObj()
+{
+    return (myStatus);
+}
