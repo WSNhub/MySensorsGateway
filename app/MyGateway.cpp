@@ -94,6 +94,7 @@ void MyGateway::incomingMessage(const MyMessage &message)
         if (msg.sender != 0 && msg.sender != 255 && !nodeIds[msg.sender])
         {
             numDetectedNodes++;
+            status.updateDetectedSensors(1,0);
             Debug.printf("Discovered new node %d\n", msg.sender);
             nodeIds[(uint8_t)msg.sender] = true;
         }
@@ -183,6 +184,8 @@ void MyGateway::incomingMessage(const MyMessage &message)
                             HTTP.notifyWsClients(getSensorJson(idx));
                         }                            
                         numDetectedSensors++;
+                        status.updateDetectedSensors(0,1);
+
                         Debug.printf("Adding sensor %d (%d/%d) type %d value %s\n",
                                      idx, mySensors[idx].node, mySensors[idx].sensor,
                                      mySensors[idx].type, mySensors[idx].value.c_str());
@@ -455,6 +458,11 @@ error:
     response.sendJsonObject(stream);
 }
 
+void MyGateway::onWsGetStatus (WebSocket& socket, const String& message)
+{
+      status.onWsGetStatus (socket, message);
+}
+
 void MyGateway::registerHttpHandlers(HttpServer &server)
 {
     server.addPath("/ajax/getSensors", HttpPathDelegate(&MyGateway::onGetSensors, this));
@@ -463,6 +471,7 @@ void MyGateway::registerHttpHandlers(HttpServer &server)
     HTTP.addWsCommand("getSensors", WebSocketMessageDelegate(&MyGateway::onWsGetSensors, this));
     HTTP.addWsCommand("setActuator", WebSocketMessageDelegate(&MyGateway::onWsSetActuator, this));
     HTTP.addWsCommand("removeSensor", WebSocketMessageDelegate(&MyGateway::onWsRemoveSensor, this));
+    HTTP.addWsCommand("getStatus", WebSocketMessageDelegate(&MyGateway::onWsGetStatus, this));
 }
 
 String MyGateway::getSensorTypeString(int type)
@@ -695,6 +704,11 @@ uint16_t MyGateway::getNumDetectedSensors()
 {
     return (numDetectedSensors);
 }
+MyStatus& MyGateway::getStatusObj()
+{
+    return (status);
+}
+
 
 int getRadioStatus ()
 {
