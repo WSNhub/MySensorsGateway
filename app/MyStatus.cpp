@@ -2,6 +2,7 @@
 #include <user_config.h>
 #include <SmingCore.h>
 #include "MyStatus.h"
+#include "Network.h"
 #include "HTTP.h"
 
 extern MyStatus myStatus;
@@ -48,10 +49,44 @@ void MyStatus::notifyUpdate(const String& statusStr)
   }
 }
 
+void MyStatus::notifyKeyValue(const String& key, const String& value)
+{
+  if (started)
+  {
+    String str = makeJsonStart();
+    str += makeJsonKV (key, value);
+    str += makeJsonEnd();
+    HTTP.notifyWsClients(str);
+  }
+}
+
 void MyStatus::onWsGetStatus (WebSocket& socket, const String& message)
 {
-    String statusStr = makeJsonStart();
+    bool dhcp = AppSettings.dhcp;
 
+    notifyKeyValue ("ssid", AppSettings.ssid);
+    notifyKeyValue ("wifiStatus", isNetworkConnected ? "Connected" : "Not connected");
+    
+    if (!Network.getClientIP().isNull())
+    {
+        notifyKeyValue ("gwIp", Network.getClientIP().toString());
+        if (dhcp)
+        {
+          notifyKeyValue ("gwIpStatus", "From DHCP");
+        }
+        else
+        {
+          notifyKeyValue ("gwIpStatus", "Static");
+        }
+    }
+    else
+    {
+        notifyKeyValue ("gwIp", "0.0.0.0");
+        notifyKeyValue ("gwIpStatus", "not configured");
+    }
+
+
+    String statusStr = makeJsonStart();
     statusStr += makeJsonKV ("detNodes", String(numDetectedNodes));
     statusStr += String(",");
     statusStr += makeJsonKV ("detSensors", String(numDetectedSensors));
@@ -69,6 +104,7 @@ void MyStatus::setStartupTime (const String& timeStr)
     if (systemStartTime.equals(""))
     {
       systemStartTime = timeStr;
+      notifyKeyValue ("systemStartTime", timeStr);
     }
 }
 
@@ -96,8 +132,7 @@ void MyStatus::updateFreeHeapSize (uint32 freeHeap)
     if (freeHeapSize != freeHeap)
     {
       freeHeapSize = freeHeap;
-      //String statusStr = makeJsonKV ("systemFreeHeap", String(freeHeapSize));
-      //notifyUpdate (statusStr);
+      notifyKeyValue ("systemFreeHeap", String(freeHeapSize));
     }
 }
 

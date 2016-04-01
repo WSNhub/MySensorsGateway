@@ -28,6 +28,7 @@ class MyStatus
     String makeJsonStart();
     String makeJsonEnd();
     void notifyUpdate(const String& statusStr);
+    void notifyKeyValue(const String& key, const String& value);
 
   private:
     int started;
