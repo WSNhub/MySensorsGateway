@@ -204,10 +204,10 @@ void MyStatus::updateMqttPackets (int rx, int tx)
 {
     //numMqttPktRx += rx;
     //numMqttPktTx += tx;
-    //if (! updateTimer.isStarted())
-    //{
-    //  updateTimer.startOnce();
-    //}
+    if (! updateTimer.isStarted())
+    {
+      updateTimer.startOnce();
+    }
 }
 
 

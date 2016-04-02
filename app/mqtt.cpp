@@ -26,7 +26,7 @@ void ICACHE_FLASH_ATTR mqttPublishMessage(String topic, String message)
 
     mqtt->publish(AppSettings.mqttSensorPfx + String("/") + topic, message);
     mqttPktTx++;
-    //getStatusObj().updateMqttPackets (0, 1);
+    getStatusObj().updateMqttPackets (0, 1);
 }
 
 void ICACHE_FLASH_ATTR mqttPublishVersion()
@@ -34,7 +34,7 @@ void ICACHE_FLASH_ATTR mqttPublishVersion()
     mqtt->publish(String("/") + clientId + String("/version"),
                   "MySensors gateway");
     mqttPktTx++;
-    //getStatusObj().updateMqttPackets (0, 1);
+    getStatusObj().updateMqttPackets (0, 1);
 }
 
 // Callback for messages, arrived from MQTT server
@@ -72,7 +72,7 @@ void ICACHE_FLASH_ATTR onMessageReceived(String topic, String message)
     if (topic.startsWith(AppSettings.mqttControllerPfx + "/"))
     {
         mqttPktRx++;
-        //getStatusObj().updateMqttPackets (1, 0);
+        getStatusObj().updateMqttPackets (1, 0);
 
         String node   = getValue(topic, '/', 1);
         String sensor = getValue(topic, '/', 2);
