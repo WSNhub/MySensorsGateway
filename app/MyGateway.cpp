@@ -132,6 +132,7 @@ void MyGateway::incomingMessage(const MyMessage &message)
             bool newSensor = true;
 
             rfPacketsRx++;
+            getStatusObj().updateRfPackets (1, 0);
             for (int idx = 0; idx < MAX_MY_SENSORS; idx++)
             {
                 if (mySensors[idx].node == message.sender &&
@@ -376,6 +377,7 @@ void MyGateway::onWsSetActuator(WebSocket& socket, const String& message)
             GW.sendRoute(GW.build(myMsg, node, sensor,
                                   C_SET, 2/* mySensors[idx].type */, 0));
             rfPacketsTx++;
+            getStatusObj().updateRfPackets (0, 1);
             return;
         }
     }
@@ -689,6 +691,7 @@ void MyGateway::setSensorValue(String object, String value)
                           mySensors[id-1].sensor, C_SET,
                           2 /*mySensors[id-1].type*/, 0));
     rfPacketsTx++;
+    getStatusObj().updateRfPackets (0, 1);
 }
 
 uint64_t MyGateway::getBaseAddress()

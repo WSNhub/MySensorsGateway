@@ -15,11 +15,17 @@ MyStatus::MyStatus()
     freeHeapSize = 0;
     numDetectedNodes = 0;
     numDetectedSensors = 0;
+    numRfPktRx = 0;
+    numRfPktTx = 0;
+    //numMqttPktRx = 0;
+    //numMqttPktTx = 0;
 }
 
 void MyStatus::begin()
 {
   started = 1;
+	updateTimer.initializeMs(2000,
+			TimerDelegate(&MyStatus::notifyCounters, this));
 }
 
 String MyStatus::makeJsonKV(const String& key, const String& value)
@@ -173,6 +179,37 @@ void MyStatus::updateDetectedSensors (int nodeUpdate, int sensorUpdate)
     statusStr += makeJsonKV ("detSensors", String(numDetectedSensors));
     notifyUpdate (statusStr);
 }
+
+void MyStatus::notifyCounters()
+{
+    String statusStr = makeJsonKV ("rfRx", String(numRfPktRx)); 
+    statusStr += String(",");
+    statusStr += makeJsonKV ("rfTx", String(rfPacketsTx)); //numRfPktTx
+    notifyUpdate (statusStr);
+    notifyKeyValue ("mqttRx", String(mqttPktRx)); // numMqttPktRx
+    notifyKeyValue ("mqttTx", String(mqttPktTx)); // numMqttPktTx
+}
+
+void MyStatus::updateRfPackets (int rx, int tx)
+{
+    numRfPktRx += rx;
+    numRfPktTx += tx;
+    if (! updateTimer.isStarted())
+    {
+      updateTimer.startOnce();
+    }
+}
+
+void MyStatus::updateMqttPackets (int rx, int tx)
+{
+    //numMqttPktRx += rx;
+    //numMqttPktTx += tx;
+    //if (! updateTimer.isStarted())
+    //{
+    //  updateTimer.startOnce();
+    //}
+}
+
 
 void MyStatus::updateFreeHeapSize (uint32 freeHeap)
 {

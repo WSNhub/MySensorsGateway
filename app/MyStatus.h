@@ -22,6 +22,10 @@ class MyStatus
     void updateMqttConnection (const String& ipAddrStr, const String& status);
     void updateDetectedSensors (int nodeUpdate, int sensorUpdate);
     void updateFreeHeapSize (uint32 freeHeap);
+    void updateRfPackets (int rx, int tx);
+    void updateMqttPackets (int rx, int tx);
+
+    void notifyCounters();
     
   protected:
     String makeJsonKV(const String& key, const String& value);
@@ -36,7 +40,14 @@ class MyStatus
     
     int numDetectedNodes;
     int numDetectedSensors;
+    uint32 numRfPktRx;
+    uint32 numRfPktTx;
+    //uint32 numMqttPktRx;
+    //uint32 numMqttPktTx;
+    
     uint32 freeHeapSize;
+    
+	  Timer updateTimer;
 };
 
 MyStatus& getStatusObj();
