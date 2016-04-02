@@ -4,6 +4,7 @@
 #include <AppSettings.h>
 #include <mqtt.h>
 #include <MyGateway.h>
+#include "MyStatus.h"
 #include <HTTP.h>
 
 // Forward declarations
@@ -107,10 +108,19 @@ void ICACHE_FLASH_ATTR startMqttClient()
     AppSettings.load();
     if (!AppSettings.mqttServer.equals(String("")) && AppSettings.mqttPort != 0)
     {
+        getStatusObj().updateMqttConnection (AppSettings.mqttServer, "Connecting...");
         sprintf(clientId, "ESP_%08X", system_get_chip_id());
         mqtt = new MqttClient(AppSettings.mqttServer, AppSettings.mqttPort, onMessageReceived);
         MqttIsConnected = mqtt->connect(clientId, AppSettings.mqttUser, AppSettings.mqttPass);
         mqtt->subscribe("#");
+        if (mqtt->getConnectionState() == eTCS_Connected)
+        {
+          getStatusObj().updateMqttConnection (AppSettings.mqttServer, "Connected");
+        }
+        else 
+        {
+          getStatusObj().updateMqttConnection (AppSettings.mqttServer, "Not Connected");
+        }
         mqttPublishVersion();
         MqttConfigured = TRUE;
     }

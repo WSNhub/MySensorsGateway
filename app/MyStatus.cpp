@@ -1,9 +1,11 @@
 #include <AppSettings.h>
 #include <user_config.h>
 #include <SmingCore.h>
+#include "MyGateway.h"
 #include "MyStatus.h"
 #include "Network.h"
 #include "HTTP.h"
+#include <mqtt.h>
 
 extern MyStatus myStatus;
 
@@ -63,6 +65,7 @@ void MyStatus::notifyKeyValue(const String& key, const String& value)
 void MyStatus::onWsGetStatus (WebSocket& socket, const String& message)
 {
     bool dhcp = AppSettings.dhcp;
+    char buf [200];
 
     notifyKeyValue ("ssid", AppSettings.ssid);
     notifyKeyValue ("wifiStatus", isNetworkConnected ? "Connected" : "Not connected");
@@ -85,12 +88,52 @@ void MyStatus::onWsGetStatus (WebSocket& socket, const String& message)
         notifyKeyValue ("gwIpStatus", "not configured");
     }
 
+    if (AppSettings.mqttServer != "")
+    {
+        notifyKeyValue ("mqttIp", AppSettings.mqttServer);
+        notifyKeyValue ("mqttStatus", isMqttConnected() ? "Connected":"Not connected");
+    }
+    else
+    {
+        notifyKeyValue ("mqttIp", "0.0.0.0");
+        notifyKeyValue ("mqttStatus", "Not configured");
+    }
 
+
+    uint64_t rfBaseAddress = GW.getBaseAddress();
+    uint32_t rfBaseLow = (rfBaseAddress & 0xffffffff);
+    uint8_t  rfBaseHigh = ((rfBaseAddress >> 32) & 0xff);
+    if (AppSettings.useOwnBaseAddress)
+      sprintf (buf, "%02x%08x (private)", rfBaseHigh, rfBaseLow);
+    else
+      sprintf (buf, "%02x%08x (default)", rfBaseHigh, rfBaseLow);
+    notifyKeyValue ("baseAddress", buf);
+    notifyKeyValue ("radioStatus", "?");
+
+    // ---------------
     String statusStr = makeJsonStart();
     statusStr += makeJsonKV ("detNodes", String(numDetectedNodes));
     statusStr += String(",");
     statusStr += makeJsonKV ("detSensors", String(numDetectedSensors));
+    statusStr += String(",");
+    statusStr += makeJsonKV ("rfRx", String(rfPacketsRx)); 
+    statusStr += String(",");
+    statusStr += makeJsonKV ("rfTx", String(rfPacketsTx));
+    statusStr += String(",");
+    statusStr += makeJsonKV ("mqttRx", String(mqttPktRx));
+    statusStr += String(",");
+    statusStr += makeJsonKV ("mqttTx", String(mqttPktTx));
+    statusStr += makeJsonEnd();
+    socket.sendString(statusStr);
 
+    // ---------------
+    sprintf (buf, "%x", system_get_chip_id());
+    statusStr = makeJsonStart();
+    statusStr += makeJsonKV ("systemVersion", build_git_sha);
+    statusStr += String(",");
+    statusStr += makeJsonKV ("systemBuild", build_time);
+    statusStr += String(",");
+    statusStr += makeJsonKV ("systemChipId", buf);
     statusStr += String(",");
     statusStr += makeJsonKV ("systemFreeHeap", String(system_get_free_heap_size()));
     statusStr += String(",");
@@ -110,10 +153,14 @@ void MyStatus::setStartupTime (const String& timeStr)
 
 void MyStatus::updateGWIpConnection (const String& ipAddrStr, const String& status)
 {
+    notifyKeyValue ("gwIp", ipAddrStr);
+    notifyKeyValue ("gwIpStatus", status);
 }
 
 void MyStatus::updateMqttConnection (const String& ipAddrStr, const String& status)
 {
+    notifyKeyValue ("mqttIp", ipAddrStr);
+    notifyKeyValue ("mqttStatus", status);
 }
 
 void MyStatus::updateDetectedSensors (int nodeUpdate, int sensorUpdate)

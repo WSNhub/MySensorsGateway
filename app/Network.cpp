@@ -151,6 +151,7 @@ void NetworkClass::handleEvent(System_Event_t *e)
         }
 
         ntpClient.requestTime();
+        getStatusObj().updateGWIpConnection(getClientIP().toString(), "Connected");
     }
     else if (event == EVENT_STAMODE_CONNECTED)
     {
@@ -193,6 +194,7 @@ void NetworkClass::handleEvent(System_Event_t *e)
         }
 
         connected = false;
+        getStatusObj().updateGWIpConnection("0.0.0.0", "Disconnected");
 
         if (changeDlg)
             changeDlg(false);

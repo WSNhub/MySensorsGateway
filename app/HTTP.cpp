@@ -87,74 +87,7 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
 
 void onStatus(HttpRequest &request, HttpResponse &response)
 {
-    char buf [200];
-    TemplateFileStream *tmpl = new TemplateFileStream("status.html");
-    auto &vars = tmpl->variables();
-
-    vars["ssid"] = AppSettings.ssid;
-    vars["wifiStatus"] = isNetworkConnected ? "Connected" : "Not connected";
-    
-    bool dhcp = AppSettings.dhcp;
-    if (dhcp)
-    {
-      vars["ipOrigin"] = "From DHCP";
-    }
-    else
-    {
-      vars["ipOrigin"] = "Static";
-    }
-
-    if (!Network.getClientIP().isNull())
-    {
-        vars["ip"] = Network.getClientIP().toString();
-    }
-    else
-    {
-        vars["ip"] = "0.0.0.0";
-        vars["ipOrigin"] = "not configured";
-    }
-    if (AppSettings.mqttServer != "")
-    {
-        vars["mqttIp"] = AppSettings.mqttServer;
-        vars["mqttStatus"] = isMqttConnected() ? "Connected":"Not connected";
-    }
-    else
-    {
-        vars["mqttIp"] = "0.0.0.0";
-        vars["mqttStatus"] = "Not configured";
-    }
-    uint64_t rfBaseAddress = GW.getBaseAddress();
-    uint32_t rfBaseLow = (rfBaseAddress & 0xffffffff);
-    uint8_t  rfBaseHigh = ((rfBaseAddress >> 32) & 0xff);
-    if (AppSettings.useOwnBaseAddress)
-      sprintf (buf, "%02x%08x (private)", rfBaseHigh, rfBaseLow);
-    else
-      sprintf (buf, "%02x%08x (default)", rfBaseHigh, rfBaseLow);
-    vars["baseAddress"] = buf;
-    vars["radioStatus"] = getRadioStatus();
-    vars["detNodes"] = GW.getNumDetectedNodes();
-    vars["detSensors"] = GW.getNumDetectedSensors();
-    
-    
-    // --- System info -------------------------------------------------
-    sprintf (buf, "%x", system_get_chip_id());
-    vars["systemVersion"] = build_git_sha;
-    vars["systemBuild"] = build_time;
-    vars["systemFreeHeap"] = system_get_free_heap_size();
-    vars["systemStartup"] = "todo";
-    vars["systemChipId"] = buf;
-    uint32_t curMillis = millis();
-    sprintf(buf, "%d s, %03d ms : ", curMillis/1000, curMillis % 1000);
-    vars["systemUptime"] = buf;
-
-
-    // --- Statistics --------------------------------------------------
-    vars["nrfRx"] = rfPacketsRx; //TODO check counters at MySensor.cpp
-    vars["nrfTx"] = rfPacketsTx;
-    vars["mqttRx"] = mqttPktRx;
-    vars["mqttTx"] = mqttPktTx;
-    
-   response.sendTemplate(tmpl); // will be automatically deleted
+    response.sendFile("status.html");
 }
 
 void onMaintenance(HttpRequest &request, HttpResponse &response)
