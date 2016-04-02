@@ -21,8 +21,9 @@ void NetworkClass::begin(NetworkStateChangeDelegate dlg)
 
     changeDlg = dlg;
 
-    if (AppSettings.apMode == apModeAlwaysOn ||
-        AppSettings.apMode == apModeWhenDisconnected)
+    if (!AppSettings.wired &&
+        (AppSettings.apMode == apModeAlwaysOn ||
+         AppSettings.apMode == apModeWhenDisconnected))
     {
         softApEnable();
     }
@@ -42,11 +43,10 @@ void NetworkClass::begin(NetworkStateChangeDelegate dlg)
         }
     }
 
-    // This will work both for wired and wireless
-    wifi_set_event_handler_cb(network_cb);
-
     if (!AppSettings.wired)
     {
+        wifi_set_event_handler_cb(network_cb);
+
         if (AppSettings.ssid.equals(""))
         {
             WifiStation.enable(false);
@@ -69,6 +69,9 @@ void NetworkClass::begin(NetworkStateChangeDelegate dlg)
 void NetworkClass::softApEnable()
 {
     char id[16];
+
+    if (AppSettings.wired)
+        return;
 
     if (AppSettings.apMode == apModeAlwaysOff ||
         AppSettings.apMode == apModeWhenDisconnected && connected)
@@ -97,8 +100,9 @@ void NetworkClass::softApEnable()
 
 void NetworkClass::softApDisable()
 {
-    if (AppSettings.apMode == apModeAlwaysOn ||
-        AppSettings.apMode == apModeWhenDisconnected && !connected)
+    if (!AppSettings.wired &&
+        (AppSettings.apMode == apModeAlwaysOn ||
+         AppSettings.apMode == apModeWhenDisconnected && !connected))
     {
         Debug.println("Not disabling AP due to config setting");
         return;
@@ -124,7 +128,6 @@ void NetworkClass::handleEvent(System_Event_t *e)
         }
         haveIp = true;
 
-        // TODO make this work for wired!
         if (!AppSettings.portalUrl.equals(""))
         {
             String mac;
