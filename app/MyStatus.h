@@ -43,8 +43,8 @@ class MyStatus
     
     int numDetectedNodes;
     int numDetectedSensors;
-    uint32 numRfPktRx;
-    uint32 numRfPktTx;
+    //uint32 numRfPktRx;
+    //uint32 numRfPktTx;
     //uint32 numMqttPktRx;
     //uint32 numMqttPktTx;
     
