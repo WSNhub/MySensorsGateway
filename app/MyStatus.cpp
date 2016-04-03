@@ -220,6 +220,29 @@ void MyStatus::updateFreeHeapSize (uint32 freeHeap)
     }
 }
 
+void MyStatus::setFirmwareDldStart (int trial)
+{
+    String str("{\"type\": \"firmware\", \"data\" : [");
+    str += String ("{\"key\": \"firmwareSt\",");
+    str += String("\"value\": \"Firmware download started, trial=") + String(trial)+ String("\"}");
+    str += String("]}");
+    HTTP.notifyWsClients(str);
+}
+
+void MyStatus::setFirmwareDldEnd (bool isSuccess)
+{
+    String str("{\"type\": \"firmware\", \"data\" : [");
+    str += String ("{\"key\": \"firmwareSt\",");
+    if (isSuccess)
+      str += String("\"value\": \"Firmware download finished\"}");
+    else
+      str += String("\"value\": \"Firmware download failed !\"}");
+    
+    str += String("]}");
+    HTTP.notifyWsClients(str);
+}
+
+
 MyStatus& getStatusObj()
 {
     return (myStatus);
