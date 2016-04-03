@@ -16,8 +16,8 @@ MyStatus::MyStatus()
     freeHeapSize = 0;
     numDetectedNodes = 0;
     numDetectedSensors = 0;
-    numRfPktRx = 0;
-    numRfPktTx = 0;
+    //numRfPktRx = 0;
+    //numRfPktTx = 0;
     //numMqttPktRx = 0;
     //numMqttPktTx = 0;
 }
@@ -183,7 +183,7 @@ void MyStatus::updateDetectedSensors (int nodeUpdate, int sensorUpdate)
 
 void MyStatus::notifyCounters()
 {
-    String statusStr = makeJsonKV ("rfRx", String(numRfPktRx)); 
+    String statusStr = makeJsonKV ("rfRx", String(rfPacketsRx)); // numRfPktRx
     statusStr += String(",");
     statusStr += makeJsonKV ("rfTx", String(rfPacketsTx)); //numRfPktTx
     notifyUpdate (statusStr);
@@ -193,8 +193,8 @@ void MyStatus::notifyCounters()
 
 void MyStatus::updateRfPackets (int rx, int tx)
 {
-    numRfPktRx += rx;
-    numRfPktTx += tx;
+    //numRfPktRx += rx;
+    //numRfPktTx += tx;
     if (! updateTimer.isStarted())
     {
       updateTimer.startOnce();

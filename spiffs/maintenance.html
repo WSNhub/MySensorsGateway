@@ -31,6 +31,7 @@
                 ws.onopen = function()
                 {
                     // Web Socket is connected
+                    ws.send("getDldStatus");
                 };
 				
                 ws.onmessage = function(evt) 
