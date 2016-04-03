@@ -22,34 +22,59 @@
     <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
 </head>
-<script>
-    $(document).ready(function () {
-        ToggleReadonly($('input[checked=checked]').val());
-        $('input[name=dhcp]').on('click', function(){
-            $('input[name=dhcp]').each(function(e){
-                $(e).removeAttr('checked');
-            })
-            $(this).attr('checked', 'checked');
-            ToggleReadonly($(this).val());
-        })
-    });
 
-    function ToggleReadonly(value){
-        /*if(value == '1'){
-            $('.form-control').each(function(){
-                $(this).attr('readonly', 'readonly');
-            })
-        }
-        else*/
+
+    <script>
+
+        function StartWebSocket()
         {
-            $('.form-control').each(function(){
-                $(this).removeAttr('readonly');
-            })
-        }
-    }
-</script>
+            if ("WebSocket" in window)
+            {
+                // Let us open a web socket
+                ws = new WebSocket("ws://" + window.location.host);
+				
+                ws.onopen = function()
+                {
+                    // Web Socket is connected, send data using send()
+                    ws.send("getStatus");
+                };
+				
+                ws.onmessage = function(evt) 
+                { 
+                    var received_msg = JSON.parse(evt.data);
 
-<body>
+                    if (received_msg.type == "status")
+                    {
+                      
+                        for (i=0; i<received_msg.data.length; i++)
+                        {
+                          var statusData = received_msg.data[i];
+                          document.getElementById(statusData.key).innerHTML = statusData.value;
+                        }
+                    }
+                    else
+                    {
+                        //alert("Message is received: "+evt.data);
+                    }
+                };
+				
+                ws.onclose = function()
+                { 
+                    // websocket is closed.
+                    alert("Connection is closed..."); 
+                };
+            }
+            else
+            {
+               // The browser doesn't support WebSocket
+               alert("WebSocket NOT supported by your Browser!");
+            }
+        }
+
+      
+	</script>
+  
+<body onload="StartWebSocket()">
 <div class="container">
     <div class="header">
         <nav>
@@ -81,7 +106,7 @@
                <tr>
                  <td>Gateway</td>
                  <td id="gwIp">{ip}</td>
-                 <td id="gwIpOrigin">{ipOrigin}</td>
+                 <td id="gwIpStatus">{ipOrigin}</td>
                </tr>
                <tr>
                  <td>MQTT Server</td>
@@ -148,8 +173,8 @@
                  <td id="systemFreeHeap">{systemFreeHeap}</td>
                </tr>
                <tr>
-                 <td>Uptime</td>
-                 <td id="systemStartTime">{systemUptime}</td>
+                 <td>NTP Start time</td>
+                 <td id="systemStartTime"></td>
                </tr>
              </tbody>
            </table>

@@ -6,6 +6,7 @@
 #include "MySensors/MySigningAtsha204Soft.h"
 #include "Rule.h"
 #include "HTTP.h"
+#include "MyStatus.h"
 
 //#define RADIO_CE_PIN 2
 //#define RADIO_SPI_SS_PIN 15
@@ -94,6 +95,7 @@ void MyGateway::incomingMessage(const MyMessage &message)
         if (msg.sender != 0 && msg.sender != 255 && !nodeIds[msg.sender])
         {
             numDetectedNodes++;
+            getStatusObj().updateDetectedSensors(1,0);
             Debug.printf("Discovered new node %d\n", msg.sender);
             nodeIds[(uint8_t)msg.sender] = true;
         }
@@ -130,6 +132,7 @@ void MyGateway::incomingMessage(const MyMessage &message)
             bool newSensor = true;
 
             rfPacketsRx++;
+            getStatusObj().updateRfPackets (1, 0);
             for (int idx = 0; idx < MAX_MY_SENSORS; idx++)
             {
                 if (mySensors[idx].node == message.sender &&
@@ -183,6 +186,8 @@ void MyGateway::incomingMessage(const MyMessage &message)
                             HTTP.notifyWsClients(getSensorJson(idx));
                         }                            
                         numDetectedSensors++;
+                        getStatusObj().updateDetectedSensors(0,1);
+
                         Debug.printf("Adding sensor %d (%d/%d) type %d value %s\n",
                                      idx, mySensors[idx].node, mySensors[idx].sensor,
                                      mySensors[idx].type, mySensors[idx].value.c_str());
@@ -372,6 +377,7 @@ void MyGateway::onWsSetActuator(WebSocket& socket, const String& message)
             GW.sendRoute(GW.build(myMsg, node, sensor,
                                   C_SET, 2/* mySensors[idx].type */, 0));
             rfPacketsTx++;
+            getStatusObj().updateRfPackets (0, 1);
             return;
         }
     }
@@ -455,6 +461,11 @@ error:
     response.sendJsonObject(stream);
 }
 
+void MyGateway::onWsGetStatus (WebSocket& socket, const String& message)
+{
+      getStatusObj().onWsGetStatus (socket, message);
+}
+
 void MyGateway::registerHttpHandlers(HttpServer &server)
 {
     server.addPath("/ajax/getSensors", HttpPathDelegate(&MyGateway::onGetSensors, this));
@@ -463,6 +474,7 @@ void MyGateway::registerHttpHandlers(HttpServer &server)
     HTTP.addWsCommand("getSensors", WebSocketMessageDelegate(&MyGateway::onWsGetSensors, this));
     HTTP.addWsCommand("setActuator", WebSocketMessageDelegate(&MyGateway::onWsSetActuator, this));
     HTTP.addWsCommand("removeSensor", WebSocketMessageDelegate(&MyGateway::onWsRemoveSensor, this));
+    HTTP.addWsCommand("getStatus", WebSocketMessageDelegate(&MyGateway::onWsGetStatus, this));
 }
 
 String MyGateway::getSensorTypeString(int type)
@@ -679,6 +691,7 @@ void MyGateway::setSensorValue(String object, String value)
                           mySensors[id-1].sensor, C_SET,
                           2 /*mySensors[id-1].type*/, 0));
     rfPacketsTx++;
+    getStatusObj().updateRfPackets (0, 1);
 }
 
 uint64_t MyGateway::getBaseAddress()

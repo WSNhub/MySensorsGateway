@@ -5,6 +5,7 @@
 #include <AppSettings.h>
 #include "Network.h"
 #include "RTClock.h"
+#include "MyStatus.h"
 
 void
 network_cb ( System_Event_t *e )
@@ -153,6 +154,7 @@ void NetworkClass::handleEvent(System_Event_t *e)
         }
 
         ntpClient.requestTime();
+        getStatusObj().updateGWIpConnection(getClientIP().toString(), "Connected");
     }
     else if (event == EVENT_STAMODE_CONNECTED)
     {
@@ -195,6 +197,7 @@ void NetworkClass::handleEvent(System_Event_t *e)
         }
 
         connected = false;
+        getStatusObj().updateGWIpConnection("0.0.0.0", "Disconnected");
 
         if (changeDlg)
             changeDlg(false);
@@ -249,6 +252,7 @@ void NetworkClass::ntpTimeResultHandler(NtpClient& client, time_t ntpTime)
     Debug.print("Time after NTP sync: ");
     Debug.println(SystemClock.getSystemTimeString());
     Clock.setTime(ntpTime);
+    getStatusObj().setStartupTime(SystemClock.getSystemTimeString()); //TODO need localTime
 }
 
 IPAddress NetworkClass::getClientIP()

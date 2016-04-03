@@ -12,6 +12,7 @@
 #include <HTTP.h>
 #include <controller.h>
 #include <Rule.h>
+#include "MyStatus.h"
 
 #ifdef SD_SPI_SS_PIN
 // set up variables using the SD utility library functions:
@@ -33,6 +34,8 @@ int isNetworkConnected = FALSE;
 int pongNodeId = 22;
 
 char convBuf[MAX_PAYLOAD*2+1];
+MyStatus myStatus;
+
 
 void incomingMessage(const MyMessage &message)
 {
@@ -85,7 +88,9 @@ int updateSensorState(int node, int sensor, int value)
 Timer heapCheckTimer;
 void heapCheckUsage()
 {
-    controller.notifyChange("memory", String(system_get_free_heap_size()));    
+    uint32 freeHeap = system_get_free_heap_size();
+    controller.notifyChange("memory", String(freeHeap));
+    getStatusObj().updateFreeHeapSize (freeHeap);
 }
 
 void i2cChangeHandler(String object, String value)
@@ -113,6 +118,7 @@ void startServers()
 
     // start getting sensor data
     GW.begin(incomingMessage, NULL);
+    myStatus.begin();
 }
 
 // Will be called when WiFi station was connected to AP

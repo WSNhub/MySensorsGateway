@@ -4,6 +4,7 @@
 #include <AppSettings.h>
 #include <mqtt.h>
 #include <MyGateway.h>
+#include "MyStatus.h"
 #include <HTTP.h>
 
 // Forward declarations
@@ -25,6 +26,7 @@ void ICACHE_FLASH_ATTR mqttPublishMessage(String topic, String message)
 
     mqtt->publish(AppSettings.mqttSensorPfx + String("/") + topic, message);
     mqttPktTx++;
+    getStatusObj().updateMqttPackets (0, 1);
 }
 
 void ICACHE_FLASH_ATTR mqttPublishVersion()
@@ -32,6 +34,7 @@ void ICACHE_FLASH_ATTR mqttPublishVersion()
     mqtt->publish(String("/") + clientId + String("/version"),
                   "MySensors gateway");
     mqttPktTx++;
+    getStatusObj().updateMqttPackets (0, 1);
 }
 
 // Callback for messages, arrived from MQTT server
@@ -69,6 +72,7 @@ void ICACHE_FLASH_ATTR onMessageReceived(String topic, String message)
     if (topic.startsWith(AppSettings.mqttControllerPfx + "/"))
     {
         mqttPktRx++;
+        getStatusObj().updateMqttPackets (1, 0);
 
         String node   = getValue(topic, '/', 1);
         String sensor = getValue(topic, '/', 2);
@@ -107,10 +111,19 @@ void ICACHE_FLASH_ATTR startMqttClient()
     AppSettings.load();
     if (!AppSettings.mqttServer.equals(String("")) && AppSettings.mqttPort != 0)
     {
+        getStatusObj().updateMqttConnection (AppSettings.mqttServer, "Connecting...");
         sprintf(clientId, "ESP_%08X", system_get_chip_id());
         mqtt = new MqttClient(AppSettings.mqttServer, AppSettings.mqttPort, onMessageReceived);
         MqttIsConnected = mqtt->connect(clientId, AppSettings.mqttUser, AppSettings.mqttPass);
         mqtt->subscribe("#");
+        if (mqtt->getConnectionState() == eTCS_Connected)
+        {
+          getStatusObj().updateMqttConnection (AppSettings.mqttServer, "Connected");
+        }
+        else 
+        {
+          getStatusObj().updateMqttConnection (AppSettings.mqttServer, "Not Connected");
+        }
         mqttPublishVersion();
         MqttConfigured = TRUE;
     }
