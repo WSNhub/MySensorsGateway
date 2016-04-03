@@ -24,6 +24,8 @@ class MyStatus
     void updateFreeHeapSize (uint32 freeHeap);
     void updateRfPackets (int rx, int tx);
     void updateMqttPackets (int rx, int tx);
+    void setFirmwareDldStart (int trial);
+    void setFirmwareDldEnd (bool isSuccess);
 
     void notifyCounters();
     
