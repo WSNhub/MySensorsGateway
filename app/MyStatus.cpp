@@ -17,8 +17,8 @@ MyStatus::MyStatus()
     freeHeapSize = 0;
     numDetectedNodes = 0;
     numDetectedSensors = 0;
-    //numRfPktRx = 0;
-    //numRfPktTx = 0;
+    numRfPktRx = 0;
+    numRfPktTx = 0;
     //numMqttPktRx = 0;
     //numMqttPktTx = 0;
 }
@@ -275,7 +275,6 @@ void MyStatus::setFirmwareDldEnd (bool isSuccess, int trial)
     
     str += String("]}");
     Debug.println(str.c_str());
-    HTTP.notifyWsClients(str);
     HTTP.notifyWsClients(str);
 }
 
