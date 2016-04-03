@@ -12,6 +12,7 @@ extern MyStatus myStatus;
 MyStatus::MyStatus()
 {
     started = 0;
+    isFirmwareDld = false;
     freeHeapSize = 0;
     numDetectedNodes = 0;
     numDetectedSensors = 0;
@@ -48,7 +49,7 @@ String MyStatus::makeJsonEnd()
 
 void MyStatus::notifyUpdate(const String& statusStr)
 {
-  if (started)
+  if (started && !isFirmwareDld)
   {
     String str = makeJsonStart();
     str += statusStr;
@@ -59,7 +60,7 @@ void MyStatus::notifyUpdate(const String& statusStr)
 
 void MyStatus::notifyKeyValue(const String& key, const String& value)
 {
-  if (started)
+  if (started && !isFirmwareDld)
   {
     String str = makeJsonStart();
     str += makeJsonKV (key, value);
@@ -222,6 +223,7 @@ void MyStatus::updateFreeHeapSize (uint32 freeHeap)
 
 void MyStatus::setFirmwareDldStart (int trial)
 {
+    isFirmwareDld = true;
     String str("{\"type\": \"firmware\", \"data\" : [");
     str += String ("{\"key\": \"firmwareSt\",");
     str += String("\"value\": \"Firmware download started, trial=") + String(trial)+ String("\"}");
@@ -231,6 +233,7 @@ void MyStatus::setFirmwareDldStart (int trial)
 
 void MyStatus::setFirmwareDldEnd (bool isSuccess)
 {
+    isFirmwareDld = false;
     String str("{\"type\": \"firmware\", \"data\" : [");
     str += String ("{\"key\": \"firmwareSt\",");
     if (isSuccess)

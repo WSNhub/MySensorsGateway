@@ -38,6 +38,7 @@ class MyStatus
 
   private:
     int started;
+    bool isFirmwareDld;
     String systemStartTime;
     
     int numDetectedNodes;
