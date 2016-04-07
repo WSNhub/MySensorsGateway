@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body { 
+        font-family: Arial, sans-serif; 
+        font-size: 12px; 
+      }
+      input#save { 
+        font-weight: bold; width: auto; 
+      }
+    </style>
+
+    <script src="testgui01postitems.js"></script>
+
+    <script src="testgui01systemtimedisptime.js"></script>
+  </head>
+
+  <body>
+    <h3>Post Some Info to the Server:</h3>
+    <div>
+      <form id="postItems">
+        <p><label for="item1">Item1</label><br />
+        <input type="text" id="item1" name="item1" size="50" value="" /></p>
+
+        <p><label for="item2">Item2</label><br />
+        <input type="text" id="item2" name="item2" size="50" value="" /></p>
+
+        <p>
+          <input type="submit" id="save" value="Post Items" />
+          <span id="statusDisplay"></span>
+        </p>
+      </form>
+
+      <div id="showItem1"></div>
+      <div id="showItem2"></div>
+      <div id="params_1"></div>
+      <div id="params_2"></div>
+      <div id="getString"></div>
+    </div>
+
+    <hr>
+    <h3>Some System Info:</h3>
+    <div>
+      <form id="formDisplayTime" onsubmit="doSubmit();">
+        <p>Current System Time (System Uptime for the moment):
+          <span id="currentTime"></span>
+      </form>
+
+        <p>Free Heap:
+          <span id="systemFreeHeap"></span>
+
+      <!--<div id="counter"></div>-->
+    </div>
+
+    <hr>
+
+  </body>
+</html>

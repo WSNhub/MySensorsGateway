@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+  <head>
+<meta http-equiv="Pragma" content="no-cache">
+<link href="gpio.css" rel="stylesheet" type="text/css">
+<script type="text/javascript">
+// Blank pin entry.
+function pinFieldBlank() {
+	document.write("<td class=bCelField>&nbsp;</td>");
+}
+
+// dir: dir: 0 = input; 1 = output; 2 = Do not touch.
+// cmdPinNbr: pin name.
+// pinVal: pin value.
+function pinField(dir, cmdPinNbr, pinVal) {
+	if (dir == 0) {
+  	document.write("<td class=bCelField align=center style=\"padding:1px;\">");
+		document.write(pinVal);
+  	document.write("</td>");
+	}
+	else if (dir == 1) {
+  	document.write("<td class=bCelField align=center style=\"padding:1px;\">");
+		document.write("<input style=\"width:38px;\" type=\"submit\"" + " name=\"" + cmdPinNbr + "\"" + " value=\"" + pinVal + "\">");
+  	document.write("</td>");
+	}
+  else {
+  	pinFieldBlank();
+  }
+}
+
+function pinHead(s) {
+	document.write("<td class=bCelHead align=center><b><div style=\"width:30px;\">" + s + "</div></b></td>");
+}
+</script>
+</head>
+
+<bodyclass=iframeBody>
+
+<form method="post" action="gpio">
+<table class=bTable cellpadding=3 cellspacing=1>
+
+<tr><td class=bHeader1 colspan="9">GPIO - Digital Inputs and Outputs</td></tr>
+
+<tr><td class=bHeader2 colspan="9">GPIO Values</td></tr>
+							
+<tr>
+	<td class=bLabel><b>GPIO</b></td>
+	<script type="text/javascript">
+	pinHead("");
+	pinHead("");
+	pinHead("");
+	pinHead("");
+	pinHead("");
+	pinHead("");
+	pinHead("");
+	pinHead("16<br>D0");
+	</script>
+</tr>
+
+<tr>
+	<td class=bLabel>Value</td>
+	<script type="text/javascript">
+	pinFieldBlank();
+	pinFieldBlank();
+	pinFieldBlank();
+	pinFieldBlank();
+	pinFieldBlank();
+	pinFieldBlank();
+	pinFieldBlank();
+	pinField("{D:GPIO:16}", "N:GPIO:16", "{V:GPIO:16}");
+	</script>
+</tr>
+
+<tr>
+	<td class=bLabel><b>GPIO</b></td>
+	<script type="text/javascript">
+	pinHead("15<br>D8");
+	pinHead("14<br>D5");
+	pinHead("13<br>D7");
+	pinHead("12<br>D6");
+	pinHead("11<br>&nbsp;");
+	pinHead("10<br>&nbsp;");
+	pinHead("9<br>&nbsp;");
+	pinHead("8<br>&nbsp;");
+	</script>
+</tr>
+
+<tr>
+	<td class=bLabel>Value</td>
+	<script type="text/javascript">
+	pinField("{D:GPIO:15}", "N:GPIO:15", "{V:GPIO:15}");
+	pinField("{D:GPIO:14}", "N:GPIO:14", "{V:GPIO:14}");
+	pinField("{D:GPIO:13}", "N:GPIO:13", "{V:GPIO:13}");
+	pinField("{D:GPIO:12}", "N:GPIO:12", "{V:GPIO:12}");
+	pinField("{D:GPIO:11}", "N:GPIO:11", "{V:GPIO:11}");
+	pinField("{D:GPIO:10}", "N:GPIO:10", "{V:GPIO:10}");
+	pinField("{D:GPIO:9}", "N:GPIO:9", "{V:GPIO:9}");
+	pinField("{D:GPIO:8}", "N:GPIO:8", "{V:GPIO:8}");
+	</script>
+</tr>
+
+<tr>
+	<td class=bLabel><b>GPIO</b></td>
+	<script type="text/javascript">
+	pinHead("7<br>&nbsp;");
+	pinHead("6<br>&nbsp;");
+	pinHead("5<br>D1");
+	pinHead("4<br>D2");
+	pinHead("3<br>D9");
+	pinHead("2<br>D4");
+	pinHead("1<br>D10");
+	pinHead("0<br>D3");
+	</script>
+</tr>
+
+<tr>
+	<td class=bLabel>Value</td>
+	<script type="text/javascript">
+	pinField("{D:GPIO:7}", "N:GPIO:7", "{V:GPIO:7}");
+	pinField("{D:GPIO:6}", "N:GPIO:6", "{V:GPIO:6}");
+	pinField("{D:GPIO:5}", "N:GPIO:5", "{V:GPIO:5}");
+	pinField("{D:GPIO:4}", "N:GPIO:4", "{V:GPIO:4}");
+	pinField("{D:GPIO:3}", "N:GPIO:3", "{V:GPIO:3}");
+	pinField("{D:GPIO:2}", "N:GPIO:2", "{V:GPIO:2}");
+	pinField("{D:GPIO:1}", "N:GPIO:1", "{V:GPIO:1}");
+	pinField("{D:GPIO:0}", "N:GPIO:0", "{V:GPIO:0}");
+	</script>
+</tr>
+
+<tr>
+  <td style="text-align:right;" class=bBottom colspan="9"><input type=submit name="command" value="Refresh"></td>
+</tr>
+
+</table>
+</form>
+
+<hr>
+
+</body>
+</html>

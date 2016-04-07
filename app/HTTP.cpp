@@ -9,10 +9,11 @@
 #include <Services/WebHelpers/base64.h>
 #include <Wiring/SplitString.h>
 
+#include <DeviceHandler.h>
+
 // Forward declarations
 void StartOtaUpdateWeb(String);
 void processRestartCommandWeb(void);
-
 
 Timer softApSetPasswordTimer;
 void apEnable()
@@ -125,6 +126,84 @@ void onMaintenance(HttpRequest &request, HttpResponse &response)
     auto &vars = tmpl->variables();
 
     vars["webOtaBaseUrl"] = AppSettings.webOtaBaseUrl;
+
+    response.sendTemplate(tmpl); // will be automatically deleted
+}
+
+void onTestGui01(HttpRequest &request, HttpResponse &response)
+{
+    if (!HTTP.isHttpClientAllowed(request, response))
+        return;
+
+    String item1 = null;
+    String item2 = null;
+
+    if (request.getRequestMethod() == RequestMethod::POST)
+    {
+        String item1 = request.getPostParameter("item1");
+        String item2 = request.getPostParameter("item2");
+        Debug.printf("onTestGui01: item1: [%s]\r\n", item1.c_str());
+        Debug.printf("onTestGui01: item2: [%s]\r\n", item2.c_str());
+    }
+
+    TemplateFileStream *tmpl = new TemplateFileStream("testgui01.html");
+    auto &vars = tmpl->variables();
+
+    vars["item1"] = item1;
+    vars["item1"] = item1;
+
+    response.sendTemplate(tmpl); // will be automatically deleted
+}
+
+void onTestGui01StoreItems(HttpRequest &request, HttpResponse &response)
+{
+    if (!HTTP.isHttpClientAllowed(request, response))
+        return;
+
+    Debug.printf("onTestGui01StoreItems: isAjax: [%s]\r\n", (request.isAjax()?"true":"false"));
+    String item3 = request.getQueryParameter("item1");
+    String item4 = request.getQueryParameter("item2");
+    Debug.printf("onTestGui01StoreItems: item3: [%s]\r\n", item3.c_str());
+    Debug.printf("onTestGui01StoreItems: item4: [%s]\r\n", item4.c_str());
+
+    String item1 = null;
+    String item2 = null;
+
+    if (request.getRequestMethod() == RequestMethod::POST)
+    {
+        String item1 = request.getPostParameter("item1");
+        String item2 = request.getPostParameter("item2");
+        Debug.printf("onTestGui01StoreItems: item1: [%s]\r\n", item1.c_str());
+        Debug.printf("onTestGui01StoreItems: item2: [%s]\r\n", item2.c_str());
+    }
+
+    TemplateFileStream *tmpl = new TemplateFileStream("testgui01storeitems.html");
+    auto &vars = tmpl->variables();
+
+    vars["item1"] = item1;
+    vars["item2"] = item2;
+
+    response.sendTemplate(tmpl); // will be automatically deleted
+}
+
+void onSystemTimeCurrentTime(HttpRequest &request, HttpResponse &response)
+{
+    char buf[200];
+
+    if (!HTTP.isHttpClientAllowed(request, response))
+        return;
+
+    Debug.printf("onSystemTimeCurrentTime\r\n");
+
+    TemplateFileStream *tmpl = new TemplateFileStream("testgui01systemtimecurtime.html");
+    auto &vars = tmpl->variables();
+
+    // For the moment return the system up time.
+    uint32_t curMillis = millis();
+    sprintf(buf, "%d s, %03d ms (%lu s, %03d ms); millis: %lu ; %08X", curMillis/1000, curMillis % 1000, curMillis/1000, curMillis % 1000, curMillis, curMillis);
+    vars["currentTime"] = buf;
+
+    vars["systemFreeHeap"] = system_get_free_heap_size();
 
     response.sendTemplate(tmpl); // will be automatically deleted
 }
@@ -271,14 +350,26 @@ void HTTPClass::notifyWsClients(String message)
 void HTTPClass::begin()
 {
     server.listen(80);
+
+    // Enable processing of the AJAX identification header.
+    server.enableHeaderProcessing("HTTP_X_REQUESTED_WITH");
+
     server.enableHeaderProcessing("Authorization");
+
     server.addPath("/", onStatus);
     server.addPath("/ipconfig", onIpConfig);
     server.addPath("/status", onStatus);
     server.addPath("/maintenance", onMaintenance);
 
+    server.addPath("/testgui01", onTestGui01);
+    server.addPath("/testgui01storeitems", onTestGui01StoreItems);
+    server.addPath("/systemtimecurrenttime", onSystemTimeCurrentTime);
+
     GW.registerHttpHandlers(server);
     controller.registerHttpHandlers(server);
+
+    deviceHandler.registerHttpHandlers(server);
+
     server.setDefaultHandler(onFile);
 
     // Web Sockets configuration
