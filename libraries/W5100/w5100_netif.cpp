@@ -1,5 +1,8 @@
 #include <SmingCore.h>
+#include <SmingCore/Debug.h>
 #include <user_config.h>
+#include <globals.h>
+#include <AppSettings.h>
 
 #include "ethernetif.h"
 #include "ethernetif_driver.h"
@@ -8,6 +11,29 @@
 extern "C" {
 #endif
 #include <lwip/dhcp.h>
+void system_station_got_ip_set_orig(ip_addr_t * ip_addr, ip_addr_t *sn_mask, ip_addr_t *gw_addr);
+
+void system_station_got_ip_set(ip_addr_t * ip_addr, ip_addr_t *sn_mask, ip_addr_t *gw_addr)
+{
+#if WIRED_ETHERNET_MODE == WIRED_ETHERNET_NONE
+    system_station_got_ip_set_orig(ip_addr, sn_mask, gw_addr);
+#else
+    if (!AppSettings.wired)
+    {
+        IPAddress addr(ip_addr->addr);
+        IPAddress mask(sn_mask->addr);
+        IPAddress gw(gw_addr->addr);
+        Debug.printf("ip:%s,mask:%s,gw:%s",
+                     addr.toString().c_str(), mask.toString().c_str(),
+                     gw.toString().c_str());
+    }
+    else
+    {
+        system_station_got_ip_set_orig(ip_addr, sn_mask, gw_addr);
+    }
+#endif
+}
+
 err_t etharp_output(struct netif *netif,
                     struct pbuf  *q,
                     ip_addr_t    *ipaddr 

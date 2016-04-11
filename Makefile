@@ -114,6 +114,7 @@ endif
 #### Please don't change anything below. ####
 #############################################
 
+OBJ_CPY_PARAMS = --redefine-sym system_station_got_ip_set=system_station_got_ip_set_orig
 all: SMING GLOBALS spiff_clean
 
 GLOBALS:
