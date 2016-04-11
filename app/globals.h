@@ -23,4 +23,8 @@ extern int isNetworkConnected;
 #define WIRED_ETHERNET_W5100 1
 #define WIRED_ETHERNET_W5500 2
 
+#define DISPLAY_TYPE_NONE    0
+#define DISPLAY_TYPE_SSD1306 1
+#define DISPLAY_TYPE_20X4    2
+
 #endif /* GLOBALS_H_ */

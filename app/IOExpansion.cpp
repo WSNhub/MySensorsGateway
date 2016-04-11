@@ -178,6 +178,9 @@ void IOExpansion::i2cPublishMcpOutputs(byte address, bool forcePublish)
 {
     uint8_t outputs;
 
+    //HACK: disable force publish for now
+    forcePublish = false;
+
     /* read the actual value */
     Wire.beginTransmission(address);
     Wire.write(0x12); //port A
@@ -216,7 +219,7 @@ void IOExpansion::i2cPublishMcpOutputs(byte address, bool forcePublish)
     mcp23017Outputs[address - 0x20] = outputs;
 }
 
-void IOExpansion::i2cPublishMcpInputs(byte address, bool forcePublish)
+void IOExpansion::publishMcpInputs(byte address)
 {
     uint8_t inputs;
 
@@ -229,9 +232,11 @@ void IOExpansion::i2cPublishMcpInputs(byte address, bool forcePublish)
 
     for (int j = 0; j < 8; j++)
     {
-        if (forcePublish ||
-            (mcp23017Inputs[address - 0x20] & (1 << j)) != (inputs & (1 << j)))
+        if ((mcp23017Inputs[address - 0x20] & (1 << j)) != (inputs & (1 << j)))
         {
+            Debug.printf("inputD%d => %s\n", j + 1 + (8 * (address - 0x20)),
+                          inputs & (1 << j) ? "on" : "off");
+
             if (changeDlg)
                 changeDlg(String("inputD") +
                           String((j + 1) + (8 * (address - 0x20))),
@@ -253,7 +258,7 @@ void IOExpansion::i2cCheckDigitalState()
     {
         if (mcp23017Present[i])
         {
-            i2cPublishMcpInputs(0x20 + i, (forcePublish == 0));
+            publishMcpInputs(0x20 + i);
             if (forcePublish == 0)
                 i2cPublishMcpOutputs(0x20 + i, true);
         }
@@ -491,7 +496,7 @@ String IOExpansion::getResourceValue(String resource)
                      input, port, pin);
         return (mcp23017Inputs[port] & (1 << pin)) ? "on" : "off";
     }
-    /* Digital input */
+    /* Analog input */
     if (resource.startsWith("inputA"))
     {
         resource = resource.substring(6);
@@ -525,6 +530,30 @@ String IOExpansion::getResourceValue(String resource)
 
     Debug.println("ERROR: GetValue for an unknown object");
     return "invalid";
+}
+
+bool IOExpansion::toggleResourceValue(String resource)
+{
+    uint8_t port;
+    uint8_t pin;
+
+    /* Digital output */
+    if (resource.startsWith("outputD"))
+    {
+        resource = resource.substring(7);
+        int output = resource.toInt();
+        if (output < 1 || output > 56)
+        {
+            Debug.printf("invalid output: d%d", output);
+            return false;
+        }
+
+        return i2cToggleMcpOutput(output);
+    }
+    
+    Debug.printf("resource does not support toggling: %s",
+                 resource.c_str());
+    return false;
 }
 
 IOExpansion Expansion;

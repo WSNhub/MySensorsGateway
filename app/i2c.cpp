@@ -12,82 +12,9 @@
 
 #include <MySensors/ATSHA204.h>
 
-Adafruit_SSD1306 display(-1); // reset Pin required but later ignored if set to False
-
-void MyI2C::showOLED()
-{
-	Wire.lock();
-
-	display.clearDisplay();
-	// text display tests
-	display.setTextSize(1);
-	display.setTextColor(WHITE);
-	display.setCursor(0,0);
-        display.println("MySensors gateway");
-	display.setTextSize(1);
-	display.setCursor(0,9);
-        if (AppSettings.wired)
-        {
-            if (!Network.getClientIP().isNull())
-            {
-                display.print("IP  :");
-                display.println(Network.getClientIP().toString());
-            } 
-            else
-            {
-                display.setTextColor(BLACK, WHITE); // 'inverted' text
-                display.println("connecting ...");
-                display.setTextColor(WHITE);
-            }
-        }
-        else
-        {
-            if (WifiStation.isConnected())
-            {
-                display.print("AP  :");
-                display.println(Network.getClientIP().toString());
-            } 
-            else
-            {
-                display.setTextColor(BLACK, WHITE); // 'inverted' text
-                display.println("connecting ...");
-                display.setTextColor(WHITE);
-            }
-        }
-	display.setCursor(0,18);
-        if (isMqttConfigured())
-        {
-          display.print("MQTT:");
-          display.println(MqttServer());
-        }
-        else
-        {
-	  display.setTextColor(BLACK, WHITE); // 'inverted' text
-          display.println("configure MQTT !");
-	  display.setTextColor(WHITE);
-        }
-
-	display.setCursor(0,27);
-        display.println(SystemClock.getSystemTimeString().c_str());
-	display.setCursor(0,36);
-        display.print("HEAP :");
-	display.setTextColor(BLACK, WHITE); // 'inverted' text
-        display.println(system_get_free_heap_size());
-
-	display.setTextColor(WHITE);
-
-	//display.setTextColor(BLACK, WHITE); // 'inverted' text
-	//display.setTextSize(3);
-	display.display();
-
-	Wire.unlock();
-}
-
-void MyI2C::begin(I2CChangeDelegate dlg)
+void MyI2C::begin()
 {
     byte error, address;
-
-    changeDlg = dlg;
 
     Wire.pins(I2C_SCL_PIN, I2C_SDA_PIN); // SCL, SDA
     Wire.begin();
@@ -148,24 +75,12 @@ void MyI2C::begin(I2CChangeDelegate dlg)
             }
             else if (address == 0x3c)
             {
-                OLEDFound = TRUE;
                 Debug.printf("Found OLED %x\n", address);
-                // by default, we'll generate the high voltage from the 3.3v line internally! (neat!)`
-                // initialize with the I2C addr 0x3D (for the 128x64)
-                // bool:reset set to TRUE or FALSE depending on you display
-                display.begin(SSD1306_SWITCHCAPVCC, SSD1306_I2C_ADDRESS, FALSE);
-                // display.begin(SSD1306_SWITCHCAPVCC);
-                display.display();
             }
             else
             {
                 Debug.printf("Unexpected I2C device found @ %x\n", address);
             }
         }
-    }
-
-    if (OLEDFound)
-    {
-        i2cOLEDTimer.initializeMs(1000, TimerDelegate(&MyI2C::showOLED, this)).start(true);
     }
 }

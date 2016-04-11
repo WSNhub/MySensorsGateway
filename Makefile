@@ -55,6 +55,12 @@ SMING_AUTO_UPGRADE ?= 1
 # monitor that with a logic analyzer rather than adding prints.
 GPIO16_MEASURE_ENABLE ?= 0
 
+# DISPLAY_TYPE
+# By default DISPLAY_TYPE_SSD1306 for the oled display is used.
+# It is however possible to use a 20x4 LCD display. In that case
+# DISPLAY_TYPE_20X4 should be provided.
+DISPLAY_TYPE ?= DISPLAY_TYPE_SSD1306
+#DISPLAY_TYPE ?= DISPLAY_TYPE_20X4
 
 #########################
 ## Platform definition ##
@@ -159,6 +165,7 @@ USER_CFLAGS += "-DSIGNING_HMAC=$(MYSENSORS_SIGNING_HMAC)"
 USER_CFLAGS += "-DATSHA204I2C=$(MYSENSORS_WITH_ATSHA204)"
 USER_CFLAGS += "-DWIRED_ETHERNET_MODE=$(WIRED_ETHERNET_MODE)"
 USER_CFLAGS += "-DMEASURE_ENABLE=$(GPIO16_MEASURE_ENABLE)"
+USER_CFLAGS += "-DDISPLAY_TYPE=$(DISPLAY_TYPE)"
 
 # Include main Sming Makefile
 ifeq ($(RBOOT_ENABLED), 1)

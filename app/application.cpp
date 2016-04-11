@@ -13,6 +13,7 @@
 #include <controller.h>
 #include <Rule.h>
 #include "MyStatus.h"
+#include "MyDisplay.h"
 
 #ifdef SD_SPI_SS_PIN
 // set up variables using the SD utility library functions:
@@ -106,7 +107,8 @@ void startServers()
 
     HTTP.begin(); //HTTP must be first so handlers can be registered
 
-    I2C_dev.begin(i2cChangeHandler);
+    I2C_dev.begin();
+    Display.begin();
     Expansion.begin(i2cChangeHandler);
     Clock.begin(i2cChangeHandler);
 

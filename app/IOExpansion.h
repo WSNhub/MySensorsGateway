@@ -17,6 +17,7 @@ class IOExpansion
     void begin(IOChangeDelegate dlg = NULL);
     bool updateResource(String resource, String value);
     String getResourceValue(String resource);
+    bool toggleResourceValue(String resource);
 
   private:
     /* Digital I/O pins */
@@ -25,7 +26,7 @@ class IOExpansion
     bool i2cSetMcpOutputInvert(uint8_t output, bool invert);
     bool i2cSetMcpInputInvert(uint8_t input, bool invert);
     void i2cPublishMcpOutputs(byte address, bool forcePublish);
-    void i2cPublishMcpInputs(byte address, bool forcePublish);
+    void publishMcpInputs(byte address);
     void i2cCheckDigitalState();
     
     /* Analog I/O pins */
