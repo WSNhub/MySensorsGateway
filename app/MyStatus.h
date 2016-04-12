@@ -16,7 +16,9 @@ class MyStatus
     MyStatus();
     void begin();
 
+    void registerHttpHandlers(HttpServer &server);
     void onWsGetStatus (WebSocket& socket, const String& message);
+    void onWsGetDldStatus (WebSocket& socket, const String& message);
     void setStartupTime (const String& timeStr);
     void updateGWIpConnection (const String& ipAddrStr, const String& status);
     void updateMqttConnection (const String& ipAddrStr, const String& status);
