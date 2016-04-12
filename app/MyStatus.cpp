@@ -29,6 +29,12 @@ void MyStatus::begin()
 			TimerDelegate(&MyStatus::notifyCounters, this));
 }
 
+void MyStatus::registerHttpHandlers(HttpServer &server)
+{
+    HTTP.addWsCommand("getDldStatus", WebSocketMessageDelegate(&MyStatus::onWsGetDldStatus, this));
+}
+
+
 String MyStatus::makeJsonKV(const String& key, const String& value)
 {
     String kvStr = String("{\"key\": \"" + key + "\",");
@@ -67,6 +73,14 @@ void MyStatus::notifyKeyValue(const String& key, const String& value)
     str += makeJsonEnd();
     HTTP.notifyWsClients(str);
   }
+}
+
+void MyStatus::onWsGetDldStatus (WebSocket& socket, const String& message)
+{
+    String str("{\"type\": \"firmware\", \"data\" : [");
+    str += makeJsonKV ("firmwareSt", "..."); //TODO check: isFirmwareDld
+    str += makeJsonEnd();
+    socket.sendString(str);
 }
 
 void MyStatus::onWsGetStatus (WebSocket& socket, const String& message)
