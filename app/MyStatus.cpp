@@ -94,7 +94,6 @@ void MyStatus::onWsGetDldStatus (WebSocket& socket, const String& message)
     str += makeJsonKV ("systemBuild",build_time);
     str += makeJsonEnd();
     socket.sendString(str);
-    socket.sendString(str);
 }
 
 void MyStatus::onWsGetStatus (WebSocket& socket, const String& message)
