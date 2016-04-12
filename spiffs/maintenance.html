@@ -30,26 +30,41 @@
 				
                 ws.onopen = function()
                 {
+                    //alert("ws.onopen()");
                     // Web Socket is connected
                     ws.send("getDldStatus");
                 };
 				
                 ws.onmessage = function(evt) 
                 { 
-                    var received_msg = JSON.parse(evt.data);
-
-                    if (received_msg.type == "firmware")
-                    {
-                      
-                        for (i=0; i<received_msg.data.length; i++)
+                    //alert("ws.onmessage(): " + evt.data);
+                    try {
+                        var received_msg = JSON.parse(evt.data);
+    
+                        if (received_msg.type == "firmware")
                         {
-                          var statusData = received_msg.data[i];
-                          document.getElementById(statusData.key).innerHTML = statusData.value;
+                            for (i=0; i<received_msg.data.length; i++)
+                            {
+                              var statusData = received_msg.data[i];
+                              document.getElementById(statusData.key).innerHTML = "[" + statusData.value + "]";
+                            }
+                        }
+                        else if (received_msg.type == "status")
+                        {
+                            for (i=0; i<received_msg.data.length; i++)
+                            {
+                              var statusData = received_msg.data[i];
+                              document.getElementById(statusData.key).innerHTML = "[" + statusData.value + "]";
+                            }
+                        }
+                        else
+                        {
+                            document.getElementById("unknownMessageType").innerHTML = "Message is received: [" + evt.data + "]";
+                            //alert("Message is received: "+evt.data);
                         }
                     }
-                    else
-                    {
-                        //alert("Message is received: "+evt.data);
+                    catch(e) {
+                        alert(e);
                     }
                 };
 				
@@ -104,7 +119,12 @@
                 </fieldset>
                 <div class="col-md-offset-3">
                     <input type="submit" name="Command" value="Upgrade" class="btn btn-success">
-                    <p id="firmwareSt"></p>
+                    <p id="firmwareSt">[FIRMWARE STATUS COMES HERE.]</p>
+                    <p id="systemFreeHeap">[systemFreeHeap COMES HERE.]</p>
+                    <p id="gwIp">[gwIp COMES HERE.]</p>
+                    <p id="gwIpStatus">[gwIpStatus COMES HERE.]</p>
+                    <p id="systemStartTime">[systemStartTime COMES HERE.]</p>
+                    <p id="unknownMessageType">[unknownMessageType COMES HERE.]</p>
                 </div>
             </form>
         </div>
@@ -132,3 +152,4 @@
 </div> <!-- /container -->
 </body>
 </html>
+
