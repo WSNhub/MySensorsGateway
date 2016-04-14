@@ -53,6 +53,12 @@ ethernetif_input(struct netif *netif)
   int len;
   int frames = 0;
 
+  if (system_get_free_heap_size() < 5000)
+  {
+    Serial.println("Out of memory");
+    return;
+  }
+
   ethernetif = (struct ethernetif *)netif->state;
   do {
     //if((len = ethernetif->low_level_startinput(ethernetif->internals)) == 0)
@@ -130,6 +136,7 @@ ethernetif_input(struct netif *netif)
       break;
 
     default:
+      m_printf("ethernetif_input: Bad ethernet type 0x%x\n", htons(ethhdr->type));
       pbuf_free(p);
       p = NULL;
       break;
