@@ -18,7 +18,7 @@ void system_station_got_ip_set(ip_addr_t * ip_addr, ip_addr_t *sn_mask, ip_addr_
 #if WIRED_ETHERNET_MODE == WIRED_ETHERNET_NONE
     system_station_got_ip_set_orig(ip_addr, sn_mask, gw_addr);
 #else
-    if (!AppSettings.wired)
+    if (AppSettings.wired)
     {
         IPAddress addr(ip_addr->addr);
         IPAddress mask(sn_mask->addr);
