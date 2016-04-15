@@ -110,21 +110,66 @@ int
 low_level_startinput(void *i)
 {
 #if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
-    uint8_t dummy[2];
-    int rbuflen;
+    uint8_t header[8];
+    int rxLen;
+    int pktLen;
 
-    rbuflen = W5100.getRXReceivedSize(s);
-    if (rbuflen < 2)
-    {
+    /*
+     * Check the size of the RX buffer, It should hold at least the Wiznet
+     * header (2B) and a minimum ethernet header (14B).
+     */
+    rxLen = W5100.getRXReceivedSize(s);
+    if (rxLen < 16)
         return 0;
-    }
-    else
+
+    //Serial.printf("buffer: %d bytes\n", rxLen);
+
+    /* Peek the header added by the Wiznet chip (2B) and the DST MAC (6B) */
+    W5100.recv_data_processing(s, header, 8, true);
+
+    /* Calculate the length of the packet we're going to retrieve */
+    pktLen = (header[0] << 8) + header[1];
+
+    /* Dump length and DST MAC
+    Serial.printf("header: %d [%02x %02x]\n", pktLen, header[0], header[1]);
+    Serial.printf("DST MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",
+                  header[2], header[3], header[4],
+                  header[5], header[6], header[7]);*/
+
+    /*
+     * If the packet is maller than 16 bytes there is something wrong. At
+     * least 16 bytes need to be present (2B Wiznet header, 14B minimal
+     * ethernet header.
+     * When the packet exceeds the MTU by more than 16 bytes, there is also
+     * a problem with the packet.
+     * In both cases treat the whole buffer as a packet hoping next rx will
+     * be a sane one again.
+     */
+    if (pktLen < 16 ||
+        pktLen > (2 + 14 + ETHERNET_MTU))
     {
-        W5100.recv_data_processing(s, dummy, 2); //first 2 bytes = length
+        /* Probably corrupted, treat buffer as one packet */
+        W5100.recv_data_processing(s, header, 2);
         W5100.execCmdSn(s, Sock_RECV);
-        //Serial.printf("incoming: %d bytes\n", rbuflen - 2);
-        return rbuflen - 2;
+        Serial.printf("RX (corrupt?) packet: %d bytes, buffer %d bytes\n",
+                      pktLen - 2, rxLen - 2);
+        return rxLen - 2;
     }
+
+    if (rxLen >= pktLen)
+    {
+        /* The whole packet is in the buffer */
+        W5100.recv_data_processing(s, header, 2);
+        W5100.execCmdSn(s, Sock_RECV);
+        //Serial.printf("RX packet: %d bytes\n", pktLen - 2);
+        return pktLen - 2;
+    }
+
+    /* The packet is not fully in the buffer, process whatever is available */
+    W5100.recv_data_processing(s, header, 2);
+    W5100.execCmdSn(s, Sock_RECV);
+    Serial.printf("RX (incomplete?) packet: %d bytes\n", rxLen - 2);
+    return rxLen - 2;
 #endif
 }
 
@@ -139,15 +184,17 @@ low_level_input(void *i, void *data, uint16_t len)
 {
 #if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
     W5100.recv_data_processing(s, (uint8_t*)data, len);
-    //Serial.printf("INPUT: %d bytes, read into %x\n", len, (unsigned int)(data));
-    //for (int i=0; i<len; i++)
-    //{
-    //    uint8_t*arr = (uint8_t*)data;
-    //    Serial.print(arr[i], HEX);
-    //    Serial.print(" ");  
-    //}
-    //Serial.print("\n");
     W5100.execCmdSn(s, Sock_RECV);
+
+    /*Serial.printf("INPUT: %d bytes, read into %x\n",
+                  len, (unsigned int)(data));
+    for (int i=0; i<len; i++)
+    {
+        uint8_t*arr = (uint8_t*)data;
+        Serial.print(arr[i], HEX);
+        Serial.print(" ");  
+    }
+    Serial.print("\n");*/
 #endif 
 }
 
@@ -160,7 +207,7 @@ low_level_endinput(void *i)
 {
 #if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
     //Serial.println("===> low_level_endinput");
-    W5100.execCmdSn(s, Sock_RECV);
+    //W5100.execCmdSn(s, Sock_RECV);
 #endif
 }
 
