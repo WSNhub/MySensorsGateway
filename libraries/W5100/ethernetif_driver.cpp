@@ -55,7 +55,7 @@ ethernetif_input(struct netif *netif)
 
   if (system_get_free_heap_size() < 5000)
   {
-    Serial.println("Out of memory");
+    //Serial.println("Out of memory");
     return;
   }
 
