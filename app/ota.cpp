@@ -44,7 +44,7 @@ void StartOtaUpdateWeb(String webOtaBaseUrl)
 void otaUpdate_CallBack(bool result) {
 	
     Debug.println("In OTA callback...");
-    getStatusObj().setFirmwareDldEnd (result);
+    getStatusObj().setFirmwareDldEnd (result, numOtaTrials);
     if(result == true)
     {
         // success
