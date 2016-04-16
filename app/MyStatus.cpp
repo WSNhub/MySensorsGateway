@@ -13,6 +13,7 @@ MyStatus::MyStatus()
 {
     started = 0;
     isFirmwareDld = false;
+    firmwareTrial=0;
     freeHeapSize = 0;
     numDetectedNodes = 0;
     numDetectedSensors = 0;
@@ -78,8 +79,21 @@ void MyStatus::notifyKeyValue(const String& key, const String& value)
 void MyStatus::onWsGetDldStatus (WebSocket& socket, const String& message)
 {
     String str("{\"type\": \"firmware\", \"data\" : [");
-    str += makeJsonKV ("firmwareSt", "..."); //TODO check: isFirmwareDld
+    if (isFirmwareDld)
+    {
+      String val = String ("Downloading firmware (trial=") + String (firmwareTrial) + String (")");
+      str += makeJsonKV ("firmwareSt", val);
+    }
+    else
+    {
+      str += makeJsonKV ("firmwareSt", "...");
+    }
+    str += String(",");
+    str += makeJsonKV ("systemVersion",build_git_sha);
+    str += String(",");
+    str += makeJsonKV ("systemBuild",build_time);
     str += makeJsonEnd();
+    socket.sendString(str);
     socket.sendString(str);
 }
 
@@ -238,14 +252,17 @@ void MyStatus::updateFreeHeapSize (uint32 freeHeap)
 void MyStatus::setFirmwareDldStart (int trial)
 {
     isFirmwareDld = true;
+    firmwareTrial = trial;
     String str("{\"type\": \"firmware\", \"data\" : [");
     str += String ("{\"key\": \"firmwareSt\",");
     str += String("\"value\": \"Firmware download started, trial=") + String(trial)+ String("\"}");
     str += String("]}");
+    Debug.println(str.c_str());
+    HTTP.notifyWsClients(str);
     HTTP.notifyWsClients(str);
 }
 
-void MyStatus::setFirmwareDldEnd (bool isSuccess)
+void MyStatus::setFirmwareDldEnd (bool isSuccess, int trial)
 {
     isFirmwareDld = false;
     String str("{\"type\": \"firmware\", \"data\" : [");
@@ -253,9 +270,12 @@ void MyStatus::setFirmwareDldEnd (bool isSuccess)
     if (isSuccess)
       str += String("\"value\": \"Firmware download finished\"}");
     else
-      str += String("\"value\": \"Firmware download failed !\"}");
+      str += String("\"value\": \"Firmware download failed (trial=")
+             + String(trial) + String(")\"}");
     
     str += String("]}");
+    Debug.println(str.c_str());
+    HTTP.notifyWsClients(str);
     HTTP.notifyWsClients(str);
 }
 
