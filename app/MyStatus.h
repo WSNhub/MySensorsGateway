@@ -27,7 +27,7 @@ class MyStatus
     void updateRfPackets (int rx, int tx);
     void updateMqttPackets (int rx, int tx);
     void setFirmwareDldStart (int trial);
-    void setFirmwareDldEnd (bool isSuccess);
+    void setFirmwareDldEnd (bool isSuccess, int trial);
 
     void notifyCounters();
     
@@ -41,6 +41,7 @@ class MyStatus
   private:
     int started;
     bool isFirmwareDld;
+    int  firmwareTrial;
     String systemStartTime;
     
     int numDetectedNodes;
