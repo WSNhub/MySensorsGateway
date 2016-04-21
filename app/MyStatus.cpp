@@ -101,37 +101,49 @@ void MyStatus::onWsGetStatus (WebSocket& socket, const String& message)
 {
     bool dhcp = AppSettings.dhcp;
     char buf [200];
-
-    notifyKeyValue ("ssid", AppSettings.ssid);
-    notifyKeyValue ("wifiStatus", isNetworkConnected ? "Connected" : "Not connected");
+    String statusStr;
+    
+    statusStr = makeJsonStart();
+    statusStr += makeJsonKV ("ssid", AppSettings.ssid);
+    statusStr += String(",");
+    statusStr += makeJsonKV ("wifiStatus", isNetworkConnected ? "Connected" : "Not connected");
+    statusStr += String(",");
     
     if (!Network.getClientIP().isNull())
     {
-        notifyKeyValue ("gwIp", Network.getClientIP().toString());
+        statusStr += makeJsonKV ("gwIp", Network.getClientIP().toString());
+        statusStr += String(",");
         if (dhcp)
         {
-          notifyKeyValue ("gwIpStatus", "From DHCP");
+          statusStr += makeJsonKV ("gwIpStatus", "From DHCP");
         }
         else
         {
-          notifyKeyValue ("gwIpStatus", "Static");
+          statusStr += makeJsonKV ("gwIpStatus", "Static");
         }
     }
     else
     {
-        notifyKeyValue ("gwIp", "0.0.0.0");
-        notifyKeyValue ("gwIpStatus", "not configured");
+        statusStr += makeJsonKV ("gwIp", "0.0.0.0");
+        statusStr += String(",");
+        statusStr += makeJsonKV ("gwIpStatus", "not configured");
     }
+    statusStr += makeJsonEnd();
+    socket.sendString(statusStr);
 
+    // ---------------
+    statusStr = makeJsonStart();
     if (AppSettings.mqttServer != "")
     {
-        notifyKeyValue ("mqttIp", AppSettings.mqttServer);
-        notifyKeyValue ("mqttStatus", isMqttConnected() ? "Connected":"Not connected");
+        statusStr += makeJsonKV ("mqttIp", AppSettings.mqttServer);
+        statusStr += String(",");
+        statusStr += makeJsonKV ("mqttStatus", isMqttConnected() ? "Connected":"Not connected");
     }
     else
     {
-        notifyKeyValue ("mqttIp", "0.0.0.0");
-        notifyKeyValue ("mqttStatus", "Not configured");
+        statusStr += makeJsonKV ("mqttIp", "0.0.0.0");
+        statusStr += String(",");
+        statusStr += makeJsonKV ("mqttStatus", "Not configured");
     }
 
 
@@ -142,11 +154,16 @@ void MyStatus::onWsGetStatus (WebSocket& socket, const String& message)
       sprintf (buf, "%02x%08x (private)", rfBaseHigh, rfBaseLow);
     else
       sprintf (buf, "%02x%08x (default)", rfBaseHigh, rfBaseLow);
-    notifyKeyValue ("baseAddress", buf);
-    notifyKeyValue ("radioStatus", "?");
 
+    statusStr += String(",");
+    statusStr += makeJsonKV ("baseAddress", buf);
+    statusStr += String(",");
+    statusStr += makeJsonKV ("radioStatus", "?");
+    statusStr += makeJsonEnd();
+    socket.sendString(statusStr);
+    
     // ---------------
-    String statusStr = makeJsonStart();
+    statusStr = makeJsonStart();
     statusStr += makeJsonKV ("detNodes", String(numDetectedNodes));
     statusStr += String(",");
     statusStr += makeJsonKV ("detSensors", String(numDetectedSensors));
