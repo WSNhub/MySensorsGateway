@@ -174,6 +174,18 @@ else
 include $(SMING_HOME)/Makefile-project.mk
 endif
 
+flash_rom: all
+	$(vecho) "Killing Terminal to free $(COM_PORT)"
+	-$(Q) $(KILL_TERM)
+	$(ESPTOOL) -p $(COM_PORT) -b $(COM_SPEED_ESPTOOL) write_flash $(flashimageoptions) 0x02000 $(RBOOT_ROM_0)
+	$(TERMINAL)
+
+flash_spiffs: all
+	$(vecho) "Killing Terminal to free $(COM_PORT)"
+	-$(Q) $(KILL_TERM)
+	$(ESPTOOL) -p $(COM_PORT) -b $(COM_SPEED_ESPTOOL) write_flash $(flashimageoptions) $(RBOOT_SPIFFS_0) $(SPIFF_BIN_OUT)
+	$(TERMINAL)
+
 upload: all
 ifndef FTP_SERVER
 	$(error FTP_SERVER not set. Please configure it in Makefile-user.mk)
