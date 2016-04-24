@@ -104,11 +104,11 @@ void RuleController::addTrigger(String rule, String trigger)
 
 void RuleController::processTrigger(String trigger)
 {
-    Debug.printf("Processing trigger %s\n", trigger.c_str());
+    //Debug.printf("Processing trigger %s\n", trigger.c_str());
     
     if (!triggers.contains(trigger))
     {
-        Debug.printf("Trigger not found\n");
+        //Debug.printf("Trigger not found\n");
         return;
     }
 
