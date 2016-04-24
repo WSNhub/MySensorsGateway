@@ -21,16 +21,13 @@ class IOExpansion
 
   private:
     /* Digital I/O pins */
-    bool i2cSetMcpOutput(uint8_t output, bool enable);
-    bool i2cToggleMcpOutput(uint8_t output);
-    bool i2cSetMcpOutputInvert(uint8_t output, bool invert);
-    bool i2cSetMcpInputInvert(uint8_t input, bool invert);
-    void i2cPublishMcpOutputs(byte address, bool forcePublish);
-    void publishMcpInputs(byte address);
+    bool getDigOutput(uint8_t output);
+    bool setDigOutput(uint8_t output, bool enable);
+    bool toggleDigOutput(uint8_t output);
+    bool getDigInput(uint8_t output);
     void i2cCheckDigitalState();
     
     /* Analog I/O pins */
-    void i2cPublishPcfOutputs(byte address, bool forcePublish);
     void i2cPublishPcfInputs(byte address, bool forcePublish);
     void i2cCheckAnalogState();
 
@@ -46,8 +43,6 @@ class IOExpansion
 
     bool              mcp23017Present[7] = { false, false, false, false,
                                              false, false, false };
-    uint8_t           mcp23017Outputs[7] = { 0, 0, 0, 0, 0, 0, 0 };
-    uint8_t           mcp23017Inputs[7] = { 0, 0, 0, 0, 0, 0, 0 };
 
     bool              pcf8591Present[8] = { false, false, false, false,
                                             false, false, false, false };

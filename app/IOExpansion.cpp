@@ -5,399 +5,246 @@
 #include <AppSettings.h>
 #include "IOExpansion.h"
 
-bool IOExpansion::i2cSetMcpOutput(uint8_t output, bool enable)
-{
-    uint8_t port;
-    uint8_t pin;
-    uint8_t outputs;
-    
-    /*
-     * Output is any number between 1 and 56, boundaries included
-     * so the port and pin number have to be derived from it.
-     */
+#define MCP23017_ADDRESS 0x20
 
-    if (output < 1 || output > 56)
+#define MCP23017_IODIRA 0x00
+#define MCP23017_IPOLA 0x02
+#define MCP23017_GPINTENA 0x04
+#define MCP23017_DEFVALA 0x06
+#define MCP23017_INTCONA 0x08
+#define MCP23017_IOCONA 0x0A
+#define MCP23017_GPPUA 0x0C
+#define MCP23017_INTFA 0x0E
+#define MCP23017_INTCAPA 0x10
+#define MCP23017_GPIOA 0x12
+#define MCP23017_OLATA 0x14
+
+
+#define MCP23017_IODIRB 0x01
+#define MCP23017_IPOLB 0x03
+#define MCP23017_GPINTENB 0x05
+#define MCP23017_DEFVALB 0x07
+#define MCP23017_INTCONB 0x09
+#define MCP23017_IOCONB 0x0B
+#define MCP23017_GPPUB 0x0D
+#define MCP23017_INTFB 0x0F
+#define MCP23017_INTCAPB 0x11
+#define MCP23017_GPIOB 0x13
+#define MCP23017_OLATB 0x15
+
+#define MCP23017_INT_ERR 255
+
+struct DigitalPin
+{
+    uint8_t id;
+    uint8_t i2caddr;
+    uint8_t pin;
+    bool    enabled;
+
+    uint8_t bitForPin(uint8_t pin)
     {
-        Debug.printf("invalid output %d!!!!\n", output);
+        return pin%8;
+    }
+
+    uint8_t regForPin(uint8_t pin, uint8_t portAaddr, uint8_t portBaddr)
+    {
+        return (pin<8) ? portAaddr : portBaddr;
+    }
+
+    uint8_t readRegister(uint8_t addr)
+    {
+        // read the current GPINTEN
+        Wire.beginTransmission(MCP23017_ADDRESS | i2caddr);
+        Wire.write((uint8_t)addr);
+        Wire.endTransmission();
+        Wire.requestFrom(MCP23017_ADDRESS | i2caddr, 1);
+        return Wire.read();
+    }
+
+    void writeRegister(uint8_t regAddr, uint8_t regValue)
+    {
+        // Write the register
+        Wire.beginTransmission(MCP23017_ADDRESS | i2caddr);
+        Wire.write((uint8_t)regAddr);
+        Wire.write((uint8_t)regValue);
+        Wire.endTransmission();
+    }
+
+    void updateRegisterBit(uint8_t pin, uint8_t pValue,
+                           uint8_t portAaddr, uint8_t portBaddr)
+    {
+        uint8_t regValue;
+        uint8_t regAddr=regForPin(pin,portAaddr,portBaddr);
+        uint8_t bit=bitForPin(pin);
+        regValue = readRegister(regAddr);
+
+        // set the value for the particular bit
+        bitWrite(regValue,bit,pValue);
+
+        writeRegister(regAddr,regValue);
+    }
+
+    void pinMode(uint8_t d)
+    {
+        updateRegisterBit(pin,(d==INPUT),MCP23017_IODIRA,MCP23017_IODIRB);
+    }
+
+    uint8_t readGPIO(uint8_t b)
+    {
+        // read the current GPIO output latches
+        Wire.beginTransmission(MCP23017_ADDRESS | i2caddr);
+        if (b == 0)
+            Wire.write((uint8_t)MCP23017_GPIOA);
+        else
+        {
+            Wire.write((uint8_t)MCP23017_GPIOB);
+        }
+        Wire.endTransmission();
+
+        Wire.requestFrom(MCP23017_ADDRESS | i2caddr, 1);
+        return Wire.read();
+    }
+
+    void digitalWrite(uint8_t d)
+    {
+        uint8_t gpio;
+        uint8_t bit=bitForPin(pin);
+
+        // read the current GPIO output latches
+        uint8_t regAddr=regForPin(pin,MCP23017_OLATA,MCP23017_OLATB);
+        gpio = readRegister(regAddr);
+
+        // set the pin and direction
+        bitWrite(gpio,bit,d);
+
+        // write the new GPIO
+        regAddr=regForPin(pin,MCP23017_GPIOA,MCP23017_GPIOB);
+        writeRegister(regAddr,gpio);
+    }
+
+    void pullUp(uint8_t d)
+    {
+        updateRegisterBit(pin,d,MCP23017_GPPUA,MCP23017_GPPUB);
+    }
+
+    uint8_t digitalRead()
+    {
+        uint8_t bit=bitForPin(pin);
+        uint8_t regAddr=regForPin(pin,MCP23017_GPIOA,MCP23017_GPIOB);
+        return (readRegister(regAddr) >> bit) & 0x1;
+    }
+
+    bool checkState()
+    {
+        bool newEnabled = digitalRead() > 0 ? true : false;
+        if (newEnabled != enabled)
+        {
+            enabled = newEnabled;
+            return true;
+        }
         return false;
     }
+};
 
-    port = (output - 1) / 8;
-    pin = output - 1 - (port * 8);
-    Debug.printf("Set output %d %s [port=%d pin=%d]\n",
-                  output, enable ? "on" : "off", port, pin);
-
-    /* read the actual value */
-    Wire.beginTransmission(0x20 + port);
-    Wire.write(0x12); //port A
-    Wire.endTransmission();
-    Wire.requestFrom(0x20 + port, 1);
-    outputs=Wire.read();
-
-//    if (AppSettings.getMcpOutputInvert(port) & (1 << pin))
-//        enable = !enable;
-
-    if (!enable)
-        outputs &= ~(1 << pin);
-    else
-        outputs |= (1 << pin);
-
-    Wire.beginTransmission(0x20 + port);
-    Wire.write(0x12); // address port A
-    Wire.write(outputs);  // value to send
-    Wire.endTransmission();
-
-    i2cPublishMcpOutputs(0x20 + port, false /* forcePublish */);
-    return true;
-}
-
-bool IOExpansion::i2cToggleMcpOutput(uint8_t output)
+DigitalPin DigitalOutputPins[] =
 {
-    uint8_t port;
-    uint8_t pin;
-    uint8_t outputs;
-    
-    /*
-     * Output is any number between 1 and 56, boundaries included
-     * so the port and pin number have to be derived from it.
-     */
+    { 1, 0x20, 0}, // expander 0x20 pin 0
+    { 2, 0x20, 1}, // expander 0x20 pin 1
+    { 3, 0x20, 2}, // expander 0x20 pin 2
+    { 4, 0x20, 3}, // expander 0x20 pin 3
+    { 5, 0x20, 4}, // expander 0x20 pin 4
+    { 6, 0x20, 5}, // expander 0x20 pin 5
+    { 7, 0x20, 6}, // expander 0x20 pin 6
+    { 8, 0x20, 7}, // expander 0x20 pin 7
+};
 
-    if (output < 1 || output > 56)
-    {
-        Debug.printf("invalid output %d!!!!\n", output);
-        return false;
-    }
-
-    port = (output - 1) / 8;
-    pin = output - 1 - (port * 8);
-    Debug.printf("Toggle output %d [port=%d pin=%d]\n",
-                  output, port, pin);
-
-    /* read the actual value */
-    Wire.beginTransmission(0x20 + port);
-    Wire.write(0x12); //port A
-    Wire.endTransmission();
-    Wire.requestFrom(0x20 + port, 1);
-    outputs=Wire.read();
-
-    bool newState = outputs & (1 << pin) ? false : true;
-
-    if (!newState)
-        outputs &= ~(1 << pin);
-    else
-        outputs |= (1 << pin);
-
-    Wire.beginTransmission(0x20 + port);
-    Wire.write(0x12); // address port A
-    Wire.write(outputs);  // value to send
-    Wire.endTransmission();
-
-    i2cPublishMcpOutputs(0x20 + port, false /* forcePublish */);
-    return true;
-}
-
-bool IOExpansion::i2cSetMcpOutputInvert(uint8_t output, bool invert)
+DigitalPin DigitalInputPins[] =
 {
-#if 0
-    uint8_t port;
-    uint8_t pin;
-    uint8_t invertMask;
-    
-    /*
-     * Output is any number between 1 and 56, boundaries included
-     * so the port and pin number have to be derived from it.
-     */
-
-    if (output < 1 || output > 56)
-    {
-        Debug.printf("invalid output %d!!!!\n", output);
-        return false;
-    }
-
-    port = (output - 1) / 8;
-    pin = output - 1 - (port * 8);
-    Debug.printf("Set invert output %d %s [port=%d pin=%d]\n",
-                  output, invert ? "yes" : "no", port, pin);
-
-    invertMask = AppSettings.getMcpOutputInvert(port);
-    if (!invert)
-        invertMask &= ~(1 << pin);
-    else
-        invertMask |= (1 << pin);
-
-    AppSettings.setMcpOutputInvert(port, invertMask);
-    AppSettings.save();
-    
-    i2cPublishMcpOutputs(0x20 + port, false /* forcePublish */);
-#endif
-    return true;
-}
-
-bool IOExpansion::i2cSetMcpInputInvert(uint8_t input, bool invert)
-{
-#if 0
-    uint8_t port;
-    uint8_t pin;
-    uint8_t invertMask;
-    
-    /*
-     * Output is any number between 1 and 56, boundaries included
-     * so the port and pin number have to be derived from it.
-     */
-
-    if (input < 1 || input > 56)
-    {
-        Debug.printf("invalid output %d!!!!\n", input);
-        return false;
-    }
-
-    port = (input - 1) / 8;
-    pin = input - 1 - (port * 8);
-    Debug.printf("Set invert input %d %s [port=%d pin=%d]\n",
-                  input, invert ? "yes" : "no", port, pin);
-
-    invertMask = AppSettings.getMcpInputInvert(port);
-    if (!invert)
-        invertMask &= ~(1 << pin);
-    else
-        invertMask |= (1 << pin);
-
-    AppSettings.setMcpInputInvert(port, invertMask);
-    AppSettings.save();
-    
-    Wire.beginTransmission(0x20 + port);
-    Wire.write(0x03); // input invert register
-    Wire.write(invertMask);
-
-    i2cPublishMcpInputs(0x20 + port, false /* forcePublish */);
-#endif
-    return true;
-}
-
-void IOExpansion::i2cPublishMcpOutputs(byte address, bool forcePublish)
-{
-    uint8_t outputs;
-
-    //HACK: disable force publish for now
-    forcePublish = false;
-
-    /* read the actual value */
-    Wire.beginTransmission(address);
-    Wire.write(0x12); //port A
-    Wire.endTransmission();
-    Wire.requestFrom(address, 1);
-    outputs=Wire.read();
-
-    /* apply the inversions and publish */
-    uint8_t outputInvert = 0; //TODO AppSettings.getMcpOutputInvert(address - 0x20);
-    for (int j = 0; j < 8; j++)
-    {
-        if (outputInvert & (1 << j))
-        {
-            if (outputs & (1 << j))
-            {
-                //The bit is set, clear it
-                outputs &= ~(1 << j);
-            }
-            else
-            {
-                //The bit is not set, set it
-                outputs |= (1 << j);
-            }
-        }
-
-        if (forcePublish ||
-            (mcp23017Outputs[address - 0x20] & (1 << j)) != (outputs & (1 << j)))
-        {
-            if (changeDlg)
-                changeDlg(String("outputD") +
-                          String((j + 1) + (8 * (address - 0x20))),
-                          outputs & (1 << j) ? "on" : "off");
-        }
-    }
-
-    mcp23017Outputs[address - 0x20] = outputs;
-}
-
-void IOExpansion::publishMcpInputs(byte address)
-{
-    uint8_t inputs;
-
-    /* read the actual value */
-    Wire.beginTransmission(address);
-    Wire.write(0x13); //port B
-    Wire.endTransmission();
-    Wire.requestFrom(address, 1);
-    inputs=Wire.read();
-
-    for (int j = 0; j < 8; j++)
-    {
-        if ((mcp23017Inputs[address - 0x20] & (1 << j)) != (inputs & (1 << j)))
-        {
-            Debug.printf("inputD%d => %s\n", j + 1 + (8 * (address - 0x20)),
-                          inputs & (1 << j) ? "on" : "off");
-
-            if (changeDlg)
-                changeDlg(String("inputD") +
-                          String((j + 1) + (8 * (address - 0x20))),
-                          inputs & (1 << j) ? "on" : "off");
-        }
-    }
-
-    mcp23017Inputs[address - 0x20] = inputs;
-}
-
-void IOExpansion::i2cCheckDigitalState()
-{
-    static int forcePublish = FORCE_PUBLISH_DIG_IVL;
-
-    Wire.lock();
-
-    forcePublish--;
-    for (int i = 0; i < 7; i++)
-    {
-        if (mcp23017Present[i])
-        {
-            publishMcpInputs(0x20 + i);
-            if (forcePublish == 0)
-                i2cPublishMcpOutputs(0x20 + i, true);
-        }
-    }
-
-    if (forcePublish == 0)
-        forcePublish = FORCE_PUBLISH_DIG_IVL;
-
-    Wire.unlock();
-}
-
-void IOExpansion::i2cPublishPcfOutputs(byte address, bool forcePublish)
-{
-    /* The value can not be read back */
-    /*
-    if (forcePublish)
-    {
-        if (changeDlg)
-                changeDlg(String("outputs/a") +
-                          String(1 + (address - 0x48)),
-                          String(pcf8591Outputs[address - 0x48]));
-    }
-    */
-}
-
-void IOExpansion::i2cPublishPcfInputs(byte address, bool forcePublish)
-{
-    byte value[4];
-
-    /* read the actual values */
-    Wire.beginTransmission(address); // wake up PCF8591
-    Wire.write(0x04); // control byte - read ADC0 then auto-increment
-    Wire.endTransmission(); // end tranmission
-    Wire.requestFrom(address, 5);
-    value[0]=Wire.read();
-    value[0]=Wire.read();
-    value[1]=Wire.read();
-    value[2]=Wire.read();
-    value[3]=Wire.read();
-
-    for (int j = 0; j < 4; j++)
-    {
-        if (forcePublish ||
-            pcf8591Inputs[j + (4 * (address - 0x48))] != value[j])
-        {
-            if (changeDlg)
-                changeDlg(String("inputA") +
-                          String((j + 1) + (4 * (address - 0x48))),
-                          String(value[j]));
-        }
-        pcf8591Inputs[j + (4 * (address - 0x48))] = value[j];
-    }
-}
-
-void IOExpansion::i2cCheckAnalogState()
-{
-    static int forcePublish = FORCE_PUBLISH_ANALOG_IVL;
-
-    Wire.lock();
-
-    forcePublish--;
-    for (int i = 0; i < 8; i++)
-    {
-        if (pcf8591Present[i])
-        {
-            i2cPublishPcfInputs(0x48 + i, (forcePublish == 0));
-            if (forcePublish == 0)
-                i2cPublishPcfOutputs(0x48 + i, true);
-        }
-    }
-
-    if (forcePublish == 0)
-        forcePublish = FORCE_PUBLISH_ANALOG_IVL;
-
-    Wire.unlock();
-}
+    { 1, 0x20, 13}, // expander 0x20 pin 0
+    { 2, 0x20, 9},  // expander 0x20 pin 0
+    { 3, 0x20, 10}, // expander 0x20 pin 0
+    { 4, 0x20, 11}, // expander 0x20 pin 0
+    { 5, 0x20, 12}, // expander 0x20 pin 0
+    { 6, 0x20, 8},  // expander 0x20 pin 0
+    { 7, 0x20, 14}, // expander 0x20 pin 0
+    { 8, 0x20, 15}, // expander 0x20 pin 0
+};
 
 void IOExpansion::begin(IOChangeDelegate dlg)
 {
     byte error, address;
-
+    uint8_t input = 0;
+    uint8_t output = 0;
     changeDlg = dlg;
 
+    /*
+     * MCP23017 16-bit port expanders
+     * 7 of these are supported, with addresses from 0x20 to 0x26.
+     */
     for (address = 0x20; address <= 0x26; address++)
     {
+        uint8_t data;
+
+        /* Let the watchdog know we're not crashed */
+	WDT.alive();
+
+        /* Lock the I2C bus */
         Wire.lock();
 
+        /* Check whether the device responds, if not it's not present */
         Wire.beginTransmission(address);
 	error = Wire.endTransmission();
 
-	WDT.alive(); //Make doggy happy
-
-	if (error == 0)
+	if (error != 0)
 	{
-            uint8_t data;
-            digitalFound = TRUE;
-
-            /*
-             * MCP23017 16-bit port expanders
-             *
-             * 7 of these are supported, with addresses from 0x20 to 0x26.
-             * These are configured so that port A are all outputs and
-             * port B are all inputs.
-             */
-            Debug.printf("Found MCP23017 expander at %x\n", address);
-            mcp23017Present[address - 0x20] = true;
-
-            /* set all of port A to outputs */
-            Wire.beginTransmission(address);
-            Wire.write(0x00); // IODIRA register
-            Wire.write(0x00); // set all of port A to outputs
-            Wire.endTransmission();
-
-#if 0
-            /* if inversion is configured, set outputs to the correct state */
-            uint8_t outputInvert =
-                AppSettings.getMcpOutputInvert(address - 0x20);
-            if (outputInvert)
-            {
-                Wire.beginTransmission(address);
-                Wire.write(0x12); // address port A
-                Wire.write(outputInvert);  // value to send
-                Wire.endTransmission();
-            }
-#endif
-
-            //set all of port B to inputs
-            Wire.beginTransmission(address);
-            Wire.write(0x01); // IODIRB register
-            Wire.write(0xff); // set all of port A to outputs
-            Wire.endTransmission();
-#if 0
-            Wire.beginTransmission(address);
-            Wire.write(0x03); // input invert register
-            Wire.write(AppSettings.getMcpInputInvert(address - 0x20));
-            Wire.endTransmission();
-#endif
+            Wire.unlock();
+            continue;
         }
 
+        digitalFound = TRUE;
+
+        Debug.printf("Found MCP23017 expander at %x\n", address);
+        mcp23017Present[address - 0x20] = true;
+
+        /* Unlock the I2C bus */
+        Wire.unlock();        
+    }
+
+    for (int i=0; i<(sizeof(DigitalInputPins)/sizeof(DigitalPin)); i++)
+    {
+        DigitalPin *pPin = &DigitalInputPins[i];
+
+        /* Let the watchdog know we're not crashed */
+	WDT.alive();
+
+        if (pPin->i2caddr == 0)
+            continue;
+
+        if (!mcp23017Present[pPin->i2caddr - 0x20])
+            continue;
+
+        Wire.lock();
+        pPin->pinMode(INPUT);
+        pPin->checkState();
+        Wire.unlock();
+    }
+    
+    for (int i=0; i<(sizeof(DigitalOutputPins)/sizeof(DigitalPin)); i++)
+    {
+        DigitalPin *pPin = &DigitalOutputPins[i];
+
+        /* Let the watchdog know we're not crashed */
+	WDT.alive();
+
+        if (pPin->i2caddr == 0)
+            continue;
+
+        if (!mcp23017Present[pPin->i2caddr - 0x20])
+            continue;
+
+        Wire.lock();
+        pPin->pinMode(OUTPUT);
+        pPin->checkState();
         Wire.unlock();
     }
 
@@ -450,20 +297,274 @@ void IOExpansion::begin(IOChangeDelegate dlg)
     }
 }
 
+void IOExpansion::i2cCheckDigitalState()
+{
+    static int forcePublish = FORCE_PUBLISH_DIG_IVL;
+
+    forcePublish--;
+
+    for (int i=0; i<(sizeof(DigitalInputPins)/sizeof(DigitalPin)); i++)
+    {
+        DigitalPin *pPin = &DigitalInputPins[i];
+        bool changed;
+        bool enabled;
+
+        /* Let the watchdog know we're not crashed */
+	WDT.alive();
+
+        if (pPin->i2caddr == 0)
+            continue;
+
+        if (!mcp23017Present[pPin->i2caddr - 0x20])
+            continue;
+
+        Wire.lock();
+        changed = pPin->checkState();
+        enabled = pPin->enabled;
+        Wire.unlock();
+        
+        if (changed)
+        {
+            Debug.printf("inputD%d => %s\n", pPin->id,
+                         enabled ? "on" : "off");
+
+            if (changeDlg)
+                changeDlg(String("inputD") + String(pPin->id),
+                          enabled ? "on" : "off");
+        }
+    }
+
+    for (int i=0; i<(sizeof(DigitalOutputPins)/sizeof(DigitalPin)); i++)
+    {
+        DigitalPin *pPin = &DigitalOutputPins[i];
+        bool changed;
+        bool enabled;
+
+        /* Let the watchdog know we're not crashed */
+	WDT.alive();
+
+        if (pPin->i2caddr == 0)
+            continue;
+
+        if (!mcp23017Present[pPin->i2caddr - 0x20])
+            continue;
+
+        Wire.lock();
+        changed = pPin->checkState();
+        enabled = pPin->enabled;
+        Wire.unlock();
+
+        if (changed)
+        {
+            Debug.printf("outputD%d => %s\n",  pPin->id,
+                         enabled ? "on" : "off");
+
+            if (changeDlg)
+                changeDlg(String("outputD") + String(pPin->id),
+                          enabled ? "on" : "off");
+        }
+    }
+
+    if (forcePublish == 0)
+        forcePublish = FORCE_PUBLISH_DIG_IVL;
+}
+
+bool IOExpansion::getDigOutput(uint8_t output)
+{
+    bool enabled = false;
+
+    for (int i=0; i<(sizeof(DigitalOutputPins)/sizeof(DigitalPin)); i++)
+    {
+        DigitalPin *pPin = &DigitalOutputPins[i];
+
+        /* Let the watchdog know we're not crashed */
+	WDT.alive();
+
+        if (pPin->id != output)
+            continue;
+
+        if (!mcp23017Present[pPin->i2caddr - 0x20])
+            break;
+
+        Wire.lock();
+        enabled = pPin->enabled;
+        Wire.unlock();
+
+        return enabled;
+    }
+
+    Debug.printf("invalid output %d!!!!\n", output);
+    return false;
+}
+
+bool IOExpansion::setDigOutput(uint8_t output, bool enable)
+{
+    bool success = false;
+
+    for (int i=0; i<(sizeof(DigitalOutputPins)/sizeof(DigitalPin)); i++)
+    {
+        DigitalPin *pPin = &DigitalOutputPins[i];
+
+        /* Let the watchdog know we're not crashed */
+	WDT.alive();
+
+        if (pPin->id != output)
+            continue;
+
+        if (!mcp23017Present[pPin->i2caddr - 0x20])
+            break;
+
+        Wire.lock();
+        pPin->digitalWrite(enable ? 1 : 0);
+        Wire.unlock();
+
+        Debug.printf("outputD%d => %s\n",  pPin->id,
+                     pPin->enabled ? "on" : "off");
+        if (changeDlg)
+            changeDlg(String("outputD") + String(pPin->id),
+                      pPin->enabled ? "on" : "off");
+
+        success = true;
+        break;
+    }
+
+    if (!success)
+    {
+        Debug.printf("invalid output %d!!!!\n", output);
+        return false;
+    }
+
+    return true;
+}
+
+bool IOExpansion::toggleDigOutput(uint8_t output)
+{
+    bool success = false;
+
+    for (int i=0; i<(sizeof(DigitalOutputPins)/sizeof(DigitalPin)); i++)
+    {
+        DigitalPin *pPin = &DigitalOutputPins[i];
+
+        /* Let the watchdog know we're not crashed */
+	WDT.alive();
+
+        if (pPin->id != output)
+            continue;
+
+        if (!mcp23017Present[pPin->i2caddr - 0x20])
+            break;
+
+        Wire.lock();
+        pPin->digitalWrite(pPin->enabled ? 0 : 1);
+        Wire.unlock();
+
+        Debug.printf("outputD%d => %s\n",  pPin->id,
+                     pPin->enabled ? "on" : "off");
+        if (changeDlg)
+            changeDlg(String("outputD") + String(pPin->id),
+                      pPin->enabled ? "on" : "off");
+
+        success = true;
+        break;
+    }
+
+    if (!success)
+    {
+        Debug.printf("invalid output %d!!!!\n", output);
+        return false;
+    }
+
+    return true;
+}
+
+bool IOExpansion::getDigInput(uint8_t input)
+{
+    bool enabled = false;
+
+    for (int i=0; i<(sizeof(DigitalInputPins)/sizeof(DigitalPin)); i++)
+    {
+        DigitalPin *pPin = &DigitalInputPins[i];
+
+        /* Let the watchdog know we're not crashed */
+	WDT.alive();
+
+        if (pPin->id != input)
+            continue;
+
+        if (!mcp23017Present[pPin->i2caddr - 0x20])
+            break;
+
+        Wire.lock();
+        enabled = pPin->enabled;
+        Wire.unlock();
+
+        return enabled;
+    }
+
+    Debug.printf("invalid input %d!!!!\n", input);
+    return false;
+}
+
+void IOExpansion::i2cPublishPcfInputs(byte address, bool forcePublish)
+{
+    byte value[4];
+
+    /* read the actual values */
+    Wire.beginTransmission(address); // wake up PCF8591
+    Wire.write(0x04); // control byte - read ADC0 then auto-increment
+    Wire.endTransmission(); // end tranmission
+    Wire.requestFrom(address, 5);
+    value[0]=Wire.read();
+    value[0]=Wire.read();
+    value[1]=Wire.read();
+    value[2]=Wire.read();
+    value[3]=Wire.read();
+
+    for (int j = 0; j < 4; j++)
+    {
+        if (forcePublish ||
+            pcf8591Inputs[j + (4 * (address - 0x48))] != value[j])
+        {
+            if (changeDlg)
+                changeDlg(String("inputA") +
+                          String((j + 1) + (4 * (address - 0x48))),
+                          String(value[j]));
+        }
+        pcf8591Inputs[j + (4 * (address - 0x48))] = value[j];
+    }
+}
+
+void IOExpansion::i2cCheckAnalogState()
+{
+    static int forcePublish = FORCE_PUBLISH_ANALOG_IVL;
+
+    Wire.lock();
+
+    forcePublish--;
+    for (int i = 0; i < 8; i++)
+    {
+        if (pcf8591Present[i])
+        {
+            i2cPublishPcfInputs(0x48 + i, (forcePublish == 0));
+        }
+    }
+
+    if (forcePublish == 0)
+        forcePublish = FORCE_PUBLISH_ANALOG_IVL;
+
+    Wire.unlock();
+}
+
 bool IOExpansion::updateResource(String resource, String value)
 {
     if (resource.startsWith("outputD"))
     {
         resource = resource.substring(6);
         int out = resource.toInt();
-        if (out < 1 || out > 56)
-        {
-            Debug.printf("invalid output: d%d", out);
-            return false;
-        }
-
-        Debug.printf("Set digital output: [%d] %s\n", out, value.c_str());
-        i2cSetMcpOutput(out, value.equals("on"));
+        bool result = setDigOutput(out, value.equals("on"));
+        Debug.printf("Set digital output: [%d] %s%s\n",
+                     out, value.c_str(), result ? "" : " FAILED");
+        return result;
     }
     else
     {
@@ -484,17 +585,10 @@ String IOExpansion::getResourceValue(String resource)
     {
         resource = resource.substring(6);
         int input = resource.toInt();
-        if (input < 1 || input > 56)
-        {
-            Debug.printf("invalid input: d%d", input);
-            return "invalid";
-        }
-
-        port = (input - 1) / 8;
-        pin = input - 1 - (port * 8);
-        Debug.printf("Get input D%d [port=%d pin=%d]\n",
-                     input, port, pin);
-        return (mcp23017Inputs[port] & (1 << pin)) ? "on" : "off";
+        bool enabled = getDigInput(input);
+        Debug.printf("Get input %d: %sABLED\n",
+                     input, enabled ? "EN" : "DIS");
+        return enabled ? "on" : "off";
     }
     /* Analog input */
     if (resource.startsWith("inputA"))
@@ -515,17 +609,10 @@ String IOExpansion::getResourceValue(String resource)
     {
         resource = resource.substring(7);
         int output = resource.toInt();
-        if (output < 1 || output > 56)
-        {
-            Debug.printf("invalid output: d%d", output);
-            return "invalid";
-        }
-
-        port = (output - 1) / 8;
-        pin = output - 1 - (port * 8);
-        Debug.printf("Get output %d [port=%d pin=%d]\n",
-                     output, port, pin);
-        return (mcp23017Outputs[port] & (1 << pin)) ? "on" : "off";
+        bool enabled = getDigOutput(output);
+        Debug.printf("Get output %d: %sABLED\n",
+                     output, enabled ? "EN" : "DIS");
+        return enabled ? "on" : "off";
     }
 
     Debug.println("ERROR: GetValue for an unknown object");
@@ -534,26 +621,22 @@ String IOExpansion::getResourceValue(String resource)
 
 bool IOExpansion::toggleResourceValue(String resource)
 {
-    uint8_t port;
-    uint8_t pin;
-
-    /* Digital output */
     if (resource.startsWith("outputD"))
     {
-        resource = resource.substring(7);
-        int output = resource.toInt();
-        if (output < 1 || output > 56)
-        {
-            Debug.printf("invalid output: d%d", output);
-            return false;
-        }
-
-        return i2cToggleMcpOutput(output);
+        resource = resource.substring(6);
+        int out = resource.toInt();
+        bool result = toggleDigOutput(out);
+        Debug.printf("Toggle digital output: [%d]%s\n",
+                     out, result ? "" : " FAILED");
+        return result;
     }
-    
-    Debug.printf("resource does not support toggling: %s",
-                 resource.c_str());
-    return false;
+    else
+    {
+        Debug.println("ERROR: Only digital outputs can be toggled");
+        return false;
+    }
+
+    return true;
 }
 
 IOExpansion Expansion;
