@@ -63,6 +63,12 @@ void MyStatus::notifyUpdate(const String& statusStr)
     str += makeJsonEnd();
     HTTP.notifyWsClients(str);
   }
+  else
+  {
+    String info = String ("No update because started=") + String (started)
+        + String (" isFirmwareDld=") + String (isFirmwareDld);
+    Debug.println(info);
+  }
 }
 
 void MyStatus::notifyKeyValue(const String& key, const String& value)
@@ -73,6 +79,12 @@ void MyStatus::notifyKeyValue(const String& key, const String& value)
     str += makeJsonKV (key, value);
     str += makeJsonEnd();
     HTTP.notifyWsClients(str);
+  }
+  else
+  {
+    String info = String ("No update because started=") + String (started)
+        + String (" isFirmwareDld=") + String (isFirmwareDld);
+    Debug.println(info);
   }
 }
 
