@@ -16,7 +16,9 @@ class MyStatus
     MyStatus();
     void begin();
 
+    void registerHttpHandlers(HttpServer &server);
     void onWsGetStatus (WebSocket& socket, const String& message);
+    void onWsGetDldStatus (WebSocket& socket, const String& message);
     void setStartupTime (const String& timeStr);
     void updateGWIpConnection (const String& ipAddrStr, const String& status);
     void updateMqttConnection (const String& ipAddrStr, const String& status);
@@ -24,6 +26,8 @@ class MyStatus
     void updateFreeHeapSize (uint32 freeHeap);
     void updateRfPackets (int rx, int tx);
     void updateMqttPackets (int rx, int tx);
+    void setFirmwareDldStart (int trial);
+    void setFirmwareDldEnd (bool isSuccess, int trial);
 
     void notifyCounters();
     
@@ -36,12 +40,14 @@ class MyStatus
 
   private:
     int started;
+    bool isFirmwareDld;
+    int  firmwareTrial;
     String systemStartTime;
     
     int numDetectedNodes;
     int numDetectedSensors;
-    uint32 numRfPktRx;
-    uint32 numRfPktTx;
+    //uint32 numRfPktRx;
+    //uint32 numRfPktTx;
     //uint32 numMqttPktRx;
     //uint32 numMqttPktTx;
     

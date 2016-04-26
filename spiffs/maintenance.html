@@ -19,7 +19,81 @@
     <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
 </head>
-<body>
+    <script>
+
+        function StartWebSocket()
+        {
+            if ("WebSocket" in window)
+            {
+                // Let us open a web socket
+                ws = new WebSocket("ws://" + window.location.host);
+				
+                ws.onopen = function()
+                {
+                    document.getElementById("wsStatus").innerHTML = "websocket is open";
+                    //alert("ws.onopen()");
+                    // Web Socket is connected
+                    ws.send("getDldStatus");
+                };
+				
+                ws.onmessage = function(evt) 
+                { 
+                    //alert("ws.onmessage(): " + evt.data);
+                    try {
+                        var received_msg = JSON.parse(evt.data);
+    
+                        if (received_msg.type == "firmware")
+                        {
+                            for (i=0; i<received_msg.data.length; i++)
+                            {
+                              var statusData = received_msg.data[i];
+                              document.getElementById(statusData.key).innerHTML = "[" + statusData.value + "]";
+                            }
+                        }
+                        else if (received_msg.type == "status")
+                        {
+                            for (i=0; i<received_msg.data.length; i++)
+                            {
+                              var statusData = received_msg.data[i];
+                              if (statusData.key == "systemFreeHeap")
+                              {
+                                document.getElementById(statusData.key).innerHTML = "[" + statusData.value + "]";
+                              }
+                            }
+                        }
+                        else
+                        {
+                            document.getElementById("unknownMessageType").innerHTML = "Message is received: [" + evt.data + "]";
+                            //alert("Message is received: "+evt.data);
+                        }
+                    }
+                    catch(e) {
+                        alert(e);
+                    }
+                };
+				
+                ws.onclose = function()
+                { 
+                    document.getElementById("wsStatus").innerHTML = "websocket CLOSED";
+                    // websocket is closed.
+                    alert("Connection is closed..."); 
+                };
+            }
+            else
+            {
+               // The browser doesn't support WebSocket
+               alert("WebSocket NOT supported by your Browser!");
+            }
+        }
+        function refreshStatus()
+        {
+            ws.send("getDldStatus");
+            setTimeout(refreshStatus, 3000);
+        }
+
+	</script>
+  
+<body onload="StartWebSocket()">
 
 <div class="container">
     <div class="header">
@@ -54,6 +128,12 @@
                 </fieldset>
                 <div class="col-md-offset-3">
                     <input type="submit" name="Command" value="Upgrade" class="btn btn-success">
+                    <p id="firmwareSt">[FIRMWARE STATUS COMES HERE.]</p>
+                    <p id="systemVersion">[current firmware]</p>
+                    <p id="systemBuild">[current firmware build time]</p>
+                    <p id="systemFreeHeap">[systemFreeHeap COMES HERE.]</p>
+                    <p id="unknownMessageType">[unknownMessageType COMES HERE.]</p>
+                    <p id="wsStatus">[websocket status]</p>
                 </div>
             </form>
         </div>
@@ -67,7 +147,7 @@
                     <legend>Restart - Restart the system.</legend>
                 </fieldset>
                 <div class="col-md-offset-3">
-                    <input type="submit" name="Command" value="Restart" class="btn btn-success">
+                    <input type="submit" name="Command" value="Restart" class="btn btn-success" onclick="setTimeout(refreshStatus, 3000)">
                 </div>
             </form>
         </div>
@@ -81,3 +161,4 @@
 </div> <!-- /container -->
 </body>
 </html>
+

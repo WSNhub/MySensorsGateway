@@ -26,6 +26,11 @@
 
     <script>
 
+        function refreshStatus()
+        {
+            console.info ("Refreshing status");
+            ws.send("getStatus");
+        }
         function StartWebSocket()
         {
             if ("WebSocket" in window)
@@ -37,6 +42,7 @@
                 {
                     // Web Socket is connected, send data using send()
                     ws.send("getStatus");
+                    setInterval(refreshStatus, 60000); // 1min
                 };
 				
                 ws.onmessage = function(evt) 
@@ -45,7 +51,7 @@
 
                     if (received_msg.type == "status")
                     {
-                      
+                        console.info ("Received status update");
                         for (i=0; i<received_msg.data.length; i++)
                         {
                           var statusData = received_msg.data[i];
@@ -167,6 +173,9 @@
                <tr>
                  <td>Build time</td>
                  <td id="systemBuild">{systemBuild}</td>
+               </tr>               <tr>
+                 <td>Current ROM</td>
+                 <td id="currentRomSlot">{currentRomSlot}</td>
                </tr>
                <tr>
                  <td>Free heap</td>
