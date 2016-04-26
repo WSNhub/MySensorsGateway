@@ -290,7 +290,6 @@ void MyStatus::setFirmwareDldStart (int trial)
     str += String("]}");
     Debug.println(str.c_str());
     HTTP.notifyWsClients(str);
-    HTTP.notifyWsClients(str);
 }
 
 void MyStatus::setFirmwareDldEnd (bool isSuccess, int trial)
@@ -306,7 +305,6 @@ void MyStatus::setFirmwareDldEnd (bool isSuccess, int trial)
     
     str += String("]}");
     Debug.println(str.c_str());
-    HTTP.notifyWsClients(str);
     HTTP.notifyWsClients(str);
 }
 
