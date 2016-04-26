@@ -191,10 +191,13 @@ void MyStatus::onWsGetStatus (WebSocket& socket, const String& message)
 
     // ---------------
     sprintf (buf, "%x", system_get_chip_id());
+    int slot = rboot_get_current_rom();
     statusStr = makeJsonStart();
     statusStr += makeJsonKV ("systemVersion", build_git_sha);
     statusStr += String(",");
     statusStr += makeJsonKV ("systemBuild", build_time);
+    statusStr += String(",");
+    statusStr += makeJsonKV ("currentRomSlot", String(slot));
     statusStr += String(",");
     statusStr += makeJsonKV ("systemChipId", buf);
     statusStr += String(",");
