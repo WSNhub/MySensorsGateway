@@ -21,23 +21,13 @@
 </head>
     <script>
 
-        function StartWebSocket()
+        var refreshTimer = 0;
+        var isDownloading = false;
+        var ws;
+        function handleWSMessage (evt)
         {
-            if ("WebSocket" in window)
-            {
-                // Let us open a web socket
-                ws = new WebSocket("ws://" + window.location.host);
-        
-                ws.onopen = function()
-                {
-                    // Web Socket is connected
-                    console.info ("Websocket open");
-                    ws.send("getDldStatus");
-                };
-				
-                ws.onmessage = function(evt) 
-                { 
-                    try {
+           clearTimeout(refreshTimer);
+                   try {
                         var received_msg = JSON.parse(evt.data);
     
                         if (received_msg.type == "firmware")
@@ -50,20 +40,64 @@
                               {
                                 document.getElementById("linkGit").href = "https://github.com/WSNhub/MySensorsGateway/commit/" + statusData.value;
                               }
+                              if (! isDownloading)
+                              {
+                                if (statusData.key == "firmwareSt")
+                                {
+                                  if (statusData.value != "Ready")
+                                  {
+                                    isDownloading = true;
+                                    setTimeout(refreshStatus, 3000);
+                                  }
+                                }
+                              }
                             }
                         }
                     }
                     catch(e) {
                         alert(e);
                     }
+        }
+        function handleWSReopen()
+        {
+            console.info ("Websocket is open again");
+            refreshTimer = setTimeout(reCheckSocket, 2000);
+            ws.send("getDldStatus");
+        }
+        function handleWSClosed()
+        {
+            console.info ("Websocket is closed");
+            refreshTimer = setTimeout(reCheckSocket, 10000);
+        }
+        function reCheckSocket()
+        {
+            // Connection is lost, probably the system is rebooting
+            document.getElementById("firmwareSt").innerHTML = "Rebooting";
+            console.info ("Restarting websocket");
+            ws.onclose = 0;
+            ws.close ();
+            ws = new WebSocket("ws://" + window.location.host);
+            ws.onopen = handleWSReopen;
+            ws.onmessage = handleWSMessage;
+            ws.onclose = handleWSClosed;
+        }
+        function StartWebSocket()
+        {
+            if ("WebSocket" in window)
+            {
+                // Let us open a web socket
+                ws = new WebSocket("ws://" + window.location.host);
+        
+                ws.onopen = function()
+                {
+                    // Web Socket is connected
+                    console.info ("Websocket open");
+                    refreshTimer = setTimeout(reCheckSocket, 2000);
+                    ws.send("getDldStatus");
                 };
 				
-                ws.onclose = function()
-                { 
-                    // websocket is closed.
-                    console.info ("Websocket closed");
-                    alert("Connection is closed..."); 
-                };
+                ws.onmessage = handleWSMessage;
+                ws.onclose = handleWSClosed;
             }
             else
             {
@@ -73,6 +107,8 @@
         }
         function refreshStatus()
         {
+            console.info ("Refresh dld status");
+            refreshTimer = setTimeout(reCheckSocket, 2000);
             ws.send("getDldStatus");
             setTimeout(refreshStatus, 3000);
         }
