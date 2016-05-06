@@ -9,6 +9,13 @@
 #include "MySensors/MyConfig.h"
 #include "MySensors/MySensor.h"
 
+typedef enum
+{
+    systemReady = 1,
+    downloadStarted,
+    downloadFailed,
+    downloadSuccess
+} eFirmwareState;
 
 class MyStatus
 {
@@ -37,10 +44,11 @@ class MyStatus
     String makeJsonEnd();
     void notifyUpdate(const String& statusStr);
     void notifyKeyValue(const String& key, const String& value);
+    String getFirmwareStateString (eFirmwareState state);
 
   private:
     int started;
-    bool isFirmwareDld;
+    eFirmwareState firmwareState;
     int  firmwareTrial;
     String systemStartTime;
     

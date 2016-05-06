@@ -12,7 +12,7 @@ extern MyStatus myStatus;
 MyStatus::MyStatus()
 {
     started = 0;
-    isFirmwareDld = false;
+    firmwareState = systemReady;
     firmwareTrial=0;
     freeHeapSize = 0;
     numDetectedNodes = 0;
@@ -56,7 +56,7 @@ String MyStatus::makeJsonEnd()
 
 void MyStatus::notifyUpdate(const String& statusStr)
 {
-  if (started && !isFirmwareDld)
+  if (started && (firmwareState != downloadStarted))
   {
     String str = makeJsonStart();
     str += statusStr;
@@ -66,14 +66,14 @@ void MyStatus::notifyUpdate(const String& statusStr)
   else
   {
     String info = String ("No update because started=") + String (started)
-        + String (" isFirmwareDld=") + String (isFirmwareDld);
+        + String (" firmwareState=") + String (firmwareState);
     Debug.println(info);
   }
 }
 
 void MyStatus::notifyKeyValue(const String& key, const String& value)
 {
-  if (started && !isFirmwareDld)
+  if (started && (firmwareState != downloadStarted))
   {
     String str = makeJsonStart();
     str += makeJsonKV (key, value);
@@ -83,27 +83,36 @@ void MyStatus::notifyKeyValue(const String& key, const String& value)
   else
   {
     String info = String ("No update because started=") + String (started)
-        + String (" isFirmwareDld=") + String (isFirmwareDld);
+        + String (" firmwareState=") + String (firmwareState);
     Debug.println(info);
+  }
+}
+
+String MyStatus::getFirmwareStateString (eFirmwareState state)
+{
+  switch (state)
+  {
+    case systemReady : return (String("Ready")); break;
+    case downloadStarted : return (String("Downloading ...")); break;
+    case downloadFailed : return (String("Download Failed")); break;
+    case downloadSuccess : return (String("Download success")); break;
   }
 }
 
 void MyStatus::onWsGetDldStatus (WebSocket& socket, const String& message)
 {
     String str("{\"type\": \"firmware\", \"data\" : [");
-    if (isFirmwareDld)
-    {
-      String val = String ("Downloading firmware (trial=") + String (firmwareTrial) + String (")");
-      str += makeJsonKV ("firmwareSt", val);
-    }
-    else
-    {
-      str += makeJsonKV ("firmwareSt", "...");
-    }
+    String firmw = getFirmwareStateString(firmwareState);
+    
+    if (firmwareState != systemReady)
+      firmw += String(" (trial=") + String (firmwareTrial) + String (")");
+    str += makeJsonKV ("firmwareSt", firmw);
     str += String(",");
     str += makeJsonKV ("systemVersion",build_git_sha);
     str += String(",");
     str += makeJsonKV ("systemBuild",build_time);
+    str += String(",");
+    str += makeJsonKV ("systemStartTime", systemStartTime);
     str += makeJsonEnd();
     socket.sendString(str);
 }
@@ -282,7 +291,7 @@ void MyStatus::updateFreeHeapSize (uint32 freeHeap)
 
 void MyStatus::setFirmwareDldStart (int trial)
 {
-    isFirmwareDld = true;
+    firmwareState = downloadStarted;
     firmwareTrial = trial;
     String str("{\"type\": \"firmware\", \"data\" : [");
     str += String ("{\"key\": \"firmwareSt\",");
@@ -294,7 +303,14 @@ void MyStatus::setFirmwareDldStart (int trial)
 
 void MyStatus::setFirmwareDldEnd (bool isSuccess, int trial)
 {
-    isFirmwareDld = false;
+    if (isSuccess)
+    {
+      firmwareState = downloadSuccess;
+    }
+    else
+    {
+      firmwareState = downloadFailed;
+    }
     String str("{\"type\": \"firmware\", \"data\" : [");
     str += String ("{\"key\": \"firmwareSt\",");
     if (isSuccess)
