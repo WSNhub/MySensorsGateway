@@ -21,25 +21,13 @@
 </head>
     <script>
 
-        function StartWebSocket()
+        var refreshTimer = 0;
+        var isDownloading = false;
+        var ws;
+        function handleWSMessage (evt)
         {
-            if ("WebSocket" in window)
-            {
-                // Let us open a web socket
-                ws = new WebSocket("ws://" + window.location.host);
-				
-                ws.onopen = function()
-                {
-                    document.getElementById("wsStatus").innerHTML = "websocket is open";
-                    //alert("ws.onopen()");
-                    // Web Socket is connected
-                    ws.send("getDldStatus");
-                };
-				
-                ws.onmessage = function(evt) 
-                { 
-                    //alert("ws.onmessage(): " + evt.data);
-                    try {
+           clearTimeout(refreshTimer);
+                   try {
                         var received_msg = JSON.parse(evt.data);
     
                         if (received_msg.type == "firmware")
@@ -47,37 +35,69 @@
                             for (i=0; i<received_msg.data.length; i++)
                             {
                               var statusData = received_msg.data[i];
-                              document.getElementById(statusData.key).innerHTML = "[" + statusData.value + "]";
-                            }
-                        }
-                        else if (received_msg.type == "status")
-                        {
-                            for (i=0; i<received_msg.data.length; i++)
-                            {
-                              var statusData = received_msg.data[i];
-                              if (statusData.key == "systemFreeHeap")
+                              document.getElementById(statusData.key).innerHTML = statusData.value;
+                              if (statusData.key == "systemVersion")
                               {
-                                document.getElementById(statusData.key).innerHTML = "[" + statusData.value + "]";
+                                document.getElementById("linkGit").href = "https://github.com/WSNhub/MySensorsGateway/commit/" + statusData.value;
+                              }
+                              if (! isDownloading)
+                              {
+                                if (statusData.key == "firmwareSt")
+                                {
+                                  if (statusData.value != "Ready")
+                                  {
+                                    isDownloading = true;
+                                    setTimeout(refreshStatus, 3000);
+                                  }
+                                }
                               }
                             }
-                        }
-                        else
-                        {
-                            document.getElementById("unknownMessageType").innerHTML = "Message is received: [" + evt.data + "]";
-                            //alert("Message is received: "+evt.data);
                         }
                     }
                     catch(e) {
                         alert(e);
                     }
+        }
+        function handleWSReopen()
+        {
+            console.info ("Websocket is open again");
+            refreshTimer = setTimeout(reCheckSocket, 2000);
+            ws.send("getDldStatus");
+        }
+        function handleWSClosed()
+        {
+            console.info ("Websocket is closed");
+            refreshTimer = setTimeout(reCheckSocket, 10000);
+        }
+        function reCheckSocket()
+        {
+            // Connection is lost, probably the system is rebooting
+            document.getElementById("firmwareSt").innerHTML = "Rebooting";
+            console.info ("Restarting websocket");
+            ws.onclose = 0;
+            ws.close ();
+            ws = new WebSocket("ws://" + window.location.host);
+            ws.onopen = handleWSReopen;
+            ws.onmessage = handleWSMessage;
+            ws.onclose = handleWSClosed;
+        }
+        function StartWebSocket()
+        {
+            if ("WebSocket" in window)
+            {
+                // Let us open a web socket
+                ws = new WebSocket("ws://" + window.location.host);
+        
+                ws.onopen = function()
+                {
+                    // Web Socket is connected
+                    console.info ("Websocket open");
+                    refreshTimer = setTimeout(reCheckSocket, 2000);
+                    ws.send("getDldStatus");
                 };
 				
-                ws.onclose = function()
-                { 
-                    document.getElementById("wsStatus").innerHTML = "websocket CLOSED";
-                    // websocket is closed.
-                    alert("Connection is closed..."); 
-                };
+                ws.onmessage = handleWSMessage;
+                ws.onclose = handleWSClosed;
             }
             else
             {
@@ -87,6 +107,8 @@
         }
         function refreshStatus()
         {
+            console.info ("Refresh dld status");
+            refreshTimer = setTimeout(reCheckSocket, 2000);
             ws.send("getDldStatus");
             setTimeout(refreshStatus, 3000);
         }
@@ -114,43 +136,45 @@
     </div>
 
     <div class="row">
-        <div class="col-lg-6 col-md-offset-3">
-            <form method="post" action="">
-                <fieldset>
-                    <legend>Upgrade - Upgrade the system with another software version.</legend>
-                    <div class="col-md-offset-2">
-                        <div class="form-group">
-                            <label>OTA Base URL (IP_ADDRESS/DIRECTORY e.g. 192.168.1.157/firmware)</label>
-                            <p>This is the IP addres of the webserver and the directory (path from webserver document root) where the files to be downloaded are stored.
-                            <input class="form-control" style="width: 250px" type="text" name="webOtaBaseUrl" value="{webOtaBaseUrl}">
-                        </div>
-                    </div>
-                </fieldset>
-                <div class="col-md-offset-3">
+       <fieldset>
+            <legend>Current software version.</legend>
+            <div class="col-md-offset-1">
+                <p><b>Version: </b><span id="systemVersion">[current firmware]</span>
+                (<a id="linkGit" href="https://github.com/WSNhub/MySensorsGateway/commit/">Link to git</a>)</p>
+                <p><b>Build time: </b><span id="systemBuild">[current firmware build time]</span></p>
+                <p><b>Boot time: </b><span id="systemStartTime">[boot time]</span></p>
+            </div>
+       </fieldset>
+    </div>
+    <p></p>
+    
+  <div class="row">
+      <form method="post" action="">
+        <fieldset>
+            <legend>Upgrade - Upgrade the system with another software version.</legend>
+              <div class="col-md-offset-1">
+                  <label for="otaUrl">OTA Base URL : </label> <input id="otaUrl" style="width: 250px" type="text" name="webOtaBaseUrl" value="{webOtaBaseUrl}"> 
                     <input type="submit" name="Command" value="Upgrade" class="btn btn-success">
-                    <p id="firmwareSt">[FIRMWARE STATUS COMES HERE.]</p>
-                    <p id="systemVersion">[current firmware]</p>
-                    <p id="systemBuild">[current firmware build time]</p>
-                    <p id="systemFreeHeap">[systemFreeHeap COMES HERE.]</p>
-                    <p id="unknownMessageType">[unknownMessageType COMES HERE.]</p>
-                    <p id="wsStatus">[websocket status]</p>
+                            <p>This is the IP addres of the webserver and the directory (path from webserver document root) where the files to be downloaded are stored. (e.g. http://192.168.1.157/firmware)
+              </div>
+        </fieldset>
+      </form>
+       
+              <div class="col-md-offset-1">
+                <p><b>Status: </b><span id="firmwareSt">[firmware status]</span></p>
                 </div>
-            </form>
-        </div>
     </div>
 
     <p>&nbsp;</p>
     <div class="row">
-        <div class="col-lg-6 col-md-offset-3">
             <form method="post" action="">
                 <fieldset>
                     <legend>Restart - Restart the system.</legend>
                 </fieldset>
-                <div class="col-md-offset-3">
+                <div class="col-md-offset-1">
                     <input type="submit" name="Command" value="Restart" class="btn btn-success" onclick="setTimeout(refreshStatus, 3000)">
                 </div>
             </form>
-        </div>
     </div>
 
     <p>&nbsp;</p>
