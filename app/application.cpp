@@ -7,20 +7,11 @@
 #include <IOExpansion.h>
 #include <RTClock.h>
 #include <Network.h>
-#include <SDCard.h>
 #include <MyGateway.h>
 #include <HTTP.h>
 #include <controller.h>
-#include <Rule.h>
 #include "MyStatus.h"
 #include "MyDisplay.h"
-
-#ifdef SD_SPI_SS_PIN
-// set up variables using the SD utility library functions:
-Sd2Card card;
-SdVolume volume;
-SdFile root;
-#endif
 
 /*
  * The I2C implementation takes care of initializing things like I/O
@@ -97,14 +88,11 @@ void heapCheckUsage()
 void i2cChangeHandler(String object, String value)
 {
     controller.notifyChange(object, value);
-    Rules.processTrigger(object);
 }
 
 // Will be called when system initialization was completed
 void startServers()
 {
-    Rules.begin();
-
     HTTP.begin(); //HTTP must be first so handlers can be registered
 
     I2C_dev.begin();
@@ -137,75 +125,6 @@ void wifiCb(bool connected)
     }
 }
 
-#ifdef SD_SPI_SS_PIN
-// change this to match your SD shield or module;
-// Arduino Ethernet shield: pin 4
-// Adafruit SD shields and modules: pin 10
-// Sparkfun SD shield: pin 8
-const int chipSelect = 0;
-void processSD(String commandLine, CommandOutput* out)
-{
-  out->printf("Initializing SD card...\n");
-
-  // we'll use the initialization code from the utility libraries
-  // since we're just testing if the card is working!
-  if (!card.init(SPI_HALF_SPEED, SD_SPI_SS_PIN)) {
-    out->printf("initialization failed. Things to check:\n");
-    out->printf("* is a card inserted?\n");
-    out->printf("* is your wiring correct?\n");
-    out->printf("* did you change the chipSelect pin to match your shield or module?\n");
-    return;
-  } else {
-    out->printf("Wiring is correct and a card is present.\n");
-  }
-
-  // print the type of card
-  out->printf("Card type: ");
-  switch (card.type()) {
-    case SD_CARD_TYPE_SD1:
-      out->printf("SD1\n");
-      break;
-    case SD_CARD_TYPE_SD2:
-      out->printf("SD2\n");
-      break;
-    case SD_CARD_TYPE_SDHC:
-      out->printf("SDHC\n");
-      break;
-    default:
-      out->printf("Unknown\n");
-  }
-
-  // Now we will try to open the 'volume'/'partition' - it should be FAT16 or FAT32
-  if (!volume.init(card)) {
-    out->printf("Could not find FAT16/FAT32 partition.\nMake sure you've formatted the card\n");
-    return;
-  }
-
-
-  // print the type and size of the first FAT-type volume
-  uint32_t volumesize;
-  out->printf("Volume type is FAT%d\n", volume.fatType());
-
-  volumesize = volume.blocksPerCluster();    // clusters are collections of blocks
-  volumesize *= volume.clusterCount();       // we'll have a lot of clusters
-  volumesize *= 512;                            // SD card blocks are always 512 bytes
-  out->printf("Volume size (bytes): %d\n", volumesize);
-  out->printf("Volume size (Kbytes): ");
-  volumesize /= 1024;
-  out->printf("%d\n", volumesize);
-  out->printf("Volume size (Mbytes): ");
-  volumesize /= 1024;
-  out->printf("%d\n", volumesize);
-
-
-  Serial.println("\nFiles found on the card (name, date and size in bytes): ");
-  root.openRoot(volume);
-
-  // list all files in the card with date and size
-  root.ls(LS_R | LS_DATE | LS_SIZE);
-}
-#endif
-
 void processInfoCommand(String commandLine, CommandOutput* out)
 {
     uint64_t rfBaseAddress = GW.getBaseAddress();
@@ -217,23 +136,10 @@ void processInfoCommand(String commandLine, CommandOutput* out)
     out->printf("ESP SDK version    : %s\n", system_get_sdk_version());
     out->printf("MySensors version  : %s\n", GW.version());
     out->printf("\r\n");
-#if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
-    if (!AppSettings.wired)
-    {
-#endif
-        out->printf("Station SSID       : %s\n", AppSettings.ssid.c_str());
-        out->printf("Station DHCP       : %s\n", AppSettings.dhcp ?
-                                                 "TRUE" : "FALSE");
-        out->printf("Station IP         : %s\n", Network.getClientIP().toString().c_str());
-#if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
-    }
-    else
-    {
-        out->printf("DHCP               : %s\n", AppSettings.dhcp ? "TRUE" : "FALSE");
-        extern IPAddress w5100_netif_get_ip();
-        out->printf("Wired IP           : %s\n", Network.getClientIP().toString().c_str());
-    }
-#endif
+    out->printf("Station SSID       : %s\n", AppSettings.ssid.c_str());
+    out->printf("Station DHCP       : %s\n", AppSettings.dhcp ?
+                                             "TRUE" : "FALSE");
+    out->printf("Station IP         : %s\n", Network.getClientIP().toString().c_str());
     uint8 hwaddr[6];
     wifi_get_macaddr(STATION_IF, hwaddr);
     out->printf("MAC                : %02x:%02x:%02x:%02x:%02x:%02x\n",
@@ -392,36 +298,6 @@ void processShowConfigCommand(String commandLine, CommandOutput* out)
     out->println(fileGetContent(".settings.conf"));
 }
 
-#include "ScriptCore.h"
-
-void processJS(String commandLine, CommandOutput* out)
-{
-    ScriptingCore.execute("SetObjectValue(\"sensor2\", \"1\");");
-    ScriptingCore.execute("result = 1; print(\"All Done \"+result);");
-    bool pass = ScriptingCore.root->getParameter("result")->getBool();
-    out->printf("Result: %s\n", pass ? "true" : "false");
-    ScriptingCore.execute("print(\"GetObjectValue() => \"+GetObjectValue(\"sensor1\"));");
-    ScriptingCore.execute("for (result=0; result<10; result++) { print(result); }");
-    ScriptingCore.execute("SetObjectValue(\"sensor2\", \"0\");");
-}
-
-void processRules(String commandLine, CommandOutput* out)
-{
-    Rules.addRule("test1", "SetObjectValue(\"sensor2\", \"1\");");
-    Rules.addRule("test2", "for (result=0; result<10; result++) { print(result); }");
-    Rules.addTrigger("test1", "object1");
-    Rules.addTrigger("test1", "object1");
-    Rules.addTrigger("test1", "object2");
-    Rules.addTrigger("test2", "object3");
-    Rules.addTrigger("test3", "object4");
-    Rules.addTrigger("test4", "object1");
-    Rules.addRule("sensor1", "if (GetObjectIntValue(\"sensor1\") %2 == 0){SetObjectValue(\"sensor2\", \"1\");} else {SetObjectValue(\"sensor2\", \"0\");}");
-    Rules.addTrigger("sensor1", "sensor1");
-
-    Rules.store();
-    Rules.processTrigger("object3");
-}
-
 void processAPModeCommand(String commandLine, CommandOutput* out)
 {
     Vector<String> commandToken;
@@ -465,14 +341,6 @@ void init()
 #ifdef RADIO_SPI_SS_PIN
     pinMode(RADIO_SPI_SS_PIN, OUTPUT);
     digitalWrite(RADIO_SPI_SS_PIN, HIGH);
-#endif
-#ifdef SD_SPI_SS_PIN
-    pinMode(SD_SPI_SS_PIN, OUTPUT);
-    digitalWrite(SD_SPI_SS_PIN, HIGH);
-#endif
-#ifdef ETHERNET_SPI_SS_PIN
-    pinMode(ETHERNET_SPI_SS_PIN, OUTPUT);
-    digitalWrite(ETHERNET_SPI_SS_PIN, HIGH);
 #endif
 
     /* Mount the internal storage */
@@ -519,20 +387,6 @@ void init()
                                                    "Adjust the AccessPoint Mode",
                                                    "System",
                                                    processAPModeCommand));
-#ifdef SD_SPI_SS_PIN
-    commandHandler.registerCommand(CommandDelegate("sd",
-                                                   "Test SD",
-                                                   "System",
-                                                   processSD));
-#endif
-    commandHandler.registerCommand(CommandDelegate("js",
-                                                   "Test JS",
-                                                   "System",
-                                                   processJS));
-    commandHandler.registerCommand(CommandDelegate("rules",
-                                                   "Test rules",
-                                                   "System",
-                                                   processRules));
     commandHandler.registerCommand(CommandDelegate("showConfig",
                                                    "Show the current configuration",
                                                    "System",

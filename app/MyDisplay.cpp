@@ -33,33 +33,16 @@ void MyDisplay::update()
     display.println("MySensors gateway");
     display.setTextSize(1);
     display.setCursor(0,9);
-    if (AppSettings.wired)
+    if (WifiStation.isConnected())
     {
-        if (!Network.getClientIP().isNull())
-        {
-            display.print("IP  :");
-            display.println(Network.getClientIP().toString());
-        } 
-        else
-        {
-            display.setTextColor(BLACK, WHITE); // 'inverted' text
-            display.println("connecting ...");
-            display.setTextColor(WHITE);
-        }
-    }
+        display.print("AP  :");
+        display.println(Network.getClientIP().toString());
+    } 
     else
     {
-        if (WifiStation.isConnected())
-        {
-            display.print("AP  :");
-            display.println(Network.getClientIP().toString());
-        } 
-        else
-        {
-            display.setTextColor(BLACK, WHITE); // 'inverted' text
-            display.println("connecting ...");
-            display.setTextColor(WHITE);
-        }
+        display.setTextColor(BLACK, WHITE); // 'inverted' text
+        display.println("connecting ...");
+        display.setTextColor(WHITE);
     }
     display.setCursor(0,18);
     if (isMqttConfigured())

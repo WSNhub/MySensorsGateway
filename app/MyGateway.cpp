@@ -4,7 +4,6 @@
 #include "MyGateway.h"
 #include "MySensors/MySigningAtsha204.h"
 #include "MySensors/MySigningAtsha204Soft.h"
-#include "Rule.h"
 #include "HTTP.h"
 #include "MyStatus.h"
 
@@ -151,7 +150,6 @@ void MyGateway::incomingMessage(const MyMessage &message)
                         Debug.printf("Updating sensor %d (%d/%d) type %d value %s\n",
                                      idx, mySensors[idx].node, mySensors[idx].sensor,
                                      mySensors[idx].type, mySensors[idx].value.c_str());
-                        Rules.processTrigger("sensor"+String(idx+1));
                     }
                     newSensor = false;
                     HTTP.notifyWsClients(getSensorJson(idx));
@@ -179,7 +177,6 @@ void MyGateway::incomingMessage(const MyMessage &message)
                             }
                             mySensors[idx].value = newValue;
                             HTTP.notifyWsClients(getSensorJson(idx));
-                            Rules.processTrigger("sensor"+String(idx+1));
                         }
                         else
                         {

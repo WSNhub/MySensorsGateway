@@ -18,10 +18,6 @@ class Controller
   #include <openHabMqttController.h>
   class OpenHabMqttController;
   extern OpenHabMqttController controller;
-#elif CONTROLLER_TYPE == CONTROLLER_TYPE_CLOUD
-  #include <CloudController.h>
-  class CloudController;
-  extern CloudController controller;
 #else
   #error Wrong CONTROLLER_TYPE value
 #endif

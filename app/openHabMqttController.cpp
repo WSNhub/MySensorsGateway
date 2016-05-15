@@ -32,7 +32,7 @@ void OpenHabMqttController::registerCommandHandlers()
 
 void OpenHabMqttController::checkConnection()
 {
-    if (AppSettings.wired || WifiStation.isConnected())
+    if (WifiStation.isConnected())
         checkMqttClient();
 }
 

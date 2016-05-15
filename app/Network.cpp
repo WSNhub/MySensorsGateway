@@ -17,14 +17,12 @@ extern void otaEnable();
 
 void NetworkClass::begin(NetworkStateChangeDelegate dlg)
 {
-    if (!AppSettings.wired)
-        WifiStation.enable(false);
+    WifiStation.enable(false);
 
     changeDlg = dlg;
 
-    if (!AppSettings.wired &&
-        (AppSettings.apMode == apModeAlwaysOn ||
-         AppSettings.apMode == apModeWhenDisconnected))
+    if (AppSettings.apMode == apModeAlwaysOn ||
+        AppSettings.apMode == apModeWhenDisconnected)
     {
         softApEnable();
     }
@@ -33,35 +31,23 @@ void NetworkClass::begin(NetworkStateChangeDelegate dlg)
         softApDisable();
     }
 
-    if (!AppSettings.wired)
+    WifiStation.config(AppSettings.ssid, AppSettings.password);
+    if (!AppSettings.dhcp && !AppSettings.ip.isNull())
     {
-        WifiStation.config(AppSettings.ssid, AppSettings.password);
-        if (!AppSettings.dhcp && !AppSettings.ip.isNull())
-        {
-            WifiStation.setIP(AppSettings.ip,
-                              AppSettings.netmask,
-                              AppSettings.gateway);
-        }
+        WifiStation.setIP(AppSettings.ip,
+                          AppSettings.netmask,
+                          AppSettings.gateway);
     }
 
-    if (!AppSettings.wired)
-    {
-        wifi_set_event_handler_cb(network_cb);
+    wifi_set_event_handler_cb(network_cb);
 
-        if (AppSettings.ssid.equals(""))
-        {
-            WifiStation.enable(false);
-        }
-        else
-        {
-            reconnect(1);
-        }
+    if (AppSettings.ssid.equals(""))
+    {
+        WifiStation.enable(false);
     }
     else
     {
-    	void w5100_netif_init();
-    	w5100_netif_init();
-        ntpClient.requestTime();
+        reconnect(1);
     }
 
     otaEnable();    
@@ -70,9 +56,6 @@ void NetworkClass::begin(NetworkStateChangeDelegate dlg)
 void NetworkClass::softApEnable()
 {
     char id[16];
-
-    if (AppSettings.wired)
-        return;
 
     if (AppSettings.apMode == apModeAlwaysOff ||
         AppSettings.apMode == apModeWhenDisconnected && connected)
@@ -101,9 +84,8 @@ void NetworkClass::softApEnable()
 
 void NetworkClass::softApDisable()
 {
-    if (!AppSettings.wired &&
-        (AppSettings.apMode == apModeAlwaysOn ||
-         AppSettings.apMode == apModeWhenDisconnected && !connected))
+    if (AppSettings.apMode == apModeAlwaysOn ||
+        AppSettings.apMode == apModeWhenDisconnected && !connected)
     {
         Debug.println("Not disabling AP due to config setting");
         return;
@@ -212,9 +194,6 @@ void NetworkClass::portalLoginHandler(HttpClient& client, bool successful)
 
 void NetworkClass::connect()
 {
-    if (AppSettings.wired)
-        return;
-
     Debug.println("Connecting...");
 
     if (!WifiStation.getSSID().equals(AppSettings.ssid) ||
@@ -240,9 +219,6 @@ void NetworkClass::connect()
 
 void NetworkClass::reconnect(int delayMs)
 {
-    if (AppSettings.wired)
-        return;
-
     reconnectTimer.initializeMs(delayMs, TimerDelegate(&NetworkClass::connect, this)).startOnce();
 }
 
@@ -257,41 +233,21 @@ void NetworkClass::ntpTimeResultHandler(NtpClient& client, time_t ntpTime)
 
 IPAddress NetworkClass::getClientIP()
 {
-    if (AppSettings.wired)
-    {
-        extern IPAddress w5100_netif_get_ip();
-        return w5100_netif_get_ip();
-    }
-
     return WifiStation.getIP();
 }
 
 IPAddress NetworkClass::getClientMask()
 {
-    if (AppSettings.wired)
-    {
-        extern IPAddress w5100_netif_get_netmask();
-        return w5100_netif_get_netmask();
-    }
-
     return WifiStation.getNetworkMask();
 }
 
 IPAddress NetworkClass::getClientGW()
 {
-    if (AppSettings.wired)
-    {
-        extern IPAddress w5100_netif_get_gateway();
-        return w5100_netif_get_gateway();
-    }
-
     return WifiStation.getNetworkGateway();
 }
 
 bool NetworkClass::isConnected()
 {
-    if (!AppSettings.wired)
-        return WifiStation.isConnected();
     if (getClientIP().isNull())
         return false;
     return true;

@@ -23,11 +23,6 @@ typedef enum
 class ApplicationSettingsStorage
 {
   public:
-#if WIRED_ETHERNET_MODE != WIRED_ETHERNET_NONE
-    bool        wired = true;
-#else
-    bool        wired = false;
-#endif
     String      ssid;
     String      password;
     eAppMode    apMode = apModeAlwaysOn;

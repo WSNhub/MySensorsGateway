@@ -155,7 +155,7 @@ void onMqttConfig(HttpRequest &request, HttpResponse &response)
         AppSettings.mqttControllerPfx = request.getPostParameter("controllerPfx");
 
         AppSettings.save();
-        if (AppSettings.wired || WifiStation.isConnected())
+        if (WifiStation.isConnected())
             startMqttClient();
     }
 

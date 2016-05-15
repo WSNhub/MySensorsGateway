@@ -2,7 +2,6 @@
 #include <SmingCore.h>
 #include <HTTP.h>
 #include <Network.h>
-#include <SDCard.h>
 #include <MyGateway.h>
 #include <MyStatus.h>
 #include <AppSettings.h>
@@ -28,11 +27,6 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
 
     if (request.getRequestMethod() == RequestMethod::POST)
     {
-        bool connectionTypeChanges =
-        	AppSettings.wired != (request.getPostParameter("wired") == "1");
-
-        AppSettings.wired = request.getPostParameter("wired") == "1";
-
         String oldApPass = AppSettings.apPassword;
         AppSettings.apPassword = request.getPostParameter("apPassword");
         if (!AppSettings.apPassword.equals(oldApPass))
@@ -53,20 +47,10 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
         AppSettings.save();
     
         Network.reconnect(500);
-
-        if (connectionTypeChanges)
-            processRestartCommandWeb();
     }
 
-#if WIRED_ETHERNET_MODE == WIRED_ETHERNET_NONE
     TemplateFileStream *tmpl = new TemplateFileStream("settings.html");
-#else
-    TemplateFileStream *tmpl = new TemplateFileStream("settings_wired.html");
-#endif
     auto &vars = tmpl->variables();
-
-    vars["wiredon"] = AppSettings.wired ? "checked='checked'" : "";
-    vars["wiredoff"] = AppSettings.wired ? "" : "checked='checked'";
 
     vars["ssid"] = AppSettings.ssid;
     vars["password"] = AppSettings.password;
@@ -132,10 +116,6 @@ void onMaintenance(HttpRequest &request, HttpResponse &response)
 
 void onFile(HttpRequest &request, HttpResponse &response)
 {
-#ifdef SD_SPI_SS_PIN
-    static bool alreadyInitialized = false;
-#endif
-
     if (!HTTP.isHttpClientAllowed(request, response))
         return;
 
@@ -152,40 +132,7 @@ void onFile(HttpRequest &request, HttpResponse &response)
         // open the file. note that only one file can be open at a time,
         // so you have to close this one before opening another.
         Debug.printf("REQUEST for %s\n", file.c_str());
-#ifdef SD_SPI_SS_PIN
-        if (alreadyInitialized || SD.begin(0))
-        {
-            alreadyInitialized = true;
-            Debug.printf("SD card present\n");
-            File f = SD.open(file);
-            if (!f) //SD.exists(file) does not seem to work
-            {
-                Debug.printf("NOT FOUND %s\n", file.c_str());
-                response.sendFile(file);
-            }
-            else if (f.isDirectory())
-            {
-                f.close();
-                Debug.printf("%s IS A DIRECTORY\n", file.c_str());
-                response.forbidden();
-            }
-            else
-            {
-                f.close();
-                Debug.printf("OPEN STREAM FOR %s\n", file.c_str());
-                response.setAllowCrossDomainOrigin("*");
-                const char *mime = ContentType::fromFullFileName(file);
-		if (mime != NULL)
-		    response.setContentType(mime);
-                SdFileStream *stream = new SdFileStream(file);
-                response.sendDataStream(stream);
-            }
-        }
-        else
-#endif
-        {
-            response.sendFile(file);
-        }
+        response.sendFile(file);
     }
 }
 

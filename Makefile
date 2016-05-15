@@ -34,15 +34,6 @@ MYSENSORS_SIGNING_HMAC ?= { 0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08, \
                             0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, \
                             0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }
 
-# WIRED_ETHERNET
-# Instead of the wifi station to connect to your network, it is possible
-# to connect to the network over wired ethernet.
-# Possibilities are:
-#   WIRED_ETHERNET_NONE
-#   WIRED_ETHERNET_W5100
-#   WIRED_ETHERNET_W5500
-WIRED_ETHERNET_MODE ?= WIRED_ETHERNET_NONE
-
 # SMING_AUTO_UPGRADE
 # If enabled, each time "make" is done, the system will check whether
 # upgrading Sming is necessary. A reason to disable this would be if
@@ -73,7 +64,6 @@ ifeq ('${PLATFORM_TYPE}', 'GENERIC')
   USER_CFLAGS += "-DI2C_SDA_PIN=4"
   USER_CFLAGS += "-DI2C_SCL_PIN=5"
   USER_CFLAGS += "-DRTC_TYPE=RTC_TYPE_3213"
-  USER_CFLAGS += "-DETHERNET_SPI_SS_PIN=16"
 endif
 
 ## SD shield platform
@@ -85,7 +75,6 @@ ifeq ('${PLATFORM_TYPE}', 'SDSHIELD')
   USER_CFLAGS += "-DI2C_SDA_PIN=4"
   USER_CFLAGS += "-DI2C_SCL_PIN=5"
   USER_CFLAGS += "-DRTC_TYPE=RTC_TYPE_1307"
-  USER_CFLAGS += "-DETHERNET_SPI_SS_PIN=16"
 endif
 
 ## WeMos D1 board with W5100 ethernet shield and data logger shield
@@ -100,27 +89,13 @@ ifeq ('${PLATFORM_TYPE}', 'WEMOS_WITH_SHIELDS')
   USER_CFLAGS += "-DI2C_SDA_PIN=4"
   USER_CFLAGS += "-DI2C_SCL_PIN=5"
   USER_CFLAGS += "-DRTC_TYPE=RTC_TYPE_1307"
-  USER_CFLAGS += "-DETHERNET_SPI_SS_PIN=15"
 endif
-
-## WeMos D1 board with custom W5500 ethernet shield (+SD +NRF).
-ifeq ('${PLATFORM_TYPE}', 'WEMOS_WITH_W5500_SHIELD')
-  USER_CFLAGS += "-DRADIO_CE_PIN=2"
-  USER_CFLAGS += "-DRADIO_SPI_SS_PIN=15"
-  USER_CFLAGS += "-DSD_SPI_SS_PIN=0"
-  USER_CFLAGS += "-DI2C_SDA_PIN=4"
-  USER_CFLAGS += "-DI2C_SCL_PIN=5"
-  USER_CFLAGS += "-DRTC_TYPE=RTC_TYPE_1307"
-  USER_CFLAGS += "-DETHERNET_SPI_SS_PIN=16"
-  WIRED_ETHERNET_MODE = WIRED_ETHERNET_W5500
-endif
-
 
 #############################################
 #### Please don't change anything below. ####
 #############################################
 
-OBJ_CPY_PARAMS = --redefine-sym system_station_got_ip_set=system_station_got_ip_set_orig
+#OBJ_CPY_PARAMS = --redefine-sym system_station_got_ip_set=system_station_got_ip_set_orig
 all: SMING GLOBALS spiff_clean
 
 GLOBALS:
@@ -130,11 +105,6 @@ GLOBALS:
 
 
 SMING:
-ifeq ($(SMING_AUTO_UPGRADE), 1)
-	@echo "Updating Sming..."
-	@cd tools/Sming; git checkout develop; git pull || (echo "Sming needs rebuild"; cd Sming; make clean)
-endif
-
 	@echo "Building Sming..."
 	@make rebuild -C tools/Sming/Sming
 	@make -C tools/Sming/Sming/spiffy
@@ -163,7 +133,6 @@ USER_CFLAGS += "-DPLATFORM_TYPE=PLATFORM_TYPE_$(PLATFORM_TYPE)"
 USER_CFLAGS += "-DSIGNING_ENABLE=$(MYSENSORS_SIGNING)"
 USER_CFLAGS += "-DSIGNING_HMAC=$(MYSENSORS_SIGNING_HMAC)"
 USER_CFLAGS += "-DATSHA204I2C=$(MYSENSORS_WITH_ATSHA204)"
-USER_CFLAGS += "-DWIRED_ETHERNET_MODE=$(WIRED_ETHERNET_MODE)"
 USER_CFLAGS += "-DMEASURE_ENABLE=$(GPIO16_MEASURE_ENABLE)"
 USER_CFLAGS += "-DDISPLAY_TYPE=$(DISPLAY_TYPE)"
 
