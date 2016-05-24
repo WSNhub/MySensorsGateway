@@ -54,6 +54,7 @@ void otaUpdate_CallBack(bool result) {
 #ifndef DISABLE_SPIFFS
         Debug.printf("Firmware updated, storing AppSettings to new spiffs...\r\n");
         AppSettings.load();
+        Debug.printf("unmounting spiffs...\r\n");
         spiffs_unmount();
         if (slot == 0)
         {
@@ -80,8 +81,14 @@ void otaUpdate_CallBack(bool result) {
         Debug.printf("spiffs disabled");
 #endif
         // set to boot new rom and then reboot
-        Debug.printf("Firmware updated, rebooting to rom %d...\r\n", slot);
-        rboot_set_current_rom(slot);
+        if (rboot_set_current_rom(slot))
+        {
+            Debug.printf("Firmware updated, rebooting to rom %d...\r\n", slot);
+        }
+        else
+        {
+            Debug.printf("Failed selecting new rom %d and writing it to config\n", slot);
+        }
         System.restart();
     }
     else

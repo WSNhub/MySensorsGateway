@@ -256,6 +256,7 @@ void processInfoCommand(String commandLine, CommandOutput* out)
     out->printf("Free Heap          : %d\r\n", system_get_free_heap_size());
     out->printf("CPU Frequency      : %d MHz\r\n", system_get_cpu_freq());
     out->printf("System Chip ID     : %x\r\n", system_get_chip_id());
+    out->printf("Current rom        : %d\r\n", rboot_get_current_rom());
     out->printf("SPI Flash ID       : %x\r\n", spi_flash_get_id());
     out->printf("SPI Flash Size     : %d\r\n", (1 << ((spi_flash_get_id() >> 16) & 0xff)));
     out->printf("\r\n");
