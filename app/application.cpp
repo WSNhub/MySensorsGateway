@@ -12,6 +12,7 @@
 #include <controller.h>
 #include "MyStatus.h"
 #include "MyDisplay.h"
+#include <string>
 
 /*
  * The I2C implementation takes care of initializing things like I/O
@@ -266,6 +267,28 @@ void ping(void)
                          message);
 }
 
+void sendMsg(String commandLine, CommandOutput* out)
+{
+    Vector<String> commandToken;
+    int numToken = splitString(commandLine, ' ' , commandToken);
+
+    if (numToken != 5)
+    {
+        out->printf("usage : \r\n\r\n");
+        out->printf("sendMsg nodeNr sensorNr msgType bool\r\n");
+        out->printf("Example: sendMsg 22 1 2 1\r\n");
+        out->printf("Note: msgType for LED node is 2 (V_LIGHT).\r\n");
+        return;
+    }
+    int nodeNr = atoi (commandToken[1].c_str());
+    int sensorNr = atoi (commandToken[2].c_str());
+    int messageType = atoi (commandToken[3].c_str());
+    int boolData = atoi (commandToken[4].c_str());
+    MyMessage myMsg;
+    myMsg.set(boolData);
+    GW.sendRoute(GW.build(myMsg, nodeNr, sensorNr, C_SET, messageType, 0));
+}
+
 Timer pingpongTimer;
 void processPongCommand(String commandLine, CommandOutput* out)
 {
@@ -399,6 +422,10 @@ void init()
                                                    "link quality test",
                                                    "MySensors",
                                                    processPongCommand));
+    commandHandler.registerCommand(CommandDelegate("sendMsg",
+                                                   "Send a message to a node",
+                                                   "MySensors",
+                                                   sendMsg));
     AppSettings.load();
 
     // Start either wired or wireless networking
