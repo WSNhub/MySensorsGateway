@@ -52,11 +52,12 @@ public:
 
     // Overloaded cast operator to allow IPAddress objects to be used where a pointer
     // to a four-byte uint8_t array is expected
-    operator uint32_t() { return *((uint32_t*)_address); };
+    operator uint32_t() const { return *((uint32_t*)_address); };
     operator ip_addr() { ip_addr ret; ret.addr = *((uint32_t*)_address); return ret; };
     operator ip_addr*() { return (ip_addr*)_address; };
     bool operator==(const IPAddress& addr) { return (*((uint32_t*)_address)) == (*((uint32_t*)addr._address)); };
     bool operator==(const uint8_t* addr);
+    bool operator!=(const IPAddress& addr);
 
     bool isNull() { return *((uint32_t*)_address) == 0; }
     String toString();

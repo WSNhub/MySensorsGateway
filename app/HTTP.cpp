@@ -8,6 +8,7 @@
 #include <controller.h>
 #include <Services/WebHelpers/base64.h>
 #include <Wiring/SplitString.h>
+#include <mDNS.h>
 
 // Forward declarations
 void StartOtaUpdateWeb(String);
@@ -22,6 +23,7 @@ void apEnable()
 
 void onIpConfig(HttpRequest &request, HttpResponse &response)
 {
+    AppSettings.load();
     if (!HTTP.isHttpClientAllowed(request, response))
         return;
 
@@ -40,6 +42,7 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
         AppSettings.portalData = request.getPostParameter("portalData");
 
         AppSettings.dhcp = request.getPostParameter("dhcp") == "1";
+        AppSettings.hostname = request.getPostParameter(HOSTNAME_KEY);
         AppSettings.ip = request.getPostParameter("ip");
         AppSettings.netmask = request.getPostParameter("netmask");
         AppSettings.gateway = request.getPostParameter("gateway");
@@ -63,6 +66,8 @@ void onIpConfig(HttpRequest &request, HttpResponse &response)
     vars["dhcpon"] = dhcp ? "checked='checked'" : "";
     vars["dhcpoff"] = !dhcp ? "checked='checked'" : "";
 
+    vars[HOSTNAME_KEY] = AppSettings.hostname;
+    vars[FULL_HOSTNAME_KEY] = AppSettings.hostname + mDNS::LOCAL_DOMAIN_NAME;
     vars["ip"] = Network.getClientIP().toString();
     vars["netmask"] = Network.getClientMask().toString();
     vars["gateway"] = Network.getClientGW().toString();

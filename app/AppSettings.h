@@ -1,7 +1,7 @@
 /*
  * AppSettings.h
  *
- *  Created on: 13 мая 2015 г.
+ *  Created on: 13 пїЅпїЅпїЅ 2015 пїЅ.
  *      Author: Anakod
  */
 
@@ -12,6 +12,8 @@
 #include "globals.h"
 
 #define APP_SETTINGS_FILE ".settings.conf" // leading point for security reasons :)
+#define HOSTNAME_KEY "hostname"
+#define FULL_HOSTNAME_KEY "fullHostname"
 
 typedef enum
 {
@@ -23,6 +25,8 @@ typedef enum
 class ApplicationSettingsStorage
 {
   public:
+    ApplicationSettingsStorage();
+
     String      ssid;
     String      password;
     eAppMode    apMode = apModeAlwaysOn;
@@ -33,6 +37,7 @@ class ApplicationSettingsStorage
 
     bool        dhcp = true;
 
+    String      hostname;
     IPAddress   ip;
     IPAddress   netmask;
     IPAddress   gateway;
@@ -57,6 +62,7 @@ class ApplicationSettingsStorage
     void save();
 
     bool exist() { return fileExist(APP_SETTINGS_FILE); }
+    bool dataLoaded;
 };
 
 extern ApplicationSettingsStorage AppSettings;

@@ -1,15 +1,29 @@
 /*
  * AppSettings.h
  *
- *  Created on: 13 мая 2015 г.
+ *  Created on: 13 пїЅпїЅпїЅ 2015 пїЅ.
  *      Author: Anakod
  */
 
 #include <SmingCore/SmingCore.h>
 #include <AppSettings.h>
 
+ApplicationSettingsStorage::ApplicationSettingsStorage(): dataLoaded(false)
+{
+}
+
+
 void ApplicationSettingsStorage::load()
 {
+    if(dataLoaded)
+    {
+        return;
+    }
+    char strChipId[32];
+    String defaultHostName("swig_");
+    m_snprintf(strChipId, 32, "%#0x", system_get_chip_id());
+    defaultHostName += strChipId;
+
     DynamicJsonBuffer jsonBuffer;
     if (exist())
     {
@@ -43,6 +57,15 @@ void ApplicationSettingsStorage::load()
                 apMode = apModeAlwaysOff;
         }
 
+        if (!network.containsKey(HOSTNAME_KEY))
+        {
+          hostname = defaultHostName;
+        }
+        else
+        {
+          hostname = (const char*)network[HOSTNAME_KEY];
+        }
+
         dhcp = network["dhcp"];
 
         ip = (const char *)network["ip"];
@@ -68,6 +91,11 @@ void ApplicationSettingsStorage::load()
 
         delete[] jsonString;
     }
+    else
+    {
+        hostname = defaultHostName;
+    }
+    dataLoaded = true;
 }
 
 void ApplicationSettingsStorage::save()
@@ -93,6 +121,7 @@ void ApplicationSettingsStorage::save()
     network["dhcp"] = dhcp;
 
     // Make copy by value for temporary string objects
+    network.set(HOSTNAME_KEY, hostname.c_str());
     network.set("ip", ip.toString());
     network.set("netmask", netmask.toString());
     network.set("gateway", gateway.toString());

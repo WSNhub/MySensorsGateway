@@ -5,6 +5,7 @@
 #include "MyStatus.h"
 #include "Network.h"
 #include "HTTP.h"
+#include "mDNS.h"
 #include <mqtt.h>
 
 extern MyStatus myStatus;
@@ -127,6 +128,10 @@ void MyStatus::onWsGetStatus (WebSocket& socket, const String& message)
     statusStr += makeJsonKV ("ssid", AppSettings.ssid);
     statusStr += String(",");
     statusStr += makeJsonKV ("wifiStatus", isNetworkConnected ? "Connected" : "Not connected");
+    statusStr += String(",");
+    String fullHostName = AppSettings.hostname;
+    fullHostName += mDNS::LOCAL_DOMAIN_NAME;
+    statusStr += makeJsonKV (FULL_HOSTNAME_KEY, fullHostName);
     statusStr += String(",");
     
     if (!Network.getClientIP().isNull())

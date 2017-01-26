@@ -98,9 +98,17 @@ endif
 #OBJ_CPY_PARAMS = --redefine-sym system_station_got_ip_set=system_station_got_ip_set_orig
 all: SMING GLOBALS spiff_clean
 
+ifneq ($(wildcard .git/.*),)
+    BUILDHASH := $(shell git describe --abbrev=7 --dirty --always --tags)
+else ifneq ($(wildcard .hg/.*),)
+    BUILDHASH := $(shell hg parent --template '{node}\n')
+else
+    BUILDHASH := unknown
+endif
+
 GLOBALS:
 	@echo "Generating globals"
-	git describe --abbrev=7 --dirty --always --tags | awk ' BEGIN {print "#include \"globals.h\""} {print "const char * build_git_sha = \"" $$0"\";"} END {}' > app/globals.c
+	echo $(BUILDHASH) | awk ' BEGIN {print "#include \"globals.h\""} {print "const char * build_git_sha = \"" $$0"\";"} END {}' > app/globals.c
 	date | awk 'BEGIN {} {print "const char * build_time = \""$$0"\";"} END {} ' >> app/globals.c
 
 
@@ -117,7 +125,9 @@ EXTRA_INCDIR    = include libraries
 ESP_HOME ?= /opt/esp-open-sdk
 
 ## SMING_HOME sets the path where Sming framework is located.
-SMING_HOME = ${PWD}/tools/Sming/Sming
+ROOT_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+ROOT_PATH := $(dir $(ROOT_PATH))
+SMING_HOME = ${ROOT_PATH}/tools/Sming/Sming
 
 #### rBoot options ####
 RBOOT_ENABLED   ?= 1
@@ -125,7 +135,7 @@ RBOOT_BIG_FLASH ?= 1
 SPI_SIZE        ?= 4M
 SPIFF_FILES     ?= spiffs
 SPIFF_SIZE      ?= 262144
-ESPTOOL2        = ${PWD}/tools/esptool2/esptool2
+ESPTOOL2        = ${ROOT_PATH}/tools/esptool2/esptool2
 
 #### Set the USER_CFLAGS for compilation ####
 USER_CFLAGS += "-DCONTROLLER_TYPE=CONTROLLER_TYPE_$(CONTROLLER_TYPE)"

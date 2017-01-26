@@ -13,15 +13,16 @@
 #include "MyStatus.h"
 #include "MyDisplay.h"
 #include <string>
+#include "mDNS.h"
 
 /*
  * The I2C implementation takes care of initializing things like I/O
  * expanders, the RTC chip and the OLED.
  */
-MyI2C I2C_dev;
-
-FTPServer ftp;
-TelnetServer telnet;
+static MyI2C I2C_dev;
+static mDNS mdns;
+static FTPServer ftp;
+static TelnetServer telnet;
 static boolean first_time = TRUE;
 int isNetworkConnected = FALSE;
 int pongNodeId = 22;
@@ -96,6 +97,7 @@ void startServers()
 {
     HTTP.begin(); //HTTP must be first so handlers can be registered
 
+    mdns.begin();
     I2C_dev.begin();
     Display.begin();
     Expansion.begin(i2cChangeHandler);

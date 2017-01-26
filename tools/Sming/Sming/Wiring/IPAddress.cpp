@@ -97,6 +97,11 @@ bool IPAddress::operator==(const uint8_t* addr)
     return memcmp(addr, _address, sizeof(_address)) == 0;
 }
 
+bool IPAddress::operator!=(const IPAddress& addr)
+{
+  return !(*this == addr);
+}
+
 size_t IPAddress::printTo(Print& p) const
 {
     size_t n = 0;
